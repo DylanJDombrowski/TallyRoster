@@ -1,18 +1,42 @@
 // app/dashboard/players/components/player-list.tsx
 "use client";
 
-import { Player, Team } from "@/lib/types";
-
-// Define the shape of the player data we're receiving from the server
-type PlayerWithTeam = Player & {
-  teams: Pick<Team, "name"> | null;
-};
+import { createClient } from "@/lib/supabase/client";
+import { PlayerWithTeam } from "./player-manager"; // Import from our new manager
+import { Player } from "@/lib/types";
 
 interface PlayerListProps {
   players: PlayerWithTeam[];
+  onEdit: (player: Player) => void;
+  onDeleteSuccess: (deletedPlayerId: string) => void;
 }
 
-export function PlayerList({ players }: PlayerListProps) {
+export function PlayerList({
+  players,
+  onEdit,
+  onDeleteSuccess,
+}: PlayerListProps) {
+  const supabase = createClient();
+
+  const handleDelete = async (player: Player) => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete ${player.first_name} ${player.last_name}?`
+      )
+    ) {
+      const { error } = await supabase
+        .from("players")
+        .delete()
+        .eq("id", player.id);
+      if (error) {
+        alert("Error deleting player: " + error.message);
+      } else {
+        alert("Player deleted successfully!");
+        onDeleteSuccess(player.id);
+      }
+    }
+  };
+
   if (players.length === 0) {
     return <p>No players found. Add one using the form!</p>;
   }
@@ -31,7 +55,20 @@ export function PlayerList({ players }: PlayerListProps) {
             </p>
             <p className="text-sm text-gray-500">{player.teams?.name}</p>
           </div>
-          {/* Edit/Delete buttons will go here */}
+          <div className="space-x-2">
+            <button
+              onClick={() => onEdit(player)}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => handleDelete(player)}
+              className="text-sm text-red-600 hover:underline"
+            >
+              Delete
+            </button>
+          </div>
         </div>
       ))}
     </div>
