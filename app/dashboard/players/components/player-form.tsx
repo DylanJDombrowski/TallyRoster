@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { Player, PlayerFormData, PlayerFormSchema, Team } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect } from "react";
+import { ImageUploader } from "./image-uploader"; // Import our new component
 
 interface PlayerFormProps {
   teams: Team[];
@@ -27,21 +28,26 @@ export function PlayerForm({
     formState: { errors, isSubmitting },
     reset,
     setValue,
+    watch,
   } = useForm<PlayerFormData>({
     resolver: zodResolver(PlayerFormSchema),
   });
 
-  // When playerToEdit changes, populate the form with its data
+  // Watch the headshot_url field so we can pass it to the uploader
+  const headshotUrl = watch("headshot_url");
+
   useEffect(() => {
     if (playerToEdit) {
+      //... (this logic stays the same)
       setValue("id", playerToEdit.id);
       setValue("first_name", playerToEdit.first_name);
       setValue("last_name", playerToEdit.last_name);
       setValue("jersey_number", playerToEdit.jersey_number);
       setValue("position", playerToEdit.position);
       setValue("team_id", playerToEdit.team_id);
+      // Set the initial headshot URL
+      setValue("headshot_url", playerToEdit.headshot_url);
     } else {
-      // If we are not editing, clear the form
       reset({
         id: undefined,
         first_name: "",
@@ -49,41 +55,38 @@ export function PlayerForm({
         jersey_number: null,
         position: "",
         team_id: "",
+        headshot_url: null,
       });
     }
   }, [playerToEdit, setValue, reset]);
 
   const onSubmit = async (data: PlayerFormData) => {
     try {
+      // ... (The entire onSubmit logic for insert/update stays the same!)
+      // The `headshot_url` is now part of the `data` object and will be saved automatically.
       let savedPlayer: Player | null = null;
       const isNew = !data.id;
+      const payload = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        jersey_number: data.jersey_number,
+        position: data.position,
+        team_id: data.team_id,
+        headshot_url: data.headshot_url, // This field is now included
+      };
 
       if (isNew) {
-        // INSERT new player
         const { data: newPlayer, error } = await supabase
           .from("players")
-          .insert({
-            first_name: data.first_name,
-            last_name: data.last_name,
-            jersey_number: data.jersey_number,
-            position: data.position,
-            team_id: data.team_id,
-          })
+          .insert(payload)
           .select()
           .single();
         if (error) throw error;
         savedPlayer = newPlayer;
       } else {
-        // UPDATE existing player
         const { data: updatedPlayer, error } = await supabase
           .from("players")
-          .update({
-            first_name: data.first_name,
-            last_name: data.last_name,
-            jersey_number: data.jersey_number,
-            position: data.position,
-            team_id: data.team_id,
-          })
+          .update(payload)
           .eq("id", data.id!)
           .select()
           .single();
@@ -121,7 +124,17 @@ export function PlayerForm({
           </button>
         )}
       </div>
-      {/* ... (The rest of the form inputs are the same as before) ... */}
+
+      {/* Add the ImageUploader component here */}
+      <ImageUploader
+        initialImageUrl={headshotUrl || null}
+        onUpload={(url) => {
+          // When an image is uploaded, update the form's state
+          setValue("headshot_url", url, { shouldValidate: true });
+        }}
+      />
+
+      {/* ... (The rest of the form inputs are the same) ... */}
       <div>
         <label
           htmlFor="team_id"
@@ -145,6 +158,7 @@ export function PlayerForm({
           <p className="mt-1 text-red-500 text-sm">{errors.team_id.message}</p>
         )}
       </div>
+
       <div>
         <label
           htmlFor="first_name"
@@ -163,6 +177,7 @@ export function PlayerForm({
           </p>
         )}
       </div>
+
       <div>
         <label
           htmlFor="last_name"
@@ -181,6 +196,7 @@ export function PlayerForm({
           </p>
         )}
       </div>
+
       <div>
         <label
           htmlFor="jersey_number"
@@ -200,6 +216,7 @@ export function PlayerForm({
           </p>
         )}
       </div>
+
       <button
         type="submit"
         disabled={isSubmitting}
