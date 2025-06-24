@@ -9,11 +9,7 @@ import { z } from "zod";
 const InviteUserSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
   role: z.enum(["admin", "coach", "parent"]),
-  team_id: z
-    .string()
-    .uuid({ message: "Please select a valid team" })
-    .optional()
-    .nullable(),
+  team_id: z.string().uuid({ message: "Please select a valid team" }).optional().nullable(),
 });
 
 // Corrected function signature
@@ -41,8 +37,7 @@ export async function inviteUser(prevState: unknown, formData: FormData) {
 
   const { email, role, team_id } = validatedFields.data;
 
-  const { data: inviteData, error: inviteError } =
-    await supabase.auth.admin.inviteUserByEmail(email);
+  const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email);
 
   if (inviteError) {
     return { error: `Failed to invite user: ${inviteError.message}` };
