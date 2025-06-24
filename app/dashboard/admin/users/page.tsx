@@ -22,12 +22,16 @@ async function UserManagementPage() {
     redirect("/login");
   }
 
-  // Check if the user is an admin
-  const { data: userRole } = await supabase
+  const { data: userRole, error: roleError } = await supabase
     .from("user_roles")
     .select("role")
-    .eq("user_id", user.id) // Use user.id from the getUser() call
+    .eq("user_id", user.id)
     .single();
+
+  // Log any error to the terminal where `npm run dev` is running
+  if (roleError) {
+    console.error("ERROR FETCHING USER ROLE:", roleError);
+  }
 
   if (userRole?.role !== "admin") {
     // Or redirect to a generic 'unauthorized' page
