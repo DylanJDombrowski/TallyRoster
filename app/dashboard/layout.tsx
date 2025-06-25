@@ -1,4 +1,5 @@
 // app/dashboard/layout.tsx
+"use client";
 import { Team } from "@/lib/types";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
