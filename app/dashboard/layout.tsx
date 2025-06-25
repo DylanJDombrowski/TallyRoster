@@ -1,13 +1,13 @@
 // app/dashboard/layout.tsx
-"use client";
-import { Team } from "@/lib/types";
+
+import { ThemeStyle } from "@/app/components/theme-style"; // Import the new component
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { ReactNode } from "react";
 import { LogoutButton } from "./components/logout-button";
 
-// A server component to fetch data and set theme colors
-async function ThemeManager() {
+// This component fetches data on the server.
+async function ThemeInjector() {
   const cookieStore = cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
@@ -15,36 +15,31 @@ async function ThemeManager() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let team: Team | null = null;
+  let primaryColor = "#171717"; // Default to black for admin
+  let secondaryColor = "#e5e5e5"; // Default to light gray for admin
+
   if (user) {
     const { data: userRole } = await supabase.from("user_roles").select("team_id").eq("user_id", user.id).single();
 
     if (userRole?.team_id) {
-      const { data: teamData } = await supabase.from("teams").select("*").eq("id", userRole.team_id).single();
-      team = teamData;
+      const { data: teamData } = await supabase.from("teams").select("primary_color, secondary_color").eq("id", userRole.team_id).single();
+
+      // Use team colors if they exist
+      if (teamData?.primary_color) primaryColor = teamData.primary_color;
+      if (teamData?.secondary_color) secondaryColor = teamData.secondary_color;
     }
   }
 
-  const primaryColor = team?.primary_color || "#171717"; // Default to black
-  const secondaryColor = team?.secondary_color || "#e5e5e5"; // Default to light gray
-  const primaryFgColor = "#ffffff"; // Assuming white text on primary color
+  const primaryFgColor = "#ffffff"; // Assuming white text on primary color is always desired
 
-  return (
-    <style jsx global>{`
-      :root {
-        --color-primary: ${primaryColor};
-        --color-secondary: ${secondaryColor};
-        --color-primary-foreground: ${primaryFgColor};
-      }
-    `}</style>
-  );
+  // It then passes the server-fetched data as props to the client component.
+  return <ThemeStyle primaryColor={primaryColor} secondaryColor={secondaryColor} primaryFgColor={primaryFgColor} />;
 }
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    // Use a light slate background for the whole page
     <div className="min-h-screen bg-slate-50">
-      <ThemeManager />
+      <ThemeInjector />
       <header className="flex items-center justify-between p-4 bg-white border-b border-slate-200">
         <h1 className="text-xl font-bold text-slate-800">MVX Admin</h1>
         <LogoutButton />
