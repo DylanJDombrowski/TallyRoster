@@ -12,6 +12,7 @@ export type Database = {
           jersey_number: number | null;
           last_name: string;
           position: string | null;
+          status: string;
           team_id: string;
         };
         Insert: {
@@ -22,6 +23,7 @@ export type Database = {
           jersey_number?: number | null;
           last_name: string;
           position?: string | null;
+          status?: string;
           team_id: string;
         };
         Update: {
@@ -32,6 +34,7 @@ export type Database = {
           jersey_number?: number | null;
           last_name?: string;
           position?: string | null;
+          status?: string;
           team_id?: string;
         };
         Relationships: [

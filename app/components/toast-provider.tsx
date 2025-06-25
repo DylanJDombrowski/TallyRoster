@@ -30,7 +30,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToast({ message, type, visible: true });
     setTimeout(() => {
       setToast((currentToast) => (currentToast ? { ...currentToast, visible: false } : null));
-    }, 3000); // Auto-dismiss after 3 seconds
+    }, 3000);
   };
 
   const value = { showToast };
@@ -40,7 +40,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {toast && (
         <div
-          className={`fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300 ${
+          className={`fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300 z-50 ${
+            // Added z-50
             toast.type === "success" ? "bg-green-500" : "bg-red-500"
           } ${toast.visible ? "opacity-100" : "opacity-0"}`}
         >
