@@ -12,7 +12,6 @@ const InviteUserSchema = z.object({
   team_id: z.string().uuid({ message: "Please select a valid team" }).optional().nullable(),
 });
 
-// Corrected function signature
 export async function inviteUser(prevState: unknown, formData: FormData) {
   const cookieStore = cookies();
   const supabase = createServerActionClient(
@@ -61,4 +60,51 @@ export async function inviteUser(prevState: unknown, formData: FormData) {
 
   revalidatePath("/dashboard/admin/users");
   return { success: `Invitation sent successfully to ${email}` };
+}
+
+// NEW: Schema for updating a user's role
+const UpdateUserRoleSchema = z.object({
+  user_id: z.string().uuid(),
+  role: z.enum(["admin", "coach", "parent"]),
+  team_id: z.string().uuid().optional().nullable(),
+});
+
+// NEW: Server action to update a user's role
+export async function updateUserRole(prevState: unknown, formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createServerActionClient({ cookies: () => cookieStore });
+
+  const validatedFields = UpdateUserRoleSchema.safeParse({
+    user_id: formData.get("user_id"),
+    role: formData.get("role"),
+    team_id: formData.get("team_id") || null,
+  });
+
+  if (!validatedFields.success) {
+    return {
+      error: "Invalid form data.",
+    };
+  }
+
+  const { user_id, role, team_id } = validatedFields.data;
+
+  // An admin role should not be tied to a specific team
+  const final_team_id = role === "admin" ? null : team_id;
+
+  // Find the existing user_roles entry
+  const { data: existingRole, error: findError } = await supabase.from("user_roles").select("id").eq("user_id", user_id).single();
+
+  if (findError || !existingRole) {
+    return { error: `Could not find a role for the specified user.` };
+  }
+
+  // Update the existing role
+  const { error: updateError } = await supabase.from("user_roles").update({ role, team_id: final_team_id }).eq("id", existingRole.id);
+
+  if (updateError) {
+    return { error: `Failed to update user role: ${updateError.message}` };
+  }
+
+  revalidatePath("/dashboard/admin/users");
+  return { success: "User role updated successfully." };
 }

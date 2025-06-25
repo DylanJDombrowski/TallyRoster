@@ -1,17 +1,33 @@
+/* app/globals.css */
 @import "tailwindcss";
 
 :root {
+  /* Default Theme / Admin Theme (Black & White) */
   --background: #ffffff;
   --foreground: #171717;
+  --color-primary: #171717; /* Black */
+  --color-secondary: #e5e5e5; /* Light Gray */
+  --color-primary-foreground: #ffffff; /* White */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --color-primary: #ffffff; /* White */
+    --color-secondary: #272727; /* Dark Gray */
+    --color-primary-foreground: #000000; /* Black */
   }
 }
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Example of using the new variables */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
 }
