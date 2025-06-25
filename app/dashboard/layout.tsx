@@ -5,6 +5,7 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { ReactNode } from "react";
 import { LogoutButton } from "./components/logout-button";
+import { SidebarNav } from "./components/sidebar-nav";
 
 // This component fetches data on the server.
 async function ThemeInjector() {
@@ -38,13 +39,25 @@ async function ThemeInjector() {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <>
       <ThemeInjector />
-      <header className="flex items-center justify-between p-4 bg-white border-b border-slate-200">
-        <h1 className="text-xl font-bold text-slate-800">MVX Admin</h1>
-        <LogoutButton />
-      </header>
-      <main>{children}</main>
-    </div>
+      <div className="min-h-screen bg-slate-100">
+        <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between h-16 px-4 bg-white border-b border-slate-200 md:left-64">
+          <h1 className="text-xl font-bold text-slate-800 md:hidden">MVX Admin</h1>
+          <div className="ml-auto">
+            <LogoutButton />
+          </div>
+        </header>
+
+        <aside className="fixed top-0 left-0 hidden w-64 h-full bg-white border-r border-slate-200 md:block">
+          <div className="flex items-center h-16 px-6 border-b">
+            <h1 className="text-xl font-bold text-slate-800">MVX Admin</h1>
+          </div>
+          <SidebarNav />
+        </aside>
+
+        <main className="pt-16 md:pl-64">{children}</main>
+      </div>
+    </>
   );
 }
