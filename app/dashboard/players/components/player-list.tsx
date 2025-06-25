@@ -32,9 +32,9 @@ export function PlayerList({ players, onEdit, onDeleteSuccess }: PlayerListProps
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Current Roster</h2>
+      <h2 className="text-xl text-slate-900 font-semibold">Current Roster</h2>
       {players.map((player) => (
-        <div key={player.id} className="p-4 border rounded-md flex items-center justify-between">
+        <div key={player.id} className="p-4 border text-slate-800 rounded-md flex items-center justify-between">
           <div>
             <p className="font-semibold">
               {player.first_name} {player.last_name} #{player.jersey_number}

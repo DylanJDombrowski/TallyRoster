@@ -24,16 +24,14 @@ export default function LoginPage() {
     if (error) {
       setMessage("Error: " + error.message);
     } else {
-      // On successful login, Next.js will automatically handle the redirect
-      // because the dashboard page will no longer redirect. We just refresh.
-      router.refresh();
+      router.push("/dashboard");
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center">MVX Platform Login</h1>
+        <h1 className="text-2xl font-bold text-slate-900 text-center">MVX Platform Login</h1>
         <form onSubmit={handleSignIn} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-900">
@@ -42,7 +40,7 @@ export default function LoginPage() {
             <input
               id="email"
               type="email"
-              className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md text-slate-800 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
               required
@@ -55,7 +53,7 @@ export default function LoginPage() {
             <input
               id="password"
               type="password"
-              className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 mt-1 border border-gray-300 text-slate-800 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               onChange={(e) => setPassword(e.target.value)}
               value={password}
               required

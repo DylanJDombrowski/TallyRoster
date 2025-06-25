@@ -28,7 +28,7 @@ export default async function ManageTeamsPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <h1 className="text-2xl font-bold mb-4">Manage Teams</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-4">Manage Teams</h1>
       <TeamManager initialTeams={teams ?? []} />
     </div>
   );

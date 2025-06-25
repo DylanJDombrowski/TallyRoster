@@ -77,17 +77,17 @@ export default function UserManagementPage() {
   return (
     <>
       <div className="p-8">
-        <h1 className="text-2xl font-bold">User Management</h1>
+        <h1 className="text-2xl text-slate-900 font-bold">User Management</h1>
         <div className="grid gap-8 mt-8 md:grid-cols-3">
           <div className="md:col-span-1">
-            <h2 className="text-xl font-semibold">Invite New User</h2>
+            <h2 className="text-xl text-slate-900 font-semibold">Invite New User</h2>
             <InviteUserForm teams={teams} />
           </div>
           <div className="mt-8 md:col-span-2 md:mt-0">
-            <h2 className="text-xl font-semibold">Current Users</h2>
-            <div className="p-4 mt-4 border rounded-md">
+            <h2 className="text-xl text-slate-900 font-semibold">Current Users</h2>
+            <div className="p-4 mt-4 border text-slate-900 rounded-md">
               {users.map((user) => (
-                <div key={user.id} className="flex justify-between items-center py-2 border-b">
+                <div key={user.id} className="flex text-slate-800 justify-between items-center py-2 border-b">
                   <div>
                     <p>{user.email}</p>
                     <p className="text-sm text-slate-800">

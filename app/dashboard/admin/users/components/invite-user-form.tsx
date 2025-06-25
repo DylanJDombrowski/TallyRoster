@@ -48,7 +48,7 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
         <label htmlFor="email" className="block text-sm font-medium text-slate-900">
           User Email
         </label>
-        <input type="email" id="email" name="email" required className="w-full p-2 border border-gray-300 rounded-md" />
+        <input type="email" id="email" name="email" required className="w-full p-2 border text-slate-800 border-gray-300 rounded-md" />
       </div>
 
       <div className="space-y-1">
@@ -59,7 +59,7 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
           id="role"
           name="role"
           required
-          className="w-full p-2 border border-gray-300 rounded-md"
+          className="w-full p-2 border text-slate-800 border-gray-300 rounded-md"
           onChange={(e) => setSelectedRole(e.target.value)}
         >
           <option value="coach">Coach</option>
@@ -74,7 +74,7 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
           <label htmlFor="team_id" className="block text-sm font-medium text-slate-900">
             Team
           </label>
-          <select id="team_id" name="team_id" required className="w-full p-2 border border-gray-300 rounded-md">
+          <select id="team_id" name="team_id" required className="w-full p-2 border text-slate-800 border-gray-300 rounded-md">
             <option value="">Select a team</option>
             {teams.map((team) => (
               <option key={team.id} value={team.id}>

@@ -93,7 +93,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
     >
       <input type="hidden" name="id" defaultValue={teamToEdit?.id ?? ""} />
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">{teamToEdit ? "Edit Team" : "Add New Team"}</h2>
+        <h2 className="text-xl text-slate-900 font-semibold">{teamToEdit ? "Edit Team" : "Add New Team"}</h2>
         {teamToEdit && (
           <button type="button" onClick={handleCancel} className="text-sm text-slate-800 hover:underline">
             Cancel
@@ -101,26 +101,26 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
         )}
       </div>
       <div>
-        <label htmlFor="name" className="block text-sm font-medium">
+        <label htmlFor="name" className="block text-slate-800 text-sm font-medium">
           Team Name
         </label>
         <input
           id="name"
           name="name"
           defaultValue={teamToEdit?.name}
-          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+          className="mt-1 block w-full p-2 border text-slate-800 border-gray-300 rounded-md"
           required
         />
       </div>
       <div>
-        <label htmlFor="season" className="block text-sm font-medium">
+        <label htmlFor="season" className="block  text-slate-800 text-sm font-medium">
           Season
         </label>
         <select
           id="season"
           name="season"
           defaultValue={teamToEdit?.season || ""}
-          className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+          className="mt-1 block w-full p-2 border text-slate-800 border-gray-300 rounded-md"
         >
           <option value="">Select a season</option>
           {seasons.map((season) => (
@@ -132,7 +132,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="primary_color" className="block text-sm font-medium">
+          <label htmlFor="primary_color" className="block text-slate-800 text-sm font-medium">
             Primary Color
           </label>
           <input
@@ -144,7 +144,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
           />
         </div>
         <div>
-          <label htmlFor="secondary_color" className="block text-sm font-medium">
+          <label htmlFor="secondary_color" className="block text-slate-800 text-sm font-medium">
             Secondary Color
           </label>
           <input

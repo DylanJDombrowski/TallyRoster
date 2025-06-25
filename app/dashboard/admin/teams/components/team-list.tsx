@@ -29,9 +29,9 @@ export function TeamList({ teams, onEdit, onDeleteSuccess }: TeamListProps) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Current Teams</h2>
+      <h2 className="text-xl text-slate-900 font-semibold">Current Teams</h2>
       {teams.map((team) => (
-        <div key={team.id} className="p-4 border rounded-md flex items-center justify-between">
+        <div key={team.id} className="p-4 border rounded-md flex text-slate-800 items-center justify-between">
           <div>
             <p className="font-semibold">{team.name}</p>
             <p className="text-sm text-slate-800">{team.season}</p>
