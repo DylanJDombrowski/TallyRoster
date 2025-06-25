@@ -90,7 +90,7 @@ export default function UserManagementPage() {
                 <div key={user.id} className="flex justify-between items-center py-2 border-b">
                   <div>
                     <p>{user.email}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-800">
                       Role: {user.role} | Team: {user.team_name}
                     </p>
                   </div>

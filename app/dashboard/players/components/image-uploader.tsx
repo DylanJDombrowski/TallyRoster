@@ -2,25 +2,20 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
 import Image from "next/image";
+import { useState } from "react";
 
 interface ImageUploaderProps {
   initialImageUrl: string | null;
   onUpload: (filePath: string) => void;
 }
 
-export function ImageUploader({
-  initialImageUrl,
-  onUpload,
-}: ImageUploaderProps) {
+export function ImageUploader({ initialImageUrl, onUpload }: ImageUploaderProps) {
   const supabase = createClient();
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialImageUrl);
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
       if (!event.target.files || event.target.files.length === 0) {
@@ -32,9 +27,7 @@ export function ImageUploader({
       const filePath = `public/${Date.now()}_${file.name}`;
 
       // Upload the file to the 'player-headshots' bucket
-      const { error: uploadError } = await supabase.storage
-        .from("player-headshots")
-        .upload(filePath, file);
+      const { error: uploadError } = await supabase.storage.from("player-headshots").upload(filePath, file);
 
       if (uploadError) {
         throw uploadError;
@@ -65,22 +58,12 @@ export function ImageUploader({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700">
-        Player Headshot
-      </label>
+      <label className="block text-sm font-medium text-slate-900">Player Headshot</label>
       <div className="mt-1 flex items-center space-x-4">
         {previewUrl ? (
-          <Image
-            src={previewUrl}
-            alt="Player headshot"
-            width={80}
-            height={80}
-            className="w-20 h-20 rounded-full object-cover"
-          />
+          <Image src={previewUrl} alt="Player headshot" width={80} height={80} className="w-20 h-20 rounded-full object-cover" />
         ) : (
-          <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
-            No Image
-          </div>
+          <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-slate-800">No Image</div>
         )}
         <div className="relative">
           <input
@@ -94,7 +77,7 @@ export function ImageUploader({
           />
           <label
             htmlFor="headshot-upload"
-            className="px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+            className="px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-slate-900 bg-white hover:bg-gray-50 cursor-pointer"
           >
             {uploading ? "Uploading..." : "Change"}
           </label>

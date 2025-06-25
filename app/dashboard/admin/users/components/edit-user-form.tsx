@@ -27,7 +27,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+      className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 disabled:bg-slate-800"
     >
       {pending ? "Saving..." : "Save Changes"}
     </button>
@@ -53,12 +53,12 @@ export function EditUserForm({ user, teams, onClose }: EditUserFormProps) {
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="user_id" value={user.id} />
       <div>
-        <label className="block text-sm font-medium text-gray-700">Email</label>
+        <label className="block text-sm font-medium text-slate-900">Email</label>
         <p className="mt-1 p-2 border border-gray-200 rounded-md bg-gray-50">{user.email}</p>
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="role" className="block text-sm font-medium text-slate-900">
           Role
         </label>
         <select
@@ -77,7 +77,7 @@ export function EditUserForm({ user, teams, onClose }: EditUserFormProps) {
 
       {(selectedRole === "coach" || selectedRole === "parent") && (
         <div className="space-y-1">
-          <label htmlFor="team_id" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="team_id" className="block text-sm font-medium text-slate-900">
             Team
           </label>
           <select

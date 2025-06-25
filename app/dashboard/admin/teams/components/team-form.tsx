@@ -19,7 +19,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full text-white p-2 rounded-md disabled:bg-gray-400"
+      className="w-full text-white p-2 rounded-md disabled:bg-slate-800"
       style={{
         backgroundColor: "var(--color-primary)",
         color: "var(--color-primary-foreground)",
@@ -95,7 +95,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">{teamToEdit ? "Edit Team" : "Add New Team"}</h2>
         {teamToEdit && (
-          <button type="button" onClick={handleCancel} className="text-sm text-gray-600 hover:underline">
+          <button type="button" onClick={handleCancel} className="text-sm text-slate-800 hover:underline">
             Cancel
           </button>
         )}

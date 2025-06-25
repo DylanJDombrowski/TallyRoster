@@ -2,9 +2,9 @@
 "use client";
 
 import { Team } from "@/lib/types";
-import { inviteUser } from "../actions";
-import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
+import { inviteUser } from "../actions";
 
 interface InviteUserFormProps {
   teams: Team[];
@@ -17,7 +17,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full px-4 py-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+      className="w-full px-4 py-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-slate-800"
     >
       {pending ? "Sending Invite..." : "Send Invite"}
     </button>
@@ -43,32 +43,16 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
   }, [state]);
 
   return (
-    <form
-      ref={formRef}
-      action={formAction}
-      className="p-4 space-y-4 border rounded-md shadow-sm"
-    >
+    <form ref={formRef} action={formAction} className="p-4 space-y-4 border rounded-md shadow-sm">
       <div className="space-y-1">
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="email" className="block text-sm font-medium text-slate-900">
           User Email
         </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          required
-          className="w-full p-2 border border-gray-300 rounded-md"
-        />
+        <input type="email" id="email" name="email" required className="w-full p-2 border border-gray-300 rounded-md" />
       </div>
 
       <div className="space-y-1">
-        <label
-          htmlFor="role"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="role" className="block text-sm font-medium text-slate-900">
           Role
         </label>
         <select
@@ -87,18 +71,10 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
       {/* Only show the team selector if the role is 'coach' or 'parent' */}
       {(selectedRole === "coach" || selectedRole === "parent") && (
         <div className="space-y-1">
-          <label
-            htmlFor="team_id"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="team_id" className="block text-sm font-medium text-slate-900">
             Team
           </label>
-          <select
-            id="team_id"
-            name="team_id"
-            required
-            className="w-full p-2 border border-gray-300 rounded-md"
-          >
+          <select id="team_id" name="team_id" required className="w-full p-2 border border-gray-300 rounded-md">
             <option value="">Select a team</option>
             {teams.map((team) => (
               <option key={team.id} value={team.id}>

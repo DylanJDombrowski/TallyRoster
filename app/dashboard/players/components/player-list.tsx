@@ -2,8 +2,8 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { PlayerWithTeam } from "./player-manager"; // Import from our new manager
 import { Player } from "@/lib/types";
+import { PlayerWithTeam } from "./player-manager"; // Import from our new manager
 
 interface PlayerListProps {
   players: PlayerWithTeam[];
@@ -11,23 +11,12 @@ interface PlayerListProps {
   onDeleteSuccess: (deletedPlayerId: string) => void;
 }
 
-export function PlayerList({
-  players,
-  onEdit,
-  onDeleteSuccess,
-}: PlayerListProps) {
+export function PlayerList({ players, onEdit, onDeleteSuccess }: PlayerListProps) {
   const supabase = createClient();
 
   const handleDelete = async (player: Player) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${player.first_name} ${player.last_name}?`
-      )
-    ) {
-      const { error } = await supabase
-        .from("players")
-        .delete()
-        .eq("id", player.id);
+    if (window.confirm(`Are you sure you want to delete ${player.first_name} ${player.last_name}?`)) {
+      const { error } = await supabase.from("players").delete().eq("id", player.id);
       if (error) {
         alert("Error deleting player: " + error.message);
       } else {
@@ -45,27 +34,18 @@ export function PlayerList({
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Current Roster</h2>
       {players.map((player) => (
-        <div
-          key={player.id}
-          className="p-4 border rounded-md flex items-center justify-between"
-        >
+        <div key={player.id} className="p-4 border rounded-md flex items-center justify-between">
           <div>
             <p className="font-semibold">
               {player.first_name} {player.last_name} #{player.jersey_number}
             </p>
-            <p className="text-sm text-gray-500">{player.teams?.name}</p>
+            <p className="text-sm text-slate-800">{player.teams?.name}</p>
           </div>
           <div className="space-x-2">
-            <button
-              onClick={() => onEdit(player)}
-              className="text-sm text-blue-600 hover:underline"
-            >
+            <button onClick={() => onEdit(player)} className="text-sm text-blue-600 hover:underline">
               Edit
             </button>
-            <button
-              onClick={() => handleDelete(player)}
-              className="text-sm text-red-600 hover:underline"
-            >
+            <button onClick={() => handleDelete(player)} className="text-sm text-red-600 hover:underline">
               Delete
             </button>
           </div>

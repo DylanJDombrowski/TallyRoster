@@ -2,8 +2,8 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { DoorClosed } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
+      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
     >
       <DoorClosed size={16} />
       Logout

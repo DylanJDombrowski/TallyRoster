@@ -34,7 +34,7 @@ export function TeamList({ teams, onEdit, onDeleteSuccess }: TeamListProps) {
         <div key={team.id} className="p-4 border rounded-md flex items-center justify-between">
           <div>
             <p className="font-semibold">{team.name}</p>
-            <p className="text-sm text-gray-500">{team.season}</p>
+            <p className="text-sm text-slate-800">{team.season}</p>
           </div>
           <div className="space-x-2">
             <button onClick={() => onEdit(team)} className="text-sm text-blue-600 hover:underline">

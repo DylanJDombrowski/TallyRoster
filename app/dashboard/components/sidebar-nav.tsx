@@ -24,7 +24,7 @@ export function SidebarNav() {
             key={link.href}
             href={link.href}
             className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-              isActive ? "bg-gray-200 text-gray-900" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              isActive ? "bg-gray-200 text-gray-900" : "text-slate-800 hover:bg-gray-100 hover:text-gray-900"
             }`}
           >
             <link.icon size={18} />
