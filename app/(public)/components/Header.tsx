@@ -1,9 +1,10 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import Image from "next/image";
-import { Navigation } from "./Navigation"; // This will be our client component
+import { Navigation } from "./Navigation";
 
 export async function Header() {
+  // Get the cookies synchronously
   const cookieStore = cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
@@ -24,9 +25,11 @@ export async function Header() {
       <div className="container mx-auto py-4 px-4">
         <div className="flex items-center justify-center">
           <Image
-            src="/assets/logos/mvxLogo2.png" // Assumes you move logos to the public folder
+            src="/assets/logos/mvxLogo2.png"
             alt="MVX Logo"
-            className="h-16 md:h-24 mr-4"
+            width={96} // Specify width instead of using className h-16 md:h-24
+            height={96}
+            className="h-16 md:h-24 w-auto mr-4"
           />
           <div className="text-center md:text-left">
             <h1 className="text-2xl md:text-5xl uppercase font-medium text-primary">Miami Valley Xpress</h1>

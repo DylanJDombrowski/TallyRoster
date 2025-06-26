@@ -13,11 +13,12 @@ const config: Config = {
         light: "#C8D5DC",
       },
       fontFamily: {
-        oswald: ["Oswald", "sans-serif"],
-        roboto: ["Roboto", "sans-serif"],
+        oswald: ["var(--font-oswald)", "Oswald", "sans-serif"],
+        roboto: ["var(--font-roboto)", "Roboto", "sans-serif"],
       },
     },
   },
   plugins: [],
 };
+
 export default config;

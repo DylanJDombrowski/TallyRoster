@@ -1,33 +1,42 @@
 /* app/globals.css */
 @import "tailwindcss";
 
-:root {
-  /* Default Theme / Admin Theme (Black & White) */
-  --background: #ffffff;
-  --foreground: #171717;
-  --color-primary: #171717; /* Black */
-  --color-secondary: #e5e5e5; /* Light Gray */
-  --color-primary-foreground: #ffffff; /* White */
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
+  /* Define CSS custom properties for your theme */
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --color-primary: #ffffff; /* White */
-    --color-secondary: #272727; /* Dark Gray */
-    --color-primary-foreground: #000000; /* Black */
+    --color-primary: #161659;
+    --color-secondary: #F2F2F2;
+    --color-text: #FFFFFF;
+    --color-accent: #D29C9C;
+    --color-ribbon: #B70F0F;
+    --color-light: #C8D5DC;
+  }
+
+  body {
+    font-family: var(--font-roboto, 'Roboto', sans-serif);
+    background-color: #F8FAFC; /* Using a standard background color */
+    color: #1E293B; /* Using slate-800 equivalent */
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-oswald, 'Oswald', sans-serif);
   }
 }
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-  background-color: var(--background);
-  color: var(--foreground);
-}
+@layer components {
+  .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-/* Example of using the new variables */
-.btn-primary {
-  background-color: var(--color-primary);
-  color: var(--color-primary-foreground);
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-text);
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
 }
