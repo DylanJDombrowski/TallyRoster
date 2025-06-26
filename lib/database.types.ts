@@ -3,43 +3,223 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
-      players: {
+      coaches: {
         Row: {
+          bio: string | null;
           created_at: string;
-          first_name: string;
-          headshot_url: string | null;
+          email: string | null;
           id: string;
-          jersey_number: number | null;
-          last_name: string;
+          image_url: string | null;
+          name: string;
+          order_index: number | null;
+          phone: string | null;
           position: string | null;
-          status: string;
           team_id: string;
         };
         Insert: {
+          bio?: string | null;
           created_at?: string;
-          first_name: string;
-          headshot_url?: string | null;
+          email?: string | null;
           id?: string;
-          jersey_number?: number | null;
-          last_name: string;
+          image_url?: string | null;
+          name: string;
+          order_index?: number | null;
+          phone?: string | null;
           position?: string | null;
-          status?: string;
           team_id: string;
         };
         Update: {
+          bio?: string | null;
           created_at?: string;
-          first_name?: string;
-          headshot_url?: string | null;
+          email?: string | null;
           id?: string;
-          jersey_number?: number | null;
-          last_name?: string;
+          image_url?: string | null;
+          name?: string;
+          order_index?: number | null;
+          phone?: string | null;
           position?: string | null;
-          status?: string;
           team_id?: string;
         };
         Relationships: [
           {
+            foreignKeyName: "coaches_team_id_fkey";
+            columns: ["team_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      player_stats: {
+        Row: {
+          batting_avg: number | null;
+          created_at: string;
+          era: number | null;
+          games_played: number | null;
+          hits: number | null;
+          home_runs: number | null;
+          id: string;
+          losses: number | null;
+          player_id: string;
+          rbis: number | null;
+          runs: number | null;
+          season: string | null;
+          wins: number | null;
+        };
+        Insert: {
+          batting_avg?: number | null;
+          created_at?: string;
+          era?: number | null;
+          games_played?: number | null;
+          hits?: number | null;
+          home_runs?: number | null;
+          id?: string;
+          losses?: number | null;
+          player_id: string;
+          rbis?: number | null;
+          runs?: number | null;
+          season?: string | null;
+          wins?: number | null;
+        };
+        Update: {
+          batting_avg?: number | null;
+          created_at?: string;
+          era?: number | null;
+          games_played?: number | null;
+          hits?: number | null;
+          home_runs?: number | null;
+          id?: string;
+          losses?: number | null;
+          player_id?: string;
+          rbis?: number | null;
+          runs?: number | null;
+          season?: string | null;
+          wins?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "player_stats_player_id_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      players: {
+        Row: {
+          bats: string | null;
+          created_at: string;
+          first_name: string;
+          gpa: number | null;
+          grad_year: number | null;
+          headshot_url: string | null;
+          height: string | null;
+          id: string;
+          jersey_number: number | null;
+          last_name: string;
+          position: string | null;
+          school: string | null;
+          status: string;
+          team_id: string;
+          throws: string | null;
+          town: string | null;
+          twitter_handle: string | null;
+        };
+        Insert: {
+          bats?: string | null;
+          created_at?: string;
+          first_name: string;
+          gpa?: number | null;
+          grad_year?: number | null;
+          headshot_url?: string | null;
+          height?: string | null;
+          id?: string;
+          jersey_number?: number | null;
+          last_name: string;
+          position?: string | null;
+          school?: string | null;
+          status?: string;
+          team_id: string;
+          throws?: string | null;
+          town?: string | null;
+          twitter_handle?: string | null;
+        };
+        Update: {
+          bats?: string | null;
+          created_at?: string;
+          first_name?: string;
+          gpa?: number | null;
+          grad_year?: number | null;
+          headshot_url?: string | null;
+          height?: string | null;
+          id?: string;
+          jersey_number?: number | null;
+          last_name?: string;
+          position?: string | null;
+          school?: string | null;
+          status?: string;
+          team_id?: string;
+          throws?: string | null;
+          town?: string | null;
+          twitter_handle?: string | null;
+        };
+        Relationships: [
+          {
             foreignKeyName: "players_team_id_fkey";
+            columns: ["team_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      schedule_events: {
+        Row: {
+          created_at: string;
+          end_time: string | null;
+          event_date: string;
+          event_name: string;
+          event_type: string | null;
+          id: string;
+          is_home: boolean | null;
+          location: string | null;
+          notes: string | null;
+          sanction: string | null;
+          start_time: string | null;
+          team_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          end_time?: string | null;
+          event_date: string;
+          event_name: string;
+          event_type?: string | null;
+          id?: string;
+          is_home?: boolean | null;
+          location?: string | null;
+          notes?: string | null;
+          sanction?: string | null;
+          start_time?: string | null;
+          team_id: string;
+        };
+        Update: {
+          created_at?: string;
+          end_time?: string | null;
+          event_date?: string;
+          event_name?: string;
+          event_type?: string | null;
+          id?: string;
+          is_home?: boolean | null;
+          location?: string | null;
+          notes?: string | null;
+          sanction?: string | null;
+          start_time?: string | null;
+          team_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "schedule_events_team_id_fkey";
             columns: ["team_id"];
             isOneToOne: false;
             referencedRelation: "teams";
@@ -55,6 +235,8 @@ export type Database = {
           primary_color: string | null;
           season: string | null;
           secondary_color: string | null;
+          team_image_url: string | null;
+          year: number | null;
         };
         Insert: {
           created_at?: string;
@@ -63,6 +245,8 @@ export type Database = {
           primary_color?: string | null;
           season?: string | null;
           secondary_color?: string | null;
+          team_image_url?: string | null;
+          year?: number | null;
         };
         Update: {
           created_at?: string;
@@ -71,6 +255,8 @@ export type Database = {
           primary_color?: string | null;
           season?: string | null;
           secondary_color?: string | null;
+          team_image_url?: string | null;
+          year?: number | null;
         };
         Relationships: [];
       };
