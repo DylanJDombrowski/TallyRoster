@@ -25,10 +25,8 @@ export function Footer() {
               </p>
               <a
                 href="mailto:mvxpresssoftballorg@gmail.com"
-                className="transition-colors duration-300 block"
+                className="transition-colors duration-300 block hover:text-accent"
                 style={{ color: "var(--color-background, #FFFFFF)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-accent, #D29C9C)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-background, #FFFFFF)")}
               >
                 mvxpresssoftballorg@gmail.com
               </a>
@@ -42,10 +40,8 @@ export function Footer() {
               </p>
               <a
                 href="mailto:mvxpresssoftballorg@gmail.com"
-                className="transition-colors duration-300 block"
+                className="transition-colors duration-300 block hover:text-accent"
                 style={{ color: "var(--color-background, #FFFFFF)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-accent, #D29C9C)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-background, #FFFFFF)")}
               >
                 mvxpresssoftballorg@gmail.com
               </a>
@@ -62,10 +58,8 @@ export function Footer() {
                 href="https://www.nmdxapparel.com/shop/MVXpressTeamStore/9?page=1&limit=60&sort_by=category_order&sort_order=asc"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors duration-300 text-lg"
+                className="transition-colors duration-300 text-lg hover:text-accent"
                 style={{ color: "var(--color-primary, #161659)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-accent, #D29C9C)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-primary, #161659)")}
               >
                 <strong>NMDX Apparel</strong>
               </a>
@@ -73,10 +67,8 @@ export function Footer() {
                 href="https://sideline.bsnsports.com/schools/ohio/miamisburg/miami-valley-xpress"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors duration-300 text-lg"
+                className="transition-colors duration-300 text-lg hover:text-accent"
                 style={{ color: "var(--color-primary, #161659)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-accent, #D29C9C)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-primary, #161659)")}
               >
                 <strong>Sideline Stores</strong>
               </a>
@@ -86,10 +78,8 @@ export function Footer() {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-2xl transition-colors duration-300"
+                className="text-2xl transition-colors duration-300 hover:text-accent"
                 style={{ color: "var(--color-background, #FFFFFF)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-accent, #D29C9C)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-background, #FFFFFF)")}
               >
                 <i className="fab fa-facebook-f"></i>
               </a>
@@ -97,10 +87,8 @@ export function Footer() {
                 href="https://twitter.com/XpressSoftball"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-2xl transition-colors duration-300"
+                className="text-2xl transition-colors duration-300 hover:text-accent"
                 style={{ color: "var(--color-background, #FFFFFF)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-accent, #D29C9C)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-background, #FFFFFF)")}
               >
                 <i className="fab fa-twitter"></i>
               </a>

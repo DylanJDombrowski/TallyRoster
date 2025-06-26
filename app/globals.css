@@ -39,4 +39,8 @@
   .btn-primary:hover {
     opacity: 0.9;
   }
+
+  .hover\:text-accent:hover {
+  color: var(--color-accent, #D29C9C);
+}
 }
