@@ -1,5 +1,7 @@
-import { Oswald, Roboto } from "next/font/google"; // Import next/font
+// app/(public)/layout.tsx
+import { Oswald, Roboto } from "next/font/google";
 import { ReactNode } from "react";
+import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 
 // Configure the fonts
@@ -16,18 +18,23 @@ const roboto = Roboto({
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
-    // Use the font variables in the className
     <html lang="en" className={`${oswald.variable} ${roboto.variable}`}>
-      <body className="font-roboto bg-secondary">
-        {" "}
-        {/* Default body font and bg color */}
-        <Header />
-        <main>{children}</main>
-        <footer className="bg-primary text-white mt-8 py-6">
-          <div className="container mx-auto px-6 text-center">
-            <p>&copy; {new Date().getFullYear()} Miami Valley Xpress. All Rights Reserved.</p>
-          </div>
-        </footer>
+      <head>
+        {/* Add Font Awesome for social icons */}
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
+        />
+      </head>
+      <body className="font-roboto flex flex-col min-h-screen" style={{ backgroundColor: "var(--color-secondary, #F2F2F2)" }}>
+        <div className="flex-1">
+          <Header />
+          <main>{children}</main>
+        </div>
+        <Footer />
       </body>
     </html>
   );

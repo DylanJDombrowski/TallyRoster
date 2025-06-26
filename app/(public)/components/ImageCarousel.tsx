@@ -1,10 +1,10 @@
+// app/(public)/components/ImageCarousel.tsx
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
-// The images are now served from the public directory
 const images = ["/home-carousel/Xpress.jpg", "/home-carousel/Xpress-team-pic.jpg", "/home-carousel/Xpress-org.jpg"];
 
 export function ImageCarousel() {
@@ -27,16 +27,27 @@ export function ImageCarousel() {
       <Image
         src={images[currentIndex]}
         alt="Carousel image"
-        layout="fill"
-        objectFit="cover"
-        className="transition-transform duration-500 ease-in-out"
+        fill
+        className="object-cover transition-transform duration-500 ease-in-out"
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+        priority
       />
-      <div className="absolute inset-0 flex items-center justify-between p-4">
-        <button onClick={prevSlide} className="p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75 transition">
-          <ChevronLeft size={24} />
+
+      {/* Navigation buttons positioned like Angular version */}
+      <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2">
+        <button
+          onClick={prevSlide}
+          className="p-2 bg-black bg-opacity-50 text-white border-none cursor-pointer transition-colors hover:bg-opacity-75"
+          aria-label="Previous image"
+        >
+          <ChevronLeft size={20} />
         </button>
-        <button onClick={nextSlide} className="p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75 transition">
-          <ChevronRight size={24} />
+        <button
+          onClick={nextSlide}
+          className="p-2 bg-black bg-opacity-50 text-white border-none cursor-pointer transition-colors hover:bg-opacity-75"
+          aria-label="Next image"
+        >
+          <ChevronRight size={20} />
         </button>
       </div>
     </div>
