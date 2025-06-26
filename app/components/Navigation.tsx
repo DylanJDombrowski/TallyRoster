@@ -1,28 +1,36 @@
-// src/components/Navigation.tsx
+// app/components/Navigation.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import Image from "next/image";
 
 interface Team {
   id: string;
   name: string;
-  year: number;
+  year?: number;
 }
 
-export default function Navigation() {
-  const [teams, setTeams] = useState<Team[]>([]);
+interface NavigationProps {
+  teams?: Team[];
+}
+
+export default function Navigation({
+  teams: initialTeams = [],
+}: NavigationProps) {
+  const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
   const pathname = usePathname();
   const supabase = createClientComponentClient();
 
   useEffect(() => {
-    loadTeams();
-  }, []);
+    // If no initial teams provided, load from database
+    if (initialTeams.length === 0) {
+      loadTeams();
+    }
+  }, [initialTeams.length]);
 
   useEffect(() => {
     // Close mobile menu when route changes
@@ -65,46 +73,6 @@ export default function Navigation() {
 
   return (
     <>
-      {/* Header */}
-      <header className="font-oswald bg-white">
-        {/* Top ribbon */}
-        <div className="bg-secondary text-white py-1 px-4">
-          <div className="container mx-auto flex justify-between items-center">
-            <div className="text-sm">mvxpresssoftballorg@gmail.com</div>
-            <div className="flex space-x-4">
-              <a href="#" className="text-white hover:text-accent">
-                <i className="fab fa-facebook-f"></i>
-              </a>
-              <a href="#" className="text-white hover:text-accent">
-                <i className="fab fa-twitter"></i>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Logo and title */}
-        <div className="container mx-auto py-4 px-4">
-          <div className="flex items-center justify-center">
-            <Image
-              src="/assets/logos/mvxLogo2.png"
-              alt="MVX Logo"
-              width={96}
-              height={96}
-              className="h-16 md:h-24"
-              priority
-            />
-          </div>
-          <div className="text-center md:text-left">
-            <h1 className="text-2xl md:text-5xl uppercase font-medium text-primary">
-              Miami Valley Xpress
-            </h1>
-            <p className="text-sm md:text-2xl uppercase text-ribbon hidden md:block">
-              Champions on the diamond, friends for life.
-            </p>
-          </div>
-        </div>
-      </header>
-
       {/* Navigation - Sticky */}
       <nav className="bg-[#161659] text-white py-3 sticky top-0 z-50">
         <div className="container mx-auto px-4">
@@ -226,20 +194,6 @@ export default function Navigation() {
                 Xpress Social
               </Link>
             </li>
-
-            {/* You can add this back when you implement auth */}
-            {/* {user && (
-              <li>
-                <Link 
-                  href="/admin" 
-                  className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                    pathname?.startsWith('/admin') ? 'text-[#D29C9C]' : ''
-                  }`}
-                >
-                  Admin Portal
-                </Link>
-              </li>
-            )} */}
           </ul>
         </div>
       </nav>
@@ -360,21 +314,6 @@ export default function Navigation() {
                 Xpress Social
               </Link>
             </li>
-
-            {/* Add this back when you implement auth */}
-            {/* {user && (
-              <li>
-                <Link 
-                  href="/admin" 
-                  className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                    pathname?.startsWith('/admin') ? 'text-[#D29C9C]' : ''
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  Admin Portal
-                </Link>
-              </li>
-            )} */}
           </ul>
         </div>
       </div>

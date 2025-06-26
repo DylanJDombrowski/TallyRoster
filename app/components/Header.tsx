@@ -1,7 +1,7 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import Image from "next/image";
-import { Navigation } from "./Navigation";
+import Navigation from "./Navigation";
 
 export async function Header() {
   // Get the cookies synchronously
@@ -9,7 +9,10 @@ export async function Header() {
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
   // Fetch teams from the database instead of hardcoding them
-  const { data: teams } = await supabase.from("teams").select("id, name").order("name");
+  const { data: teams } = await supabase
+    .from("teams")
+    .select("id, name")
+    .order("name");
 
   return (
     <header className="font-oswald bg-white">
@@ -32,8 +35,12 @@ export async function Header() {
             className="h-16 md:h-24 w-auto mr-4"
           />
           <div className="text-center md:text-left">
-            <h1 className="text-2xl md:text-5xl uppercase font-medium text-primary">Miami Valley Xpress</h1>
-            <p className="text-sm md:text-2xl uppercase text-ribbon hidden md:block">Champions on the diamond, friends for life.</p>
+            <h1 className="text-2xl md:text-5xl uppercase font-medium text-primary">
+              Miami Valley Xpress
+            </h1>
+            <p className="text-sm md:text-2xl uppercase text-ribbon hidden md:block">
+              Champions on the diamond, friends for life.
+            </p>
           </div>
         </div>
       </div>
