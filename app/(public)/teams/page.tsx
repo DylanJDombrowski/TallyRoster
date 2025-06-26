@@ -4,26 +4,32 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
-import { Container } from "../components/Container";
+import { Container } from "../../components/Container";
 
 export default async function TeamsPage() {
   const cookieStore = cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
   // Fetch all teams ordered by name
-  const { data: teams } = await supabase.from("teams").select("*").order("name", { ascending: true });
+  const { data: teams } = await supabase
+    .from("teams")
+    .select("*")
+    .order("name", { ascending: true });
 
   return (
     <div className="min-h-screen py-8">
       <Container>
         {/* Page Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 font-oswald" style={{ color: "var(--color-primary, #161659)" }}>
+          <h1
+            className="text-4xl md:text-5xl font-bold mb-4 font-oswald"
+            style={{ color: "var(--color-primary, #161659)" }}
+          >
             Xpress Teams
           </h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Meet our talented teams competing across multiple age groups. Click on any team to view their roster, schedule, and coaching
-            staff.
+            Meet our talented teams competing across multiple age groups. Click
+            on any team to view their roster, schedule, and coaching staff.
           </p>
         </div>
 
@@ -37,7 +43,12 @@ export default async function TeamsPage() {
         ) : (
           <div className="text-center py-16">
             <div className="mb-4">
-              <svg className="mx-auto h-24 w-24 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="mx-auto h-24 w-24 text-slate-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -46,8 +57,12 @@ export default async function TeamsPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">No Teams Available</h3>
-            <p className="text-slate-600">Teams will be displayed here once they are added to the system.</p>
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">
+              No Teams Available
+            </h3>
+            <p className="text-slate-600">
+              Teams will be displayed here once they are added to the system.
+            </p>
           </div>
         )}
       </Container>
@@ -78,7 +93,9 @@ function TeamCard({ team }: { team: Team }) {
 
           {/* Team Name Overlay */}
           <div className="absolute bottom-4 left-4 right-4">
-            <h2 className="text-white text-xl font-bold font-oswald group-hover:text-yellow-300 transition-colors">{team.name}</h2>
+            <h2 className="text-white text-xl font-bold font-oswald group-hover:text-yellow-300 transition-colors">
+              {team.name}
+            </h2>
           </div>
         </div>
 
@@ -110,7 +127,12 @@ function TeamCard({ team }: { team: Team }) {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </span>
           </div>
@@ -123,5 +145,6 @@ function TeamCard({ team }: { team: Team }) {
 // Metadata for SEO
 export const metadata = {
   title: "Teams | Miami Valley Xpress",
-  description: "Discover all Miami Valley Xpress softball teams, their rosters, schedules, and coaching staff across multiple age groups.",
+  description:
+    "Discover all Miami Valley Xpress softball teams, their rosters, schedules, and coaching staff across multiple age groups.",
 };

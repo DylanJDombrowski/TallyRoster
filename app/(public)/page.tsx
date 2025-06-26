@@ -1,16 +1,25 @@
 // app/(public)/page.tsx
-import { Container } from "./components/Container";
-import { ImageCarousel } from "./components/ImageCarousel";
+import { Container } from "../components/Container";
+import { ImageCarousel } from "../components/ImageCarousel";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Full-screen video background */}
       <div className="relative h-screen overflow-hidden">
-        <video autoPlay loop muted playsInline className="absolute top-0 left-0 w-full h-full object-cover">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute top-0 left-0 w-full h-full object-cover"
+        >
           <source src="/videos/MVX-HomePage.mp4" type="video/mp4" />
         </video>
-        <div className="absolute top-0 left-0 w-full h-full" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}></div>
+        <div
+          className="absolute top-0 left-0 w-full h-full"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+        ></div>
         {/* Optional: Add hero content over the video */}
         {/* 
         <div className="absolute inset-0 flex items-center justify-center">
@@ -28,11 +37,15 @@ export default function HomePage() {
         <section className="py-8">
           <Container>
             <div className="text-center">
-              <h2 className="font-oswald text-3xl font-bold mb-4" style={{ color: "var(--color-primary, #161659)" }}>
+              <h2
+                className="font-oswald text-3xl font-bold mb-4"
+                style={{ color: "var(--color-primary, #161659)" }}
+              >
                 Xpress Indoor Facility and Training Partner
               </h2>
               <p className="text-slate-800 max-w-4xl mx-auto">
-                We are proud to announce our indoor facility and training partnership with Home Field Instruction in Franklin, OH for the
+                We are proud to announce our indoor facility and training
+                partnership with Home Field Instruction in Franklin, OH for the
                 2023-24 season.
               </p>
             </div>
@@ -50,7 +63,10 @@ export default function HomePage() {
         <section className="py-8">
           <Container>
             <div className="text-center mb-6">
-              <h2 className="font-oswald text-3xl font-bold" style={{ color: "var(--color-primary, #161659)" }}>
+              <h2
+                className="font-oswald text-3xl font-bold"
+                style={{ color: "var(--color-primary, #161659)" }}
+              >
                 Our Home Field
               </h2>
             </div>

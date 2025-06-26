@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate:blog": "node scripts/migrate-blog-data.js",
+    "migrate:alumni": "node scripts/migrate-alumni-data.js",
+    "migrate:all": "npm run migrate:blog && npm run migrate:alumni"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

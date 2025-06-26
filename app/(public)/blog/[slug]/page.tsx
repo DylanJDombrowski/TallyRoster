@@ -1,4 +1,4 @@
-// src/app/blog/[slug]/page.tsx
+// app/(public)/blog/[slug]/page.tsx
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -7,21 +7,22 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 interface BlogPostPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 // Generate metadata for SEO
 export async function generateMetadata({
   params,
 }: BlogPostPageProps): Promise<Metadata> {
+  const { slug } = await params;
   const supabase = createServerComponentClient({ cookies });
 
   const { data: post } = await supabase
     .from("blog_posts")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .eq("status", "published")
     .single();
 
@@ -43,12 +44,13 @@ export async function generateMetadata({
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
+  const { slug } = await params;
   const supabase = createServerComponentClient({ cookies });
 
   const { data: post, error } = await supabase
     .from("blog_posts")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .eq("status", "published")
     .single();
 
@@ -139,10 +141,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
           {/* Tournament Badge */}
           <div className="flex flex-wrap gap-2 mb-6">
-            <span className="inline-block bg-primary text-white px-3 py-1 rounded-full text-sm font-semibold">
+            <span className="inline-block bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
               {post.tournament_name}
             </span>
-            <span className="inline-block bg-secondary text-white px-3 py-1 rounded-full text-sm font-semibold">
+            <span className="inline-block bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
               {post.place}
             </span>
             <span className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm">
@@ -183,13 +185,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <div className="flex space-x-4">
               <Link
                 href="/blog"
-                className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors"
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 View All Posts
               </Link>
               <Link
                 href={`/teams/${post.team_name?.split(" ").pop()}`}
-                className="bg-secondary text-white px-6 py-2 rounded-lg hover:bg-secondary-dark transition-colors"
+                className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
               >
                 View Team
               </Link>

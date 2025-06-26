@@ -2,7 +2,7 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { Container } from "../../components/Container";
+import { Container } from "../../../components/Container";
 import { CoachCard } from "./components/CoachCard";
 import { PlayerCard } from "./components/PlayerCard";
 import { ScheduleTable } from "./components/ScheduleTable";
@@ -21,7 +21,11 @@ export default async function TeamPage({ params }: TeamPageProps) {
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
   // Fetch team with all related data
-  const { data: team } = await supabase.from("teams").select("*").eq("id", teamId).single();
+  const { data: team } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("id", teamId)
+    .single();
 
   if (!team) {
     notFound();
@@ -36,7 +40,11 @@ export default async function TeamPage({ params }: TeamPageProps) {
     .order("jersey_number", { ascending: true });
 
   // Fetch coaches for this team
-  const { data: coaches } = await supabase.from("coaches").select("*").eq("team_id", teamId).order("order_index", { ascending: true });
+  const { data: coaches } = await supabase
+    .from("coaches")
+    .select("*")
+    .eq("team_id", teamId)
+    .order("order_index", { ascending: true });
 
   // Fetch schedule events for this team
   const { data: scheduleEvents } = await supabase
@@ -73,28 +81,38 @@ export default async function TeamPage({ params }: TeamPageProps) {
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-slate-600">No active players found for this team.</p>
+              <p className="text-slate-600">
+                No active players found for this team.
+              </p>
             </div>
           )}
         </section>
 
         {/* Schedule Section */}
         <section id="schedule" className="mb-16">
-          <h2 className="text-3xl font-semibold mb-6 font-oswald" style={{ color: "var(--color-primary, #161659)" }}>
+          <h2
+            className="text-3xl font-semibold mb-6 font-oswald"
+            style={{ color: "var(--color-primary, #161659)" }}
+          >
             {team.year || new Date().getFullYear()} Schedule
           </h2>
           {scheduleEvents && scheduleEvents.length > 0 ? (
             <ScheduleTable events={scheduleEvents} />
           ) : (
             <div className="text-center py-8">
-              <p className="text-slate-600">No scheduled events found for this team.</p>
+              <p className="text-slate-600">
+                No scheduled events found for this team.
+              </p>
             </div>
           )}
         </section>
 
         {/* Coaches Section */}
         <section id="coaches">
-          <h2 className="text-3xl font-semibold mb-6 font-oswald" style={{ color: "var(--color-primary, #161659)" }}>
+          <h2
+            className="text-3xl font-semibold mb-6 font-oswald"
+            style={{ color: "var(--color-primary, #161659)" }}
+          >
             Coaches
           </h2>
           {coaches && coaches.length > 0 ? (
@@ -120,7 +138,11 @@ export async function generateMetadata({ params }: TeamPageProps) {
   const cookieStore = cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
-  const { data: team } = await supabase.from("teams").select("name, season").eq("id", teamId).single();
+  const { data: team } = await supabase
+    .from("teams")
+    .select("name, season")
+    .eq("id", teamId)
+    .single();
 
   if (!team) {
     return {
