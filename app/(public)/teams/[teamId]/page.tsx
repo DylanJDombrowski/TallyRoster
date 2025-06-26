@@ -10,13 +10,13 @@ import { TeamHeader } from "./components/TeamHeader";
 import { TeamImage } from "./components/TeamImage";
 
 interface TeamPageProps {
-  params: {
+  params: Promise<{
     teamId: string;
-  };
+  }>;
 }
 
 export default async function TeamPage({ params }: TeamPageProps) {
-  const { teamId } = params;
+  const { teamId } = await params; // Await params in Next.js 15
   const cookieStore = cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
@@ -116,7 +116,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: TeamPageProps) {
-  const { teamId } = params;
+  const { teamId } = await params; // Await params here too
   const cookieStore = cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
