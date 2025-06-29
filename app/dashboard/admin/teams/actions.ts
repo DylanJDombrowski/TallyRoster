@@ -1,15 +1,14 @@
 // app/dashboard/admin/teams/actions.ts
 "use server";
 
+import { createClient } from "@/lib/supabase/server";
 import { TeamFormSchema } from "@/lib/types";
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
 export async function upsertTeam(prevState: unknown, formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
-
+  const cookieStore = cookies(); // NEW WAY
+  const supabase = createClient(await cookieStore); // NEW WAY
   const validatedFields = TeamFormSchema.safeParse({
     id: formData.get("id") || undefined,
     name: formData.get("name"),
@@ -36,9 +35,8 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
 }
 
 export async function deleteTeam(teamId: string) {
-  const cookieStore = cookies();
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
-
+  const cookieStore = cookies(); // NEW WAY
+  const supabase = createClient(await cookieStore); // NEW WAY
   const { error } = await supabase.from("teams").delete().eq("id", teamId);
 
   if (error) {

@@ -1,5 +1,5 @@
 // app/dashboard/admin/teams/page.tsx
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { TeamManager } from "./components/team-manager";
@@ -7,9 +7,8 @@ import { TeamManager } from "./components/team-manager";
 export const dynamic = "force-dynamic";
 
 export default async function ManageTeamsPage() {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
-
+  const cookieStore = cookies(); // NEW WAY
+  const supabase = createClient(await cookieStore); // NEW WAY
   const {
     data: { user },
   } = await supabase.auth.getUser();

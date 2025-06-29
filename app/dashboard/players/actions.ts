@@ -1,7 +1,7 @@
 // app/dashboard/players/actions.ts
 "use server";
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
@@ -11,9 +11,8 @@ const PlayerStatusSchema = z.object({
   status: z.enum(["active", "archived"]),
 });
 export async function updatePlayerStatus(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
-
+  const cookieStore = cookies(); // NEW WAY
+  const supabase = createClient(await cookieStore); // NEW WAY
   const validatedFields = PlayerStatusSchema.safeParse({
     playerId: formData.get("playerId"),
     status: formData.get("status"),
@@ -36,9 +35,8 @@ export async function updatePlayerStatus(formData: FormData) {
 }
 
 export async function deletePlayer(playerId: string) {
-  const cookieStore = cookies();
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
-
+  const cookieStore = cookies(); // NEW WAY
+  const supabase = createClient(await cookieStore); // NEW WAY
   const { error } = await supabase.from("players").delete().eq("id", playerId);
 
   if (error) {

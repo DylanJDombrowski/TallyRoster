@@ -1,11 +1,9 @@
 // src/app/blog/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import Link from "next/link";
 import Image from "next/image";
-import { useCallback } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 
 interface BlogPost {
   id: string;
@@ -49,14 +47,10 @@ export default function BlogPage() {
       setAllPosts(data || []);
 
       // Extract unique seasons
-      const uniqueSeasons = [
-        ...new Set((data || []).map((post) => post.season)),
-      ];
+      const uniqueSeasons = [...new Set((data || []).map((post) => post.season))];
       setSeasons(uniqueSeasons);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load blog posts"
-      );
+      setError(err instanceof Error ? err.message : "Failed to load blog posts");
     } finally {
       setLoading(false);
     }
@@ -65,9 +59,7 @@ export default function BlogPage() {
   const filterPosts = useCallback(() => {
     let filteredPosts = allPosts;
     if (selectedSeason) {
-      filteredPosts = filteredPosts.filter(
-        (post) => post.season === selectedSeason
-      );
+      filteredPosts = filteredPosts.filter((post) => post.season === selectedSeason);
     }
 
     setCurrentPage(1);
@@ -88,9 +80,7 @@ export default function BlogPage() {
   };
 
   const changePage = (direction: number) => {
-    const filteredPosts = selectedSeason
-      ? allPosts.filter((post) => post.season === selectedSeason)
-      : allPosts;
+    const filteredPosts = selectedSeason ? allPosts.filter((post) => post.season === selectedSeason) : allPosts;
 
     const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
     const newPage = currentPage + direction;
@@ -102,9 +92,7 @@ export default function BlogPage() {
   };
 
   const getTotalPages = () => {
-    const filteredPosts = selectedSeason
-      ? allPosts.filter((post) => post.season === selectedSeason)
-      : allPosts;
+    const filteredPosts = selectedSeason ? allPosts.filter((post) => post.season === selectedSeason) : allPosts;
     return Math.ceil(filteredPosts.length / postsPerPage);
   };
 
@@ -198,17 +186,11 @@ export default function BlogPage() {
                 />
               </div>
               <div className="p-6">
-                <h2 className="text-xl font-semibold mb-2 text-gray-800">
-                  {post.title}
-                </h2>
-                <p className="text-gray-600 mb-4 text-sm">
-                  {post.short_description}
-                </p>
+                <h2 className="text-xl font-semibold mb-2 text-gray-800">{post.title}</h2>
+                <p className="text-gray-600 mb-4 text-sm">{post.short_description}</p>
                 <div className="flex justify-between items-center">
                   <span className="text-blue-500 font-medium">Read more</span>
-                  <p className="text-sm text-gray-500">
-                    {formatDate(post.published_date)}
-                  </p>
+                  <p className="text-sm text-gray-500">{formatDate(post.published_date)}</p>
                 </div>
               </div>
             </Link>
@@ -218,11 +200,7 @@ export default function BlogPage() {
         {/* No posts message */}
         {displayedPosts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">
-              {selectedSeason
-                ? `No posts found for ${selectedSeason}`
-                : "No blog posts available"}
-            </p>
+            <p className="text-gray-600 text-lg">{selectedSeason ? `No posts found for ${selectedSeason}` : "No blog posts available"}</p>
           </div>
         )}
 

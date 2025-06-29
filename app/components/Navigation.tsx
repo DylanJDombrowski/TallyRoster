@@ -1,16 +1,11 @@
 // app/components/Navigation.tsx
 "use client";
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/lib/supabase/client";
+import { Team } from "@/lib/types";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-
-interface Team {
-  id: string;
-  name: string;
-  year?: number;
-}
 
 interface NavigationProps {
   teams?: Team[];
@@ -21,11 +16,14 @@ export default function Navigation({ teams: initialTeams = [] }: NavigationProps
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
   const pathname = usePathname();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   const loadTeams = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("teams").select("id, name, year").order("year", { ascending: false });
+      const { data, error } = await supabase
+        .from("teams")
+        .select("id, name, year, created_at, primary_color, season, secondary_color, team_image_url")
+        .order("year", { ascending: false });
 
       if (error) throw error;
       setTeams(data || []);
@@ -36,6 +34,11 @@ export default function Navigation({ teams: initialTeams = [] }: NavigationProps
         id: (2014 - i).toString(),
         name: `Miami Valley Xpress ${2014 - i}`,
         year: 2014 - i,
+        created_at: "",
+        primary_color: null,
+        season: null,
+        secondary_color: null,
+        team_image_url: null,
       }));
       setTeams(fallbackTeams);
     }

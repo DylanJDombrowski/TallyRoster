@@ -1,5 +1,6 @@
 // app/dashboard/players/page.tsx
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/lib/supabase/server";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { PlayerManager } from "./components/player-manager";
@@ -7,9 +8,8 @@ import { PlayerManager } from "./components/player-manager";
 export const dynamic = "force-dynamic";
 
 export default async function ManagePlayersPage() {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
-
+  const cookieStore = cookies(); // NEW WAY
+  const supabase = createClient(await cookieStore); // NEW WAY
   const {
     data: { session },
   } = await supabase.auth.getSession();

@@ -3,6 +3,113 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      alumni: {
+        Row: {
+          college: string | null;
+          college_logo_url: string | null;
+          created_at: string;
+          grad_year: number;
+          high_school: string | null;
+          hs_logo_url: string | null;
+          id: string;
+          image_url: string | null;
+          player_id: string | null;
+          player_name: string;
+          position: string | null;
+          xpress_team: string | null;
+        };
+        Insert: {
+          college?: string | null;
+          college_logo_url?: string | null;
+          created_at?: string;
+          grad_year: number;
+          high_school?: string | null;
+          hs_logo_url?: string | null;
+          id?: string;
+          image_url?: string | null;
+          player_id?: string | null;
+          player_name: string;
+          position?: string | null;
+          xpress_team?: string | null;
+        };
+        Update: {
+          college?: string | null;
+          college_logo_url?: string | null;
+          created_at?: string;
+          grad_year?: number;
+          high_school?: string | null;
+          hs_logo_url?: string | null;
+          id?: string;
+          image_url?: string | null;
+          player_id?: string | null;
+          player_name?: string;
+          position?: string | null;
+          xpress_team?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "alumni_player_id_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      blog_posts: {
+        Row: {
+          author_id: string | null;
+          content: string;
+          created_at: string;
+          id: string;
+          image_url: string | null;
+          location: string | null;
+          place: string | null;
+          published_date: string;
+          season: string | null;
+          short_description: string | null;
+          slug: string;
+          status: string;
+          team_name: string | null;
+          title: string;
+          tournament_name: string | null;
+        };
+        Insert: {
+          author_id?: string | null;
+          content: string;
+          created_at?: string;
+          id?: string;
+          image_url?: string | null;
+          location?: string | null;
+          place?: string | null;
+          published_date: string;
+          season?: string | null;
+          short_description?: string | null;
+          slug: string;
+          status?: string;
+          team_name?: string | null;
+          title: string;
+          tournament_name?: string | null;
+        };
+        Update: {
+          author_id?: string | null;
+          content?: string;
+          created_at?: string;
+          id?: string;
+          image_url?: string | null;
+          location?: string | null;
+          place?: string | null;
+          published_date?: string;
+          season?: string | null;
+          short_description?: string | null;
+          slug?: string;
+          status?: string;
+          team_name?: string | null;
+          title?: string;
+          tournament_name?: string | null;
+        };
+        Relationships: [];
+      };
       coaches: {
         Row: {
           bio: string | null;
@@ -49,6 +156,42 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
+      };
+      partners: {
+        Row: {
+          active: boolean | null;
+          created_at: string;
+          description: string | null;
+          display_order: number | null;
+          id: string;
+          logo_url: string | null;
+          name: string;
+          partner_type: string | null;
+          website_url: string | null;
+        };
+        Insert: {
+          active?: boolean | null;
+          created_at?: string;
+          description?: string | null;
+          display_order?: number | null;
+          id?: string;
+          logo_url?: string | null;
+          name: string;
+          partner_type?: string | null;
+          website_url?: string | null;
+        };
+        Update: {
+          active?: boolean | null;
+          created_at?: string;
+          description?: string | null;
+          display_order?: number | null;
+          id?: string;
+          logo_url?: string | null;
+          name?: string;
+          partner_type?: string | null;
+          website_url?: string | null;
+        };
+        Relationships: [];
       };
       player_stats: {
         Row: {
@@ -226,6 +369,36 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
+      };
+      static_pages: {
+        Row: {
+          content: Json | null;
+          created_at: string;
+          id: string;
+          meta_description: string | null;
+          published: boolean | null;
+          slug: string;
+          title: string;
+        };
+        Insert: {
+          content?: Json | null;
+          created_at?: string;
+          id?: string;
+          meta_description?: string | null;
+          published?: boolean | null;
+          slug: string;
+          title: string;
+        };
+        Update: {
+          content?: Json | null;
+          created_at?: string;
+          id?: string;
+          meta_description?: string | null;
+          published?: boolean | null;
+          slug?: string;
+          title?: string;
+        };
+        Relationships: [];
       };
       teams: {
         Row: {

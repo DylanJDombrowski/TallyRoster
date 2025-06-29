@@ -1,7 +1,7 @@
 // app/dashboard/admin/users/actions.ts
 "use server";
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
@@ -13,13 +13,8 @@ const InviteUserSchema = z.object({
 });
 
 export async function inviteUser(prevState: unknown, formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createServerActionClient(
-    { cookies: () => cookieStore },
-    {
-      supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    }
-  );
+  const cookieStore = cookies(); // NEW WAY
+  const supabase = createClient(await cookieStore); // NEW WAY
 
   const validatedFields = InviteUserSchema.safeParse({
     email: formData.get("email"),
@@ -71,9 +66,8 @@ const UpdateUserRoleSchema = z.object({
 
 // NEW: Server action to update a user's role
 export async function updateUserRole(prevState: unknown, formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
-
+  const cookieStore = cookies(); // NEW WAY
+  const supabase = createClient(await cookieStore); // NEW WAY
   const validatedFields = UpdateUserRoleSchema.safeParse({
     user_id: formData.get("user_id"),
     role: formData.get("role"),

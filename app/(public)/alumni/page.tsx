@@ -1,21 +1,21 @@
 // src/app/alumni/page.tsx
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
 
 interface Alumni {
   id: string;
   player_name: string;
-  xpress_team: string;
+  xpress_team: string | null;
   grad_year: number;
-  position: string;
-  high_school: string;
-  college: string;
-  image_url: string;
-  hs_logo_url: string;
-  college_logo_url: string;
+  position: string | null;
+  high_school: string | null;
+  college: string | null;
+  image_url: string | null;
+  hs_logo_url: string | null;
+  college_logo_url: string | null;
 }
 
 export default function AlumniPage() {
@@ -26,24 +26,19 @@ export default function AlumniPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   const loadAlumniData = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("alumni")
-        .select("*")
-        .order("grad_year", { ascending: false });
+      const { data, error } = await supabase.from("alumni").select("*").order("grad_year", { ascending: false });
 
       if (error) throw error;
 
       setAlumni(data || []);
       groupAlumniByGradYear(data || []);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load alumni data"
-      );
+      setError(err instanceof Error ? err.message : "Failed to load alumni data");
     } finally {
       setLoading(false);
     }
@@ -136,13 +131,10 @@ export default function AlumniPage() {
                 {/* Mobile view */}
                 <div className="md:hidden">
                   {players.map((player) => (
-                    <div
-                      key={player.id}
-                      className="bg-white rounded-lg shadow-md overflow-hidden mb-6"
-                    >
+                    <div key={player.id} className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
                       <div className="relative h-48">
                         <Image
-                          src={getImageUrl(player.image_url)}
+                          src={getImageUrl(player.image_url ?? "")}
                           alt={player.player_name}
                           fill
                           className="object-cover"
@@ -150,17 +142,13 @@ export default function AlumniPage() {
                         />
                       </div>
                       <div className="p-4">
-                        <h3 className="text-xl font-semibold mb-2">
-                          {player.player_name}
-                        </h3>
+                        <h3 className="text-xl font-semibold mb-2">{player.player_name}</h3>
                         <p className="text-gray-600 mb-2">{player.position}</p>
-                        <p className="text-sm text-gray-500 mb-2">
-                          {player.xpress_team}
-                        </p>
+                        <p className="text-sm text-gray-500 mb-2">{player.xpress_team}</p>
                         <div className="flex items-center space-x-2 mb-2">
                           <div className="relative w-8 h-8">
                             <Image
-                              src={getImageUrl(player.hs_logo_url)}
+                              src={getImageUrl(player.hs_logo_url ?? "")}
                               alt="High School Logo"
                               fill
                               className="object-contain"
@@ -172,7 +160,7 @@ export default function AlumniPage() {
                         <div className="flex items-center space-x-2">
                           <div className="relative w-8 h-8">
                             <Image
-                              src={getImageUrl(player.college_logo_url)}
+                              src={getImageUrl(player.college_logo_url ?? "")}
                               alt="College Logo"
                               fill
                               className="object-contain"
@@ -196,21 +184,16 @@ export default function AlumniPage() {
                         <th className="py-3 px-4 text-left">Position</th>
                         <th className="py-3 px-4 text-left">Xpress Team</th>
                         <th className="py-3 px-4 text-left">High School</th>
-                        <th className="py-3 px-4 text-left">
-                          Committed School
-                        </th>
+                        <th className="py-3 px-4 text-left">Committed School</th>
                       </tr>
                     </thead>
                     <tbody>
                       {players.map((player) => (
-                        <tr
-                          key={player.id}
-                          className="border-b border-gray-200 hover:bg-gray-50"
-                        >
+                        <tr key={player.id} className="border-b border-gray-200 hover:bg-gray-50">
                           <td className="py-4 px-4">
                             <div className="relative w-32 h-32">
                               <Image
-                                src={getImageUrl(player.image_url)}
+                                src={getImageUrl(player.image_url ?? "")}
                                 alt={player.player_name}
                                 fill
                                 className="object-cover rounded-lg shadow-md"
@@ -221,9 +204,7 @@ export default function AlumniPage() {
                           <td className="py-4 px-4 text-lg font-medium">
                             <div>
                               <div>{player.player_name}</div>
-                              <div className="text-sm text-gray-500">
-                                {player.xpress_team}
-                              </div>
+                              <div className="text-sm text-gray-500">{player.xpress_team}</div>
                             </div>
                           </td>
                           <td className="py-4 px-4">{player.position}</td>
@@ -232,7 +213,7 @@ export default function AlumniPage() {
                             <div className="flex items-center space-x-3">
                               <div className="relative w-12 h-12">
                                 <Image
-                                  src={getImageUrl(player.hs_logo_url)}
+                                  src={getImageUrl(player.hs_logo_url ?? "")}
                                   alt="High School Logo"
                                   fill
                                   className="object-contain"
@@ -246,7 +227,7 @@ export default function AlumniPage() {
                             <div className="flex items-center space-x-3">
                               <div className="relative w-12 h-12">
                                 <Image
-                                  src={getImageUrl(player.college_logo_url)}
+                                  src={getImageUrl(player.college_logo_url ?? "")}
                                   alt="College Logo"
                                   fill
                                   className="object-contain"
