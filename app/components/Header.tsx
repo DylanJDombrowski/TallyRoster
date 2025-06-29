@@ -1,12 +1,12 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Navigation from "./Navigation";
 
 export async function Header() {
   // Get the cookies synchronously
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const cookieStore = cookies(); // NEW WAY
+  const supabase = createClient(await cookieStore); // NEW WAY
 
   // Fetch teams from the database instead of hardcoding them
   const { data: teams } = await supabase.from("teams").select("id, name").order("name");
