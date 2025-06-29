@@ -3,85 +3,71 @@
 
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface ImageUploaderProps {
   initialImageUrl: string | null;
-  onUpload: (filePath: string) => void;
+  onUpload: (url: string) => void;
 }
 
 export function ImageUploader({ initialImageUrl, onUpload }: ImageUploaderProps) {
   const supabase = createClient();
-  const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(initialImageUrl);
+  const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      setUploading(true);
-      if (!event.target.files || event.target.files.length === 0) {
-        throw new Error("You must select an image to upload.");
-      }
-
-      const file = event.target.files[0];
-      // Create a unique file path
-      const filePath = `public/${Date.now()}_${file.name}`;
-
-      // Upload the file to the 'player-headshots' bucket
-      const { error: uploadError } = await supabase.storage.from("player-headshots").upload(filePath, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get the public URL of the uploaded file
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("player-headshots").getPublicUrl(filePath);
-
-      if (!publicUrl) {
-        throw new Error("Could not get public URL for the uploaded file.");
-      }
-
-      // Update the preview and notify the parent form
-      setPreviewUrl(publicUrl);
-      onUpload(publicUrl);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        alert("Error uploading file: " + error.message);
-      } else {
-        alert("Error uploading file: An unknown error occurred.");
-      }
-    } finally {
-      setUploading(false);
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
     }
+
+    const file = event.target.files[0];
+    const filePath = `public/${Date.now()}_${file.name}`; // Unique file path
+
+    setIsUploading(true);
+
+    const { error: uploadError } = await supabase.storage.from("player-headshots").upload(filePath, file);
+
+    if (uploadError) {
+      alert("Error uploading file: " + uploadError.message);
+      setIsUploading(false);
+      return;
+    }
+
+    // THIS IS THE KEY: Get the public URL from the filePath.
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("player-headshots").getPublicUrl(filePath);
+
+    setImageUrl(publicUrl);
+    onUpload(publicUrl); // Pass the full, correct URL to the form
+    setIsUploading(false);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
-    <div>
-      <label className="block text-sm font-medium text-slate-900">Player Headshot</label>
-      <div className="mt-1 flex items-center space-x-4">
-        {previewUrl ? (
-          <Image src={previewUrl} alt="Player headshot" width={80} height={80} className="w-20 h-20 rounded-full object-cover" />
-        ) : (
-          <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-slate-800">No Image</div>
-        )}
-        <div className="relative">
-          <input
-            type="file"
-            id="headshot-upload"
-            name="headshot-upload"
-            accept="image/*"
-            onChange={handleFileChange}
-            disabled={uploading}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
-          <label
-            htmlFor="headshot-upload"
-            className="px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-slate-900 bg-white hover:bg-gray-50 cursor-pointer"
-          >
-            {uploading ? "Uploading..." : "Change"}
-          </label>
+    <div className="space-y-4">
+      <label className="block text-sm font-medium text-slate-700">Player Headshot</label>
+      <div className="flex items-center gap-4">
+        <div className="w-32 h-32 rounded-lg bg-slate-200 flex items-center justify-center overflow-hidden">
+          {imageUrl ? (
+            <Image src={imageUrl} alt="Player headshot" width={128} height={128} className="object-cover w-full h-full" />
+          ) : (
+            <span className="text-slate-500 text-sm">No Image</span>
+          )}
         </div>
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" disabled={isUploading} />
+        <button
+          type="button"
+          onClick={handleUploadClick}
+          disabled={isUploading}
+          className="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 transition-colors disabled:opacity-50"
+        >
+          {isUploading ? "Uploading..." : "Upload Image"}
+        </button>
       </div>
     </div>
   );

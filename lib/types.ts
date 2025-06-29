@@ -94,14 +94,32 @@ export type PlayerCardData = Pick<Player, "id" | "first_name" | "last_name" | "j
 export type CoachCardData = Pick<Coach, "id" | "name" | "position" | "image_url" | "email" | "phone">;
 
 // Image handling utilities
-export const getPlayerImageUrl = (path: string) => {
-  if (!path) return "/assets/teams/defaultpfp.jpg";
-  // The path variable likely contains a leading slash already.
+export const getPlayerImageUrl = (path: string | null | undefined) => {
+  const defaultImage = "/assets/teams/defaultpfp.jpg";
+
+  if (!path) return defaultImage;
+
+  // THIS IS THE FIX: If the path is already a full URL, return it directly.
+  if (path.startsWith("http")) {
+    return path;
+  }
+
+  // Otherwise, if it's a partial path, construct the full URL (this maintains old functionality if needed)
+  // Note: We are keeping the logic from before that removed the double slash.
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/player-headshots${path}`;
 };
 
-export const getTeamImageUrl = (path: string) => {
-  if (!path) return "/assets/logos/mvxLogo2.png";
+// You should apply the same fix to the team image URL helper
+export const getTeamImageUrl = (path: string | null | undefined) => {
+  const defaultImage = "/assets/logos/mvxLogo2.png";
+
+  if (!path) return defaultImage;
+
+  // THIS IS THE FIX: If the path is already a full URL, return it directly.
+  if (path.startsWith("http")) {
+    return path;
+  }
+
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/team-photos${path}`;
 };
 
