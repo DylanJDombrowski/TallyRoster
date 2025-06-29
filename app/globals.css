@@ -5,21 +5,26 @@
   /* Define CSS custom properties for your theme */
   :root {
     --color-primary: #161659;
-    --color-secondary: #BD1515;
-    --color-text: #FFFFFF;
-    --color-accent: #D29C9C;
-    --color-ribbon: #B70F0F;
-    --color-light: #C8D5DC;
+    --color-secondary: #bd1515;
+    --color-text: #ffffff;
+    --color-accent: #d29c9c;
+    --color-ribbon: #b70f0f;
+    --color-light: #c8d5dc;
   }
 
   body {
-    font-family: var(--font-roboto, 'Roboto', sans-serif);
-    background-color: #F8FAFC; /* Using a standard background color */
-    color: #1E293B; /* Using slate-800 equivalent */
+    font-family: var(--font-roboto, "Roboto", sans-serif);
+    background-color: #f8fafc; /* Using a standard background color */
+    color: #1e293b; /* Using slate-800 equivalent */
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-oswald, 'Oswald', sans-serif);
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-oswald, "Oswald", sans-serif);
   }
 }
 
@@ -41,6 +46,20 @@
   }
 
   .hover\:text-accent:hover {
-  color: var(--color-accent, #D29C9C);
-}
+    color: var(--color-accent, #d29c9c);
+  }
+  label {
+    @apply block text-sm font-medium text-slate-700 mb-1;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="color"],
+  select {
+    @apply w-full p-2 border border-slate-300 rounded-md shadow-sm text-slate-900 focus:ring-blue-500 focus:border-blue-500;
+  }
+
+  .form-error {
+    @apply mt-1 text-sm text-red-600;
+  }
 }
