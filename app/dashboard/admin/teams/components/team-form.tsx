@@ -3,8 +3,8 @@
 
 import { useToast } from "@/app/components/toast-provider";
 import { Team } from "@/lib/types";
-import { useEffect, useRef } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState, useEffect, useRef } from "react";
+import { useFormStatus } from "react-dom";
 import { upsertTeam } from "../actions";
 
 interface TeamFormProps {
@@ -44,7 +44,8 @@ const generateSeasonOptions = () => {
 
 export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormProps) {
   const { showToast } = useToast();
-  const [state, formAction] = useFormState(upsertTeam, null);
+  // 2. Use useActionState here. The initial state is the third argument.
+  const [state, formAction] = useActionState(upsertTeam, null);
   const formRef = useRef<HTMLFormElement>(null);
   const seasons = generateSeasonOptions();
 
@@ -60,7 +61,8 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
     if (state?.error) {
       showToast(state.error, "error");
     }
-  }, [state, showToast, onSaveSuccess, teamToEdit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.success, state?.error]);
 
   useEffect(() => {
     if (teamToEdit) {

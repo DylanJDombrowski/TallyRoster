@@ -94,14 +94,15 @@ export type PlayerCardData = Pick<Player, "id" | "first_name" | "last_name" | "j
 export type CoachCardData = Pick<Coach, "id" | "name" | "position" | "image_url" | "email" | "phone">;
 
 // Image handling utilities
-export const getPlayerImageUrl = (player: Player): string => {
-  if (player.headshot_url) return player.headshot_url;
-  return "/assets/teams/defaultpfp.jpg"; // fallback image
+export const getPlayerImageUrl = (path: string) => {
+  if (!path) return "/assets/teams/defaultpfp.jpg";
+  // The path variable likely contains a leading slash already.
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/player-headshots${path}`;
 };
 
-export const getTeamImageUrl = (team: Team): string => {
-  if (team.team_image_url) return team.team_image_url;
-  return "/assets/logos/mvxLogo2.png"; // fallback image
+export const getTeamImageUrl = (path: string) => {
+  if (!path) return "/assets/logos/mvxLogo2.png";
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/team-photos${path}`;
 };
 
 export const getCoachImageUrl = (coach: Coach): string => {

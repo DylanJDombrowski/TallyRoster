@@ -1,15 +1,11 @@
 // app/(public)/layout.tsx
-import Navigation from "../components/Navigation";
 import { Footer } from "../components/Footer";
+import { Header } from "../components/Header"; // <-- CHANGED
 
-export default function PublicLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Navigation />
+      <Header /> {/* <-- CHANGED from <Navigation /> */}
       <main className="min-h-screen">{children}</main>
       <Footer />
     </>

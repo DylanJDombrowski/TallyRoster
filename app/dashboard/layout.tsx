@@ -1,7 +1,7 @@
 // app/dashboard/layout.tsx
 
 import { ThemeStyle } from "@/app/components/theme-style"; // Import the new component
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { ReactNode } from "react";
 import { LogoutButton } from "./components/logout-button";
@@ -10,8 +10,7 @@ import { SidebarNav } from "./components/sidebar-nav";
 // This component fetches data on the server.
 async function ThemeInjector() {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
-
+  const supabase = createClient(await cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -37,7 +36,7 @@ async function ThemeInjector() {
   return <ThemeStyle primaryColor={primaryColor} secondaryColor={secondaryColor} primaryFgColor={primaryFgColor} />;
 }
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <ThemeInjector />

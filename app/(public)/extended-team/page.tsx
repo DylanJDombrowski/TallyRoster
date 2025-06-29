@@ -1,4 +1,4 @@
-// src/app/extended-team/page.tsx
+// app/(public)/extended-team/page.tsx
 import Image from "next/image";
 
 interface Partner {
@@ -35,43 +35,27 @@ const partners: Partner[] = [
   },
 ];
 
-const PartnerSection = ({
-  partner,
-  index,
-}: {
-  partner: Partner;
-  index: number;
-}) => (
+const PartnerSection = ({ partner, index }: { partner: Partner; index: number }) => (
   <div
-    className={`bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 ${
+    className={`bg-white rounded-lg shadow-md p-6 md:p-8 flex flex-col md:flex-row items-center gap-8 ${
       index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-    } flex flex-col md:flex items-center`}
+    }`}
   >
-    <div className="flex-shrink-0 mb-6 md:mb-0 md:mx-8">
+    <div className="flex-shrink-0">
       <div className="relative w-40 h-40">
-        <Image
-          src={partner.logo}
-          alt={`${partner.name} Logo`}
-          fill
-          className="object-contain"
-          sizes="160px"
-        />
+        <Image src={partner.logo} alt={`${partner.name} Logo`} fill className="object-contain" sizes="160px" />
       </div>
     </div>
     <div className="flex-1 text-center md:text-left">
-      <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-gray-800">
-        {partner.name}
-      </h2>
-      <p className="text-gray-600 mb-6 leading-relaxed">
-        {partner.description}
-      </p>
+      <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-gray-800">{partner.name}</h2>
+      <p className="text-slate-600 mb-6 leading-relaxed">{partner.description}</p>
       <a
         href={partner.website}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-block bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark transition-colors duration-300 font-semibold"
+        className="inline-block bg-primary text-white px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold"
       >
-        Visit our Partners at {partner.name}
+        Visit {partner.name}
       </a>
     </div>
   </div>
@@ -79,56 +63,18 @@ const PartnerSection = ({
 
 export default function ExtendedTeamPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-40 bg-secondary text-white py-4 shadow-md">
+    <div className="min-h-screen bg-slate-50">
+      <div className="sticky top-0 z-30 py-4 shadow-md" style={{ backgroundColor: "var(--color-primary)" }}>
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl md:text-3xl font-bold">Our Partners</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white">Our Extended Team</h1>
         </div>
       </div>
 
       <div className="container mx-auto py-8 md:py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Introduction */}
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-              Building Success Together
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Miami Valley Xpress is proud to work with exceptional partners who
-              share our commitment to developing young athletes and building
-              championship teams. These partnerships are essential to our
-              success and growth.
-            </p>
-          </div>
-
-          {/* Partners */}
-          <div className="space-y-8">
-            {partners.map((partner, index) => (
-              <PartnerSection
-                key={partner.name}
-                partner={partner}
-                index={index}
-              />
-            ))}
-          </div>
-
-          {/* Call to Action */}
-          <div className="mt-16 bg-gradient-to-r from-primary to-secondary text-white rounded-lg p-8 text-center">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              Interested in Partnering with Us?
-            </h3>
-            <p className="text-lg mb-6 opacity-90">
-              We&apos;re always looking for partners who share our values and
-              commitment to excellence.
-            </p>
-            <a
-              href="/all-aboard"
-              className="inline-block bg-white text-primary px-8 py-3 rounded-lg hover:bg-gray-100 transition-colors duration-300 font-semibold"
-            >
-              Learn More About Sponsorship
-            </a>
-          </div>
+        <div className="max-w-4xl mx-auto space-y-12">
+          {partners.map((partner, index) => (
+            <PartnerSection key={partner.name} partner={partner} index={index} />
+          ))}
         </div>
       </div>
     </div>

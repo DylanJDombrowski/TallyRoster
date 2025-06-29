@@ -1,10 +1,10 @@
 // app/components/Navigation.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useCallback, useEffect, useState } from "react";
 
 interface Team {
   id: string;
@@ -16,34 +16,16 @@ interface NavigationProps {
   teams?: Team[];
 }
 
-export default function Navigation({
-  teams: initialTeams = [],
-}: NavigationProps) {
+export default function Navigation({ teams: initialTeams = [] }: NavigationProps) {
   const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
   const pathname = usePathname();
   const supabase = createClientComponentClient();
 
-  useEffect(() => {
-    // If no initial teams provided, load from database
-    if (initialTeams.length === 0) {
-      loadTeams();
-    }
-  }, [initialTeams.length]);
-
-  useEffect(() => {
-    // Close mobile menu when route changes
-    setIsMobileMenuOpen(false);
-    setIsTeamsDropdownOpen(false);
-  }, [pathname]);
-
-  const loadTeams = async () => {
+  const loadTeams = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("teams")
-        .select("id, name, year")
-        .order("year", { ascending: false });
+      const { data, error } = await supabase.from("teams").select("id, name, year").order("year", { ascending: false });
 
       if (error) throw error;
       setTeams(data || []);
@@ -57,7 +39,20 @@ export default function Navigation({
       }));
       setTeams(fallbackTeams);
     }
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    // If no initial teams provided, load from database
+    if (initialTeams.length === 0) {
+      loadTeams();
+    }
+  }, [initialTeams.length, loadTeams]);
+
+  useEffect(() => {
+    // Close mobile menu when route changes
+    setIsMobileMenuOpen(false);
+    setIsTeamsDropdownOpen(false);
+  }, [pathname]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -78,23 +73,9 @@ export default function Navigation({
         <div className="container mx-auto px-4">
           {/* Mobile Navigation Toggle */}
           <div className="flex justify-end items-center md:hidden">
-            <button
-              onClick={toggleMobileMenu}
-              className="mobile-menu-button focus:outline-none"
-              aria-label="Toggle mobile menu"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16m-7 6h7"
-                />
+            <button onClick={toggleMobileMenu} className="mobile-menu-button focus:outline-none" aria-label="Toggle mobile menu">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
               </svg>
             </button>
           </div>
@@ -102,12 +83,7 @@ export default function Navigation({
           {/* Desktop Navigation */}
           <ul className="hidden md:flex justify-center space-x-8">
             <li>
-              <Link
-                href="/"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/") ? "text-[#D29C9C]" : ""
-                }`}
-              >
+              <Link href="/" className={`hover:text-[#D29C9C] text-lg transition-colors ${isActive("/") ? "text-[#D29C9C]" : ""}`}>
                 Home
               </Link>
             </li>
@@ -129,10 +105,7 @@ export default function Navigation({
               >
                 {teams.map((team) => (
                   <li key={team.id}>
-                    <Link
-                      href={`/teams/${team.id}`}
-                      className="hover:text-[#D29C9C] block py-1 px-2 whitespace-nowrap transition-colors"
-                    >
+                    <Link href={`/teams/${team.id}`} className="hover:text-[#D29C9C] block py-1 px-2 whitespace-nowrap transition-colors">
                       {team.name}
                     </Link>
                   </li>
@@ -143,9 +116,7 @@ export default function Navigation({
             <li>
               <Link
                 href="/alumni"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/alumni") ? "text-[#D29C9C]" : ""
-                }`}
+                className={`hover:text-[#D29C9C] text-lg transition-colors ${isActive("/alumni") ? "text-[#D29C9C]" : ""}`}
               >
                 Xpress Alumni
               </Link>
@@ -153,10 +124,8 @@ export default function Navigation({
 
             <li>
               <Link
-                href="/blog"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  pathname?.startsWith("/blog") ? "text-[#D29C9C]" : ""
-                }`}
+                href="/on-the-field"
+                className={`hover:text-[#D29C9C] text-lg transition-colors ${pathname?.startsWith("/blog") ? "text-[#D29C9C]" : ""}`}
               >
                 On The Field
               </Link>
@@ -165,9 +134,7 @@ export default function Navigation({
             <li>
               <Link
                 href="/all-aboard"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/all-aboard") ? "text-[#D29C9C]" : ""
-                }`}
+                className={`hover:text-[#D29C9C] text-lg transition-colors ${isActive("/all-aboard") ? "text-[#D29C9C]" : ""}`}
               >
                 All Aboard
               </Link>
@@ -176,9 +143,7 @@ export default function Navigation({
             <li>
               <Link
                 href="/extended-team"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/extended-team") ? "text-[#D29C9C]" : ""
-                }`}
+                className={`hover:text-[#D29C9C] text-lg transition-colors ${isActive("/extended-team") ? "text-[#D29C9C]" : ""}`}
               >
                 Our Extended Team
               </Link>
@@ -187,9 +152,7 @@ export default function Navigation({
             <li>
               <Link
                 href="/xpress-social"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/xpress-social") ? "text-[#D29C9C]" : ""
-                }`}
+                className={`hover:text-[#D29C9C] text-lg transition-colors ${isActive("/xpress-social") ? "text-[#D29C9C]" : ""}`}
               >
                 Xpress Social
               </Link>
@@ -205,23 +168,9 @@ export default function Navigation({
         }`}
       >
         <div className="p-4">
-          <button
-            onClick={closeMobileMenu}
-            className="mb-4 focus:outline-none"
-            aria-label="Close mobile menu"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
+          <button onClick={closeMobileMenu} className="mb-4 focus:outline-none" aria-label="Close mobile menu">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
@@ -229,9 +178,7 @@ export default function Navigation({
             <li>
               <Link
                 href="/"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/") ? "text-[#D29C9C]" : ""
-                }`}
+                className={`hover:text-[#D29C9C] text-lg block transition-colors ${isActive("/") ? "text-[#D29C9C]" : ""}`}
                 onClick={closeMobileMenu}
               >
                 Home
@@ -258,9 +205,7 @@ export default function Navigation({
             <li>
               <Link
                 href="/alumni"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/alumni") ? "text-[#D29C9C]" : ""
-                }`}
+                className={`hover:text-[#D29C9C] text-lg block transition-colors ${isActive("/alumni") ? "text-[#D29C9C]" : ""}`}
                 onClick={closeMobileMenu}
               >
                 Xpress Alumni
@@ -269,10 +214,8 @@ export default function Navigation({
 
             <li>
               <Link
-                href="/blog"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  pathname?.startsWith("/blog") ? "text-[#D29C9C]" : ""
-                }`}
+                href="/on-the-field"
+                className={`hover:text-[#D29C9C] text-lg block transition-colors ${pathname?.startsWith("/blog") ? "text-[#D29C9C]" : ""}`}
                 onClick={closeMobileMenu}
               >
                 On The Field
@@ -282,9 +225,7 @@ export default function Navigation({
             <li>
               <Link
                 href="/all-aboard"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/all-aboard") ? "text-[#D29C9C]" : ""
-                }`}
+                className={`hover:text-[#D29C9C] text-lg block transition-colors ${isActive("/all-aboard") ? "text-[#D29C9C]" : ""}`}
                 onClick={closeMobileMenu}
               >
                 All Aboard
@@ -294,9 +235,7 @@ export default function Navigation({
             <li>
               <Link
                 href="/extended-team"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/extended-team") ? "text-[#D29C9C]" : ""
-                }`}
+                className={`hover:text-[#D29C9C] text-lg block transition-colors ${isActive("/extended-team") ? "text-[#D29C9C]" : ""}`}
                 onClick={closeMobileMenu}
               >
                 Our Extended Team
@@ -306,9 +245,7 @@ export default function Navigation({
             <li>
               <Link
                 href="/xpress-social"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/xpress-social") ? "text-[#D29C9C]" : ""
-                }`}
+                className={`hover:text-[#D29C9C] text-lg block transition-colors ${isActive("/xpress-social") ? "text-[#D29C9C]" : ""}`}
                 onClick={closeMobileMenu}
               >
                 Xpress Social
@@ -319,12 +256,7 @@ export default function Navigation({
       </div>
 
       {/* Mobile menu overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={closeMobileMenu}
-        />
-      )}
+      {isMobileMenuOpen && <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={closeMobileMenu} />}
     </>
   );
 }
