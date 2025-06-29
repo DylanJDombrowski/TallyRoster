@@ -1,24 +1,26 @@
-// src/app/blog/page.tsx
+// app/(public)/on-the-field/page.tsx
 "use client";
 
+import { createClient } from "@/lib/supabase/client"; // <-- 1. CORRECT IMPORT
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+// 2. UPDATED INTERFACE to allow for null values from the database
 interface BlogPost {
   id: string;
-  title: string;
-  slug: string;
-  short_description: string;
-  content: string;
-  image_url: string;
-  published_date: string;
-  team_name: string;
-  season: string;
-  location: string;
-  tournament_name: string;
-  place: string;
-  status: string;
+  title: string | null;
+  slug: string | null;
+  short_description: string | null;
+  content: string | null;
+  image_url: string | null;
+  published_date: string | null;
+  team_name: string | null;
+  season: string | null;
+  location: string | null;
+  tournament_name: string | null;
+  place: string | null;
+  status: string | null;
 }
 
 export default function BlogPage() {
@@ -31,7 +33,7 @@ export default function BlogPage() {
   const [error, setError] = useState<string | null>(null);
 
   const postsPerPage = 12;
-  const supabase = createClientComponentClient();
+  const supabase = createClient(); // <-- 3. CORRECT CLIENT INITIALIZATION
 
   const loadBlogPosts = useCallback(async () => {
     try {
@@ -46,8 +48,8 @@ export default function BlogPage() {
 
       setAllPosts(data || []);
 
-      // Extract unique seasons
-      const uniqueSeasons = [...new Set((data || []).map((post) => post.season))];
+      // Extract unique seasons, filtering out any nulls
+      const uniqueSeasons = [...new Set((data || []).map((post) => post.season).filter(Boolean))] as string[];
       setSeasons(uniqueSeasons);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load blog posts");
@@ -96,7 +98,8 @@ export default function BlogPage() {
     return Math.ceil(filteredPosts.length / postsPerPage);
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "No Date";
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -173,13 +176,13 @@ export default function BlogPage() {
           {displayedPosts.map((post) => (
             <Link
               key={post.id}
-              href={`/blog/${post.slug}`}
+              href={`/on-the-field/${post.slug}`} // Corrected the link to point to the new route
               className="bg-white shadow-lg rounded-lg overflow-hidden transform transition duration-300 hover:scale-105 cursor-pointer"
             >
               <div className="relative h-48">
                 <Image
                   src={`/assets/${post.image_url}`}
-                  alt={post.title}
+                  alt={post.title || "Blog Post Image"}
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -198,7 +201,7 @@ export default function BlogPage() {
         </div>
 
         {/* No posts message */}
-        {displayedPosts.length === 0 && (
+        {displayedPosts.length === 0 && !loading && (
           <div className="text-center py-12">
             <p className="text-gray-600 text-lg">{selectedSeason ? `No posts found for ${selectedSeason}` : "No blog posts available"}</p>
           </div>
