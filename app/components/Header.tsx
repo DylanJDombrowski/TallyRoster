@@ -9,7 +9,10 @@ export async function Header() {
   const supabase = createClient(await cookieStore); // NEW WAY
 
   // Fetch teams from the database instead of hardcoding them
-  const { data: teams } = await supabase.from("teams").select("id, name").order("name");
+  const { data: teams } = await supabase
+    .from("teams")
+    .select("id, name, created_at, primary_color, season, secondary_color, team_image_url, year")
+    .order("name");
 
   return (
     <header className="font-oswald bg-white">
