@@ -1,12 +1,13 @@
 // app/dashboard/players/components/player-form.tsx
 "use client";
 
+import { useToast } from "@/app/components/toast-provider"; // 1. IMPORT useToast
 import { createClient } from "@/lib/supabase/client";
 import { Player, PlayerFormData, PlayerFormSchema, Team } from "@/lib/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { ImageUploader } from "./image-uploader"; // Import our new component
+import { SubmitHandler, useForm } from "react-hook-form";
+import { ImageUploader } from "./image-uploader";
 
 interface PlayerFormProps {
   teams: Team[];
@@ -17,6 +18,8 @@ interface PlayerFormProps {
 
 export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }: PlayerFormProps) {
   const supabase = createClient();
+  const { showToast } = useToast(); // 2. INITIALIZE useToast
+
   const {
     register,
     handleSubmit,
@@ -26,48 +29,51 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
     watch,
   } = useForm<PlayerFormData>({
     resolver: zodResolver(PlayerFormSchema),
+    // 3. SET defaultValues to prevent validation errors on load
+    defaultValues: {
+      id: undefined,
+      first_name: "",
+      last_name: "",
+      jersey_number: undefined,
+      position: "",
+      team_id: "",
+      headshot_url: null,
+    },
   });
 
-  // Watch the headshot_url field so we can pass it to the uploader
   const headshotUrl = watch("headshot_url");
 
   useEffect(() => {
     if (playerToEdit) {
-      //... (this logic stays the same)
-      setValue("id", playerToEdit.id);
-      setValue("first_name", playerToEdit.first_name);
-      setValue("last_name", playerToEdit.last_name);
-      setValue("jersey_number", playerToEdit.jersey_number);
-      setValue("position", playerToEdit.position);
-      setValue("team_id", playerToEdit.team_id);
-      // Set the initial headshot URL
-      setValue("headshot_url", playerToEdit.headshot_url);
-    } else {
+      // Use reset to update all form values at once
       reset({
-        id: undefined,
-        first_name: "",
-        last_name: "",
-        jersey_number: null,
-        position: "",
-        team_id: "",
-        headshot_url: null,
+        id: playerToEdit.id,
+        first_name: playerToEdit.first_name,
+        last_name: playerToEdit.last_name,
+        jersey_number: playerToEdit.jersey_number,
+        position: playerToEdit.position,
+        team_id: playerToEdit.team_id,
+        headshot_url: playerToEdit.headshot_url,
       });
+    } else {
+      // Reset to default values for a new player
+      reset();
     }
-  }, [playerToEdit, setValue, reset]);
+  }, [playerToEdit, reset]);
 
-  const onSubmit = async (data: PlayerFormData) => {
+  // 4. THE CORRECTED ONSUBMIT HANDLER
+  const onSubmit: SubmitHandler<PlayerFormData> = async (data) => {
     try {
-      // ... (The entire onSubmit logic for insert/update stays the same!)
-      // The `headshot_url` is now part of the `data` object and will be saved automatically.
       let savedPlayer: Player | null = null;
       const isNew = !data.id;
       const payload = {
         first_name: data.first_name,
         last_name: data.last_name,
-        jersey_number: data.jersey_number,
+        // Ensure jersey_number is a number or null
+        jersey_number: data.jersey_number ? Number(data.jersey_number) : null,
         position: data.position,
         team_id: data.team_id,
-        headshot_url: data.headshot_url, // This field is now included
+        headshot_url: data.headshot_url,
       };
 
       if (isNew) {
@@ -80,21 +86,29 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
         savedPlayer = updatedPlayer;
       }
 
-      alert(`Player ${isNew ? "created" : "updated"} successfully!`);
+      // Use toast notifications instead of alerts
+      showToast(`Player ${isNew ? "created" : "updated"} successfully!`, "success");
       onSaveSuccess(savedPlayer, isNew);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        alert(`Error saving player: ${error.message}`);
-      } else {
-        alert("An unknown error occurred while saving the player.");
+      if (isNew) {
+        reset(); // Clear the form on successful creation
       }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      showToast(`Error saving player: ${errorMessage}`, "error");
+      console.error("Error saving player:", error);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-md bg-white shadow-sm">
+    // Pass a second function to handleSubmit to log validation errors
+    <form
+      onSubmit={handleSubmit(onSubmit, (formErrors) => {
+        console.error("Form validation errors:", formErrors);
+      })}
+      className="space-y-4 p-4 border rounded-md bg-white shadow-sm"
+    >
       <div className="flex justify-between items-center">
-        <h2 className="text-xl  text-slate-800 font-semibold">{playerToEdit ? "Edit Player" : "Add New Player"}</h2>
+        <h2 className="text-xl text-slate-800 font-semibold">{playerToEdit ? "Edit Player" : "Add New Player"}</h2>
         {playerToEdit && (
           <button type="button" onClick={onCancelEdit} className="text-sm text-slate-800 hover:underline">
             Cancel
@@ -102,11 +116,9 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
         )}
       </div>
 
-      {/* Add the ImageUploader component here */}
       <ImageUploader
         initialImageUrl={headshotUrl || null}
         onUpload={(url) => {
-          // When an image is uploaded, update the form's state
           setValue("headshot_url", url, { shouldValidate: true });
         }}
       />
@@ -115,7 +127,7 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
         <label htmlFor="team_id" className="block text-sm font-medium text-slate-900">
           Team
         </label>
-        <select id="team_id" {...register("team_id")} className="mt-1 block  text-slate-800 w-full p-2 border border-gray-300 rounded-md">
+        <select id="team_id" {...register("team_id")} className="mt-1 block text-slate-800 w-full p-2 border border-gray-300 rounded-md">
           <option value="">Select a team</option>
           {teams.map((team) => (
             <option key={team.id} value={team.id}>
@@ -126,47 +138,65 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
         {errors.team_id && <p className="mt-1 text-red-500 text-sm">{errors.team_id.message}</p>}
       </div>
 
-      <div>
-        <label htmlFor="first_name" className="block text-sm font-medium text-slate-900">
-          First Name
-        </label>
-        <input
-          id="first_name"
-          {...register("first_name")}
-          className="mt-1 block text-slate-800 w-full p-2 border border-gray-300 rounded-md"
-        />
-        {errors.first_name && <p className="mt-1 text-red-500 text-sm">{errors.first_name.message}</p>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="first_name" className="block text-sm font-medium text-slate-900">
+            First Name
+          </label>
+          <input
+            id="first_name"
+            {...register("first_name")}
+            className="mt-1 block text-slate-800 w-full p-2 border border-gray-300 rounded-md"
+          />
+          {errors.first_name && <p className="mt-1 text-red-500 text-sm">{errors.first_name.message}</p>}
+        </div>
+        <div>
+          <label htmlFor="last_name" className="block text-sm font-medium text-slate-900">
+            Last Name
+          </label>
+          <input
+            id="last_name"
+            {...register("last_name")}
+            className="mt-1 block w-full text-slate-800 p-2 border border-gray-300 rounded-md"
+          />
+          {errors.last_name && <p className="mt-1 text-red-500 text-sm">{errors.last_name.message}</p>}
+        </div>
       </div>
 
-      <div>
-        <label htmlFor="last_name" className="block text-sm font-medium text-slate-900">
-          Last Name
-        </label>
-        <input
-          id="last_name"
-          {...register("last_name")}
-          className="mt-1 block w-full text-slate-800 p-2 border border-gray-300 rounded-md"
-        />
-        {errors.last_name && <p className="mt-1 text-red-500 text-sm">{errors.last_name.message}</p>}
-      </div>
-
-      <div>
-        <label htmlFor="jersey_number" className="block text-sm font-medium text-slate-900">
-          Jersey Number
-        </label>
-        <input
-          id="jersey_number"
-          type="number"
-          {...register("jersey_number")}
-          className="mt-1 block w-full p-2 border border-gray-300  text-slate-800 rounded-md"
-        />
-        {errors.jersey_number && <p className="mt-1 text-red-500 text-sm">{errors.jersey_number.message}</p>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="jersey_number" className="block text-sm font-medium text-slate-900">
+            Jersey Number
+          </label>
+          <input
+            id="jersey_number"
+            type="number"
+            {...register("jersey_number")}
+            className="mt-1 block w-full p-2 border border-gray-300 text-slate-800 rounded-md"
+          />
+          {errors.jersey_number && <p className="mt-1 text-red-500 text-sm">{errors.jersey_number.message}</p>}
+        </div>
+        <div>
+          <label htmlFor="position" className="block text-sm font-medium text-slate-900">
+            Position
+          </label>
+          <input
+            id="position"
+            {...register("position")}
+            className="mt-1 block w-full p-2 border border-gray-300 text-slate-800 rounded-md"
+          />
+          {errors.position && <p className="mt-1 text-red-500 text-sm">{errors.position.message}</p>}
+        </div>
       </div>
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 disabled:bg-slate-800"
+        className="w-full p-2 rounded-md text-white disabled:opacity-50"
+        style={{
+          backgroundColor: "var(--color-primary)",
+          color: "var(--color-primary-foreground)",
+        }}
       >
         {isSubmitting ? "Saving..." : "Save Player"}
       </button>
