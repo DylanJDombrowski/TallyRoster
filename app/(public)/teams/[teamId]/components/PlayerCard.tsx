@@ -18,7 +18,7 @@ const getPlayerImageStyle = (teamId: string, playerNumber: string): React.CSSPro
 };
 
 export function PlayerCard({ player, teamId }: PlayerCardProps) {
-  const imageUrl = getPlayerImageUrl(player);
+  const imageUrl = getPlayerImageUrl(player.headshot_url ?? "");
   const imageStyle = getPlayerImageStyle(teamId, player.jersey_number?.toString() || "");
 
   return (
