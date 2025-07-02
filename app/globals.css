@@ -1,16 +1,17 @@
 /* app/globals.css */
 @import "tailwindcss";
 
+:root {
+  --color-primary: #161659;
+  --color-secondary: #bd1515;
+  --color-text: #ffffff;
+  --color-accent: #d29c9c;
+  --color-ribbon: #b70f0f;
+  --color-light: #c8d5dc;
+}
+
 @layer base {
   /* Define CSS custom properties for your theme */
-  :root {
-    --color-primary: #161659;
-    --color-secondary: #bd1515;
-    --color-text: #ffffff;
-    --color-accent: #d29c9c;
-    --color-ribbon: #b70f0f;
-    --color-light: #c8d5dc;
-  }
 
   body {
     font-family: var(--font-roboto, "Roboto", sans-serif);
@@ -26,6 +27,11 @@
   h6 {
     font-family: var(--font-oswald, "Oswald", sans-serif);
   }
+}
+
+.my-button {
+  background-color: var(--color-primary);
+  color: white;
 }
 
 @layer components {

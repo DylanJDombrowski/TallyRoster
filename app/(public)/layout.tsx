@@ -1,13 +1,20 @@
 // app/(public)/layout.tsx
-import { Footer } from "../components/Footer";
-import { Header } from "../components/Header"; // <-- CHANGED
+import { Header } from "@/app/components/Header";
+import { Footer } from "@/app/components/Footer";
+import { ThemeListener } from "@/app/components/ThemeListener";
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+// Note: We no longer need to fetch the session here, as the Header will do it.
+export default function PublicLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <>
-      <Header /> {/* <-- CHANGED from <Navigation /> */}
-      <main className="min-h-screen">{children}</main>
+    <div className="flex flex-col min-h-screen">
+      <ThemeListener />
+      <Header /> {/* The Header is now self-contained and takes no props */}
+      <main className="flex-grow">{children}</main>
       <Footer />
-    </>
+    </div>
   );
 }

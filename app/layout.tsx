@@ -2,11 +2,9 @@
 import { ToastProvider } from "@/app/components/toast-provider";
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
-import { Oswald } from "next/font/google";
+import { Inter, Oswald } from "next/font/google";
 
-const inter = Inter({ subsets: ["latin"] });
-// Add this font configuration
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const oswald = Oswald({
   subsets: ["latin"],
   variable: "--font-oswald",
@@ -14,13 +12,12 @@ const oswald = Oswald({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | MVX Admin",
-    default: "MVX Admin",
+    template: "%s | Sideline",
+    default: "Sideline - Your Team, Your Site",
   },
-  description: "Miami Valley Xpress Management Platform",
+  description: "The all-in-one platform for youth sports organizations.",
 };
 
-// The props type has been simplified to remove the Readonly<> wrapper.
 export default function RootLayout({
   children,
 }: {
@@ -28,7 +25,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} ${oswald.variable}`}>
+      <body className={`${inter.variable} ${oswald.variable} font-sans`}>
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
