@@ -10,6 +10,7 @@ export default async function AlumniPage({
 }: {
   params: { subdomain: string };
 }) {
+  // THE FIX: Add 'await' here, just like in the layout file.
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
@@ -26,7 +27,6 @@ export default async function AlumniPage({
 
   // 2. Fetch only the alumni that belong to this specific organization
   // NOTE: This assumes you have added an `organization_id` column to your `alumni` table.
-  // If you haven't, you will need to add it via SQL.
   const { data: alumni, error } = await supabase
     .from("alumni")
     .select("*")
