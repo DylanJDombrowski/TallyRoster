@@ -10,16 +10,17 @@ import { ScheduleTable } from "./components/ScheduleTable";
 export default async function TeamIdPage({
   params,
 }: {
-  params: { subdomain: string; teamId: string };
+  params: Promise<{ subdomain: string; teamId: string }>;
 }) {
   const cookieStore = await cookies();
+  const { subdomain, teamId } = await params;
   const supabase = createClient(cookieStore);
 
   // 1. Fetch the organization based on the subdomain to get its ID
   const { data: organization } = await supabase
     .from("organizations")
     .select("id")
-    .eq("subdomain", params.subdomain)
+    .eq("subdomain", subdomain)
     .single();
 
   if (!organization) {
@@ -37,7 +38,7 @@ export default async function TeamIdPage({
       schedule_events (*)
     `
     )
-    .eq("id", params.teamId)
+    .eq("id", teamId)
     .eq("organization_id", organization.id) // Security check
     .single();
 
