@@ -6,15 +6,16 @@ import { notFound } from "next/navigation";
 export default async function OrganizationHomePage({
   params,
 }: {
-  params: { subdomain: string };
+  params: Promise<{ subdomain: string }>;
 }) {
   const cookieStore = await cookies();
+  const { subdomain } = await params;
   const supabase = createClient(cookieStore);
 
   const { data: organization } = await supabase
     .from("organizations")
     .select("name")
-    .eq("subdomain", params.subdomain)
+    .eq("subdomain", subdomain)
     .single();
 
   if (!organization) {
