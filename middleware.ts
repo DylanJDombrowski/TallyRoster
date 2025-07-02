@@ -37,6 +37,9 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
 
+  console.log("Hostname:", hostname);
+  console.log("Root Domain:", rootDomain);
+  console.log("Rewriting to:", url.pathname);
   // Prevent rewriting for static assets and internal Next.js paths
   if (
     url.pathname.startsWith("/_next") ||
