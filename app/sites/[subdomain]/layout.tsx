@@ -14,6 +14,7 @@ export default async function SiteLayout({
   children: React.ReactNode;
   params: { subdomain: string };
 }) {
+  // THE FIX: Adding 'await' back, as the build environment expects a promise to be resolved.
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
