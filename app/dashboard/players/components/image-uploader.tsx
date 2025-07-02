@@ -1,74 +1,116 @@
 // app/dashboard/players/components/image-uploader.tsx
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { useRef, useState } from "react";
 
 interface ImageUploaderProps {
   initialImageUrl: string | null;
-  onUpload: (url: string) => void;
+  onUploadSuccess: (url: string) => void;
+  uploadPreset?: string;
 }
 
-export function ImageUploader({ initialImageUrl, onUpload }: ImageUploaderProps) {
-  const supabase = createClient();
-  const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl);
+export function ImageUploader({
+  initialImageUrl,
+  onUploadSuccess,
+  uploadPreset = "sideline_signed_preset",
+}: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialImageUrl);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) {
-      return;
-    }
+  // When the initialImageUrl prop changes (e.g., when a new player is selected for editing),
+  // update the preview URL.
+  useEffect(() => {
+    setPreviewUrl(initialImageUrl);
+  }, [initialImageUrl]);
 
-    const file = event.target.files[0];
-    const filePath = `public/${Date.now()}_${file.name}`; // Unique file path
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     setIsUploading(true);
+    // Show a temporary local preview of the selected file
+    setPreviewUrl(URL.createObjectURL(file));
 
-    const { error: uploadError } = await supabase.storage.from("player-headshots").upload(filePath, file);
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const paramsToSign = {
+      timestamp: timestamp,
+      upload_preset: uploadPreset,
+    };
 
-    if (uploadError) {
-      alert("Error uploading file: " + uploadError.message);
+    const response = await fetch("/api/sign-image", {
+      method: "POST",
+      body: JSON.stringify({ paramsToSign }),
+    });
+    const { signature } = await response.json();
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append(
+      "api_key",
+      process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY as string
+    );
+    formData.append("timestamp", timestamp.toString());
+    formData.append("signature", signature);
+    formData.append("upload_preset", uploadPreset);
+
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+    try {
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        body: formData,
+      });
+      const uploadData = await uploadResponse.json();
+
+      if (uploadData.secure_url) {
+        const finalUrl = uploadData.secure_url;
+        setPreviewUrl(finalUrl); // Update preview to the final Cloudinary URL
+        onUploadSuccess(finalUrl); // Pass the URL back to the parent form
+      } else {
+        // If upload fails, revert to the initial image
+        setPreviewUrl(initialImageUrl);
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+      setPreviewUrl(initialImageUrl); // Revert on error
+    } finally {
       setIsUploading(false);
-      return;
     }
-
-    // THIS IS THE KEY: Get the public URL from the filePath.
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("player-headshots").getPublicUrl(filePath);
-
-    setImageUrl(publicUrl);
-    onUpload(publicUrl); // Pass the full, correct URL to the form
-    setIsUploading(false);
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
   };
 
   return (
-    <div className="space-y-4">
-      <label className="block text-sm font-medium text-slate-700">Player Headshot</label>
-      <div className="flex items-center gap-4">
-        <div className="w-32 h-32 rounded-lg bg-slate-200 flex items-center justify-center overflow-hidden">
-          {imageUrl ? (
-            <Image src={imageUrl} alt="Player headshot" width={128} height={128} className="object-cover w-full h-full" />
-          ) : (
-            <span className="text-slate-500 text-sm">No Image</span>
-          )}
-        </div>
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" disabled={isUploading} />
-        <button
-          type="button"
-          onClick={handleUploadClick}
-          disabled={isUploading}
-          className="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 transition-colors disabled:opacity-50"
-        >
-          {isUploading ? "Uploading..." : "Upload Image"}
-        </button>
+    <div className="flex flex-col items-center space-y-4">
+      <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center border-2 border-slate-300">
+        {previewUrl ? (
+          <Image
+            src={previewUrl}
+            alt="Player headshot"
+            width={128}
+            height={128}
+            className="object-cover w-full h-full"
+            priority // Prioritize loading the player image
+          />
+        ) : (
+          <span className="text-slate-500 text-xs text-center p-2">
+            No Headshot
+          </span>
+        )}
       </div>
+      <label
+        htmlFor="headshot-upload"
+        className="cursor-pointer bg-slate-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-slate-700 transition-colors"
+      >
+        {isUploading ? "Uploading..." : "Change Headshot"}
+      </label>
+      <input
+        id="headshot-upload"
+        type="file"
+        accept="image/*"
+        onChange={handleUpload}
+        disabled={isUploading}
+        className="hidden"
+      />
     </div>
   );
 }

@@ -16,7 +16,12 @@ interface PlayerFormProps {
   onCancelEdit: () => void;
 }
 
-export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }: PlayerFormProps) {
+export function PlayerForm({
+  teams,
+  playerToEdit,
+  onSaveSuccess,
+  onCancelEdit,
+}: PlayerFormProps) {
   const supabase = createClient();
   const { showToast } = useToast();
 
@@ -51,15 +56,30 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
 
   useEffect(() => {
     if (playerToEdit) {
-      // 1. DATA MAPPING FIX: Manually map the data to match the form's enum schema
       const formData: PlayerFormData = {
         ...playerToEdit,
-        bats: playerToEdit.bats as "L" | "R" | "S" | null, // Cast to the correct enum type
-        throws: playerToEdit.throws as "L" | "R" | null, // Cast to the correct enum type
+        bats: playerToEdit.bats as "L" | "R" | "S" | null,
+        throws: playerToEdit.throws as "L" | "R" | null,
       };
       reset(formData);
     } else {
-      reset();
+      // Explicitly reset to default values for a new form
+      reset({
+        first_name: "",
+        last_name: "",
+        jersey_number: undefined,
+        position: "",
+        team_id: "",
+        headshot_url: null,
+        height: "",
+        bats: null,
+        throws: null,
+        town: "",
+        school: "",
+        grad_year: undefined,
+        gpa: undefined,
+        twitter_handle: "",
+      });
     }
   }, [playerToEdit, reset]);
 
@@ -68,24 +88,36 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
       let savedPlayer: Player | null = null;
       const isNew = !data.id;
 
-      // The payload now includes all form fields
       const payload = { ...data };
-      delete payload.id; // Remove id from payload for inserts/updates
+      delete (payload as Partial<PlayerFormData>).id;
 
       if (isNew) {
-        const { data: newPlayer, error } = await supabase.from("players").insert(payload).select().single();
+        const { data: newPlayer, error } = await supabase
+          .from("players")
+          .insert(payload)
+          .select()
+          .single();
         if (error) throw error;
         savedPlayer = newPlayer;
       } else {
-        const { data: updatedPlayer, error } = await supabase.from("players").update(payload).eq("id", data.id!).select().single();
+        const { data: updatedPlayer, error } = await supabase
+          .from("players")
+          .update(payload)
+          .eq("id", data.id!)
+          .select()
+          .single();
         if (error) throw error;
         savedPlayer = updatedPlayer;
       }
 
-      showToast(`Player ${isNew ? "created" : "updated"} successfully!`, "success");
-      onSaveSuccess(savedPlayer, isNew);
+      showToast(
+        `Player ${isNew ? "created" : "updated"} successfully!`,
+        "success"
+      );
+      onSaveSuccess(savedPlayer!, isNew);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred.";
       showToast(`Error saving player: ${errorMessage}`, "error");
       console.error("Error saving player:", error);
     }
@@ -97,19 +129,29 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
         console.error("Form validation errors:", formErrors);
         showToast("Please fix the errors before submitting.", "error");
       })}
-      // Increased vertical spacing from space-y-6 to space-y-8
       className="space-y-8 p-6 border rounded-lg bg-white shadow-sm"
     >
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl text-slate-900 font-bold">{playerToEdit ? "Edit Player" : "Add New Player"}</h2>
+        <h2 className="text-2xl text-slate-900 font-bold">
+          {playerToEdit ? "Edit Player" : "Add New Player"}
+        </h2>
         {playerToEdit && (
-          <button type="button" onClick={onCancelEdit} className="text-sm text-slate-600 hover:underline">
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            className="text-sm text-slate-600 hover:underline"
+          >
             Cancel
           </button>
         )}
       </div>
 
-      <ImageUploader initialImageUrl={headshotUrl || null} onUpload={(url) => setValue("headshot_url", url, { shouldValidate: true })} />
+      <ImageUploader
+        initialImageUrl={headshotUrl || null}
+        onUploadSuccess={(url: string) =>
+          setValue("headshot_url", url, { shouldValidate: true })
+        }
+      />
 
       {/* --- Personal Info Section --- */}
       <div className="space-y-4 border-t border-gray-200 pt-6">
@@ -118,12 +160,16 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
           <div>
             <label htmlFor="first_name">First Name</label>
             <input id="first_name" {...register("first_name")} />
-            {errors.first_name && <p className="form-error">{errors.first_name.message}</p>}
+            {errors.first_name && (
+              <p className="form-error">{errors.first_name.message}</p>
+            )}
           </div>
           <div>
             <label htmlFor="last_name">Last Name</label>
             <input id="last_name" {...register("last_name")} />
-            {errors.last_name && <p className="form-error">{errors.last_name.message}</p>}
+            {errors.last_name && (
+              <p className="form-error">{errors.last_name.message}</p>
+            )}
           </div>
         </div>
         <div>
@@ -147,29 +193,47 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
                 </option>
               ))}
             </select>
-            {errors.team_id && <p className="form-error">{errors.team_id.message}</p>}
+            {errors.team_id && (
+              <p className="form-error">{errors.team_id.message}</p>
+            )}
           </div>
           <div>
             <label htmlFor="jersey_number">Jersey Number</label>
-            <input id="jersey_number" type="number" {...register("jersey_number")} />
-            {errors.jersey_number && <p className="form-error">{errors.jersey_number.message}</p>}
+            <input
+              id="jersey_number"
+              type="number"
+              {...register("jersey_number")}
+            />
+            {errors.jersey_number && (
+              <p className="form-error">{errors.jersey_number.message}</p>
+            )}
           </div>
           <div>
             <label htmlFor="position">Position</label>
             <input id="position" {...register("position")} />
-            {errors.position && <p className="form-error">{errors.position.message}</p>}
+            {errors.position && (
+              <p className="form-error">{errors.position.message}</p>
+            )}
           </div>
         </div>
       </div>
 
       {/* --- Physical Attributes Section --- */}
       <div className="space-y-4 border-t border-gray-200 pt-6">
-        <h3 className="text-lg font-semibold text-slate-700">Physical Attributes</h3>
+        <h3 className="text-lg font-semibold text-slate-700">
+          Physical Attributes
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label htmlFor="height">Height</label>
-            <input id="height" {...register("height")} placeholder="e.g., 5' 8&quot;" />
-            {errors.height && <p className="form-error">{errors.height.message}</p>}
+            <input
+              id="height"
+              {...register("height")}
+              placeholder="e.g., 5' 8&quot;"
+            />
+            {errors.height && (
+              <p className="form-error">{errors.height.message}</p>
+            )}
           </div>
           <div>
             <label htmlFor="bats">Bats</label>
@@ -188,7 +252,9 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
               <option value="R">Right</option>
               <option value="L">Left</option>
             </select>
-            {errors.throws && <p className="form-error">{errors.throws.message}</p>}
+            {errors.throws && (
+              <p className="form-error">{errors.throws.message}</p>
+            )}
           </div>
         </div>
       </div>
@@ -200,16 +266,31 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
           <div>
             <label htmlFor="school">School</label>
             <input id="school" {...register("school")} />
-            {errors.school && <p className="form-error">{errors.school.message}</p>}
+            {errors.school && (
+              <p className="form-error">{errors.school.message}</p>
+            )}
           </div>
           <div>
             <label htmlFor="grad_year">Graduation Year</label>
-            <input id="grad_year" type="number" {...register("grad_year")} placeholder="e.g., 2025" />
-            {errors.grad_year && <p className="form-error">{errors.grad_year.message}</p>}
+            <input
+              id="grad_year"
+              type="number"
+              {...register("grad_year")}
+              placeholder="e.g., 2025"
+            />
+            {errors.grad_year && (
+              <p className="form-error">{errors.grad_year.message}</p>
+            )}
           </div>
           <div>
             <label htmlFor="gpa">GPA</label>
-            <input id="gpa" type="number" step="0.01" {...register("gpa")} placeholder="e.g., 3.8" />
+            <input
+              id="gpa"
+              type="number"
+              step="0.01"
+              {...register("gpa")}
+              placeholder="e.g., 3.8"
+            />
             {errors.gpa && <p className="form-error">{errors.gpa.message}</p>}
           </div>
         </div>
@@ -224,9 +305,15 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
             <span className="inline-flex items-center px-3 text-slate-500 bg-slate-200 border border-r-0 border-slate-300 rounded-l-md">
               @
             </span>
-            <input id="twitter_handle" {...register("twitter_handle")} className="rounded-l-none" />
+            <input
+              id="twitter_handle"
+              {...register("twitter_handle")}
+              className="rounded-l-none"
+            />
           </div>
-          {errors.twitter_handle && <p className="form-error">{errors.twitter_handle.message}</p>}
+          {errors.twitter_handle && (
+            <p className="form-error">{errors.twitter_handle.message}</p>
+          )}
         </div>
       </div>
 
