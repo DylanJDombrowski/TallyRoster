@@ -12,17 +12,18 @@ export default async function SiteLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { subdomain: string };
+  params: Promise<{ subdomain: string }>;
 }) {
-  // THE FIX: Adding 'await' back, as the build environment expects a promise to be resolved.
+  // CORRECT: Await both cookies() and params
   const cookieStore = await cookies();
+  const { subdomain } = await params;
   const supabase = createClient(cookieStore);
 
   // Fetch the organization based on the subdomain
   const { data: organization, error } = await supabase
     .from("organizations")
     .select("*")
-    .eq("subdomain", params.subdomain)
+    .eq("subdomain", subdomain)
     .single();
 
   if (error || !organization) {
