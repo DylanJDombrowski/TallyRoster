@@ -7,16 +7,17 @@ import { TeamCard } from "@/app/components/TeamCard"; // Assuming TeamCard is in
 export default async function TeamsPage({
   params,
 }: {
-  params: { subdomain: string };
+  params: Promise<{ subdomain: string }>;
 }) {
   const cookieStore = await cookies();
+  const { subdomain } = await params;
   const supabase = createClient(cookieStore);
 
   // 1. Find the organization ID from the subdomain
   const { data: organization } = await supabase
     .from("organizations")
     .select("id, name")
-    .eq("subdomain", params.subdomain)
+    .eq("subdomain", subdomain)
     .single();
 
   if (!organization) {
