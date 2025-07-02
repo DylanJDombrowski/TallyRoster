@@ -3,23 +3,23 @@ import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { getPlayerImageUrl } from "@/lib/types"; // Assuming this helper exists
+import { getPlayerImageUrl } from "@/lib/types";
 
 export default async function AlumniPage({
   params,
 }: {
-  params: { subdomain: string };
+  params: Promise<{ subdomain: string }>;
 }) {
-  // THE DEFINITIVE FIX: The cookies() function is synchronous and should not be awaited.
-  // This resolves the type error with the PageProps.
-  const cookieStore = cookies();
+  // CORRECT: Await both cookies() and params in production
+  const cookieStore = await cookies();
+  const { subdomain } = await params;
   const supabase = createClient(cookieStore);
 
   // 1. Find the organization ID from the subdomain
   const { data: organization } = await supabase
     .from("organizations")
     .select("id, name")
-    .eq("subdomain", params.subdomain)
+    .eq("subdomain", subdomain)
     .single();
 
   if (!organization) {
@@ -27,7 +27,6 @@ export default async function AlumniPage({
   }
 
   // 2. Fetch only the alumni that belong to this specific organization
-  // NOTE: This assumes you have added an `organization_id` column to your `alumni` table.
   const { data: alumni, error } = await supabase
     .from("alumni")
     .select("*")
