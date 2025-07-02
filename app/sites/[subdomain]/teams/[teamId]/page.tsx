@@ -1,133 +1,88 @@
-// app/(public)/teams/[teamId]/page.tsx
+// app/sites/[subdomain]/teams/[teamId]/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { Container } from "../../../components/Container";
-import { CoachCard } from "./components/CoachCard";
-import { PlayerCard } from "./components/PlayerCard";
-import { ScheduleTable } from "./components/ScheduleTable";
 import { TeamHeader } from "./components/TeamHeader";
-import { TeamImage } from "./components/TeamImage";
+import { PlayerCard } from "./components/PlayerCard";
+import { CoachCard } from "./components/CoachCard";
+import { ScheduleTable } from "./components/ScheduleTable";
 
-interface TeamPageProps {
-  params: Promise<{
-    teamId: string;
-  }>;
-}
+export default async function TeamIdPage({
+  params,
+}: {
+  params: { subdomain: string; teamId: string };
+}) {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
 
-export default async function TeamPage({ params }: TeamPageProps) {
-  const { teamId } = await params; // Await params in Next.js 15
-  const cookieStore = cookies(); // NEW WAY
-  const supabase = createClient(await cookieStore); // NEW WAY
-  // Fetch team with all related data
-  const { data: team } = await supabase.from("teams").select("*").eq("id", teamId).single();
+  // 1. Fetch the organization based on the subdomain to get its ID
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("subdomain", params.subdomain)
+    .single();
 
-  if (!team) {
+  if (!organization) {
     notFound();
   }
 
-  // Fetch players for this team
-  const { data: players } = await supabase
-    .from("players")
-    .select("*")
-    .eq("team_id", teamId)
-    .eq("status", "active")
-    .order("jersey_number", { ascending: true });
+  // 2. Fetch the specific team, ensuring it belongs to the correct organization
+  const { data: team, error } = await supabase
+    .from("teams")
+    .select(
+      `
+      *,
+      players (*),
+      coaches (*),
+      schedule_events (*)
+    `
+    )
+    .eq("id", params.teamId)
+    .eq("organization_id", organization.id) // Security check
+    .single();
 
-  // Fetch coaches for this team
-  const { data: coaches } = await supabase.from("coaches").select("*").eq("team_id", teamId).order("order_index", { ascending: true });
-
-  // Fetch schedule events for this team
-  const { data: scheduleEvents } = await supabase
-    .from("schedule_events")
-    .select("*")
-    .eq("team_id", teamId)
-    .order("event_date", { ascending: true });
-
-  return (
-    <div className="min-h-screen">
-      {/* Sticky Team Header */}
-      <TeamHeader team={team} />
-
-      <Container className="py-8">
-        {/* Team Image */}
-        {team.team_image_url && <TeamImage team={team} />}
-
-        {/* Roster Section */}
-        <section id="roster" className="mb-16">
-          <h2
-            className="text-3xl font-semibold mb-6 border-l-4 pl-4 font-oswald"
-            style={{
-              color: "var(--color-primary, #161659)",
-              borderColor: "var(--color-secondary, #BD1515)",
-            }}
-          >
-            Roster
-          </h2>
-          {players && players.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {players.map((player) => (
-                <PlayerCard key={player.id} player={player} teamId={teamId} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-slate-600">No active players found for this team.</p>
-            </div>
-          )}
-        </section>
-
-        {/* Schedule Section */}
-        <section id="schedule" className="mb-16">
-          <h2 className="text-3xl font-semibold mb-6 font-oswald" style={{ color: "var(--color-primary, #161659)" }}>
-            {team.year || new Date().getFullYear()} Schedule
-          </h2>
-          {scheduleEvents && scheduleEvents.length > 0 ? (
-            <ScheduleTable events={scheduleEvents} />
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-slate-600">No scheduled events found for this team.</p>
-            </div>
-          )}
-        </section>
-
-        {/* Coaches Section */}
-        <section id="coaches">
-          <h2 className="text-3xl font-semibold mb-6 font-oswald" style={{ color: "var(--color-primary, #161659)" }}>
-            Coaches
-          </h2>
-          {coaches && coaches.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {coaches.map((coach, index) => (
-                <CoachCard key={coach.id} coach={coach} index={index} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-slate-600">No coaches found for this team.</p>
-            </div>
-          )}
-        </section>
-      </Container>
-    </div>
-  );
-}
-
-// Generate metadata for SEO
-export async function generateMetadata({ params }: TeamPageProps) {
-  const { teamId } = await params; // Await params here too
-  const cookieStore = cookies(); // NEW WAY
-  const supabase = createClient(await cookieStore); // NEW WAY
-  const { data: team } = await supabase.from("teams").select("name, season").eq("id", teamId).single();
-
-  if (!team) {
-    return {
-      title: "Team Not Found",
-    };
+  if (error || !team) {
+    console.error("Error fetching team details:", error);
+    notFound();
   }
 
-  return {
-    title: `${team.name} | Miami Valley Xpress`,
-    description: `Meet the ${team.name} roster, schedule, and coaching staff for the ${team.season} season.`,
-  };
+  // Sort players and coaches, and provide default empty arrays for safety
+  const sortedPlayers =
+    team.players?.sort(
+      (a, b) => (a.jersey_number || 999) - (b.jersey_number || 999)
+    ) || [];
+  const sortedCoaches =
+    team.coaches?.sort(
+      (a, b) => (a.order_index || 999) - (b.order_index || 999)
+    ) || [];
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* THE FIX: Pass the entire team object to the TeamHeader component */}
+      <TeamHeader team={team} />
+
+      <section id="roster" className="my-12">
+        <h2 className="text-3xl font-bold mb-6 text-center">Roster</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {sortedPlayers.map((player) => (
+            <PlayerCard key={player.id} player={player} teamId={team.id} />
+          ))}
+        </div>
+      </section>
+
+      <section id="coaches" className="my-12">
+        <h2 className="text-3xl font-bold mb-6 text-center">Coaching Staff</h2>
+        <div className="flex flex-wrap justify-center gap-8">
+          {sortedCoaches.map((coach, index) => (
+            <CoachCard key={coach.id} coach={coach} index={index} />
+          ))}
+        </div>
+      </section>
+
+      <section id="schedule" className="my-12">
+        <h2 className="text-3xl font-bold mb-6 text-center">Schedule</h2>
+        <ScheduleTable events={team.schedule_events || []} />
+      </section>
+    </div>
+  );
 }
