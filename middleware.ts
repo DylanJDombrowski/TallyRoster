@@ -49,10 +49,11 @@ export async function middleware(request: NextRequest) {
   ) {
     return response;
   }
-
-  if (hostname === rootDomain || hostname === `www.${rootDomain}`) {
-    // This is a request for the main marketing site.
-    // Rewrite to the /app/(marketing) route group.
+  if (
+    (hostname === rootDomain || hostname === `www.${rootDomain}`) &&
+    !url.pathname.startsWith("/marketing")
+  ) {
+    // This is a request for the marketing site that hasn't been rewritten yet.
     url.pathname = `/marketing${url.pathname}`;
     return NextResponse.rewrite(url);
   }
