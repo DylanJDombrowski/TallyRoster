@@ -10,9 +10,9 @@ export default async function AlumniPage({
 }: {
   params: { subdomain: string };
 }) {
-  // THE DEFINITIVE FIX: Always 'await' the cookies() function in Server Components
-  // to ensure compatibility with the production build environment.
-  const cookieStore = await cookies();
+  // THE DEFINITIVE FIX: The cookies() function is synchronous and should not be awaited.
+  // This resolves the type error with the PageProps.
+  const cookieStore = cookies();
   const supabase = createClient(cookieStore);
 
   // 1. Find the organization ID from the subdomain
