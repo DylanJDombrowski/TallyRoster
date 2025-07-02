@@ -1,13 +1,10 @@
 // middleware.ts
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  // --- Start of Supabase Auth Logic ---
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
   const supabase = createServerClient(
@@ -15,17 +12,15 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
+        get: (name) => request.cookies.get(name)?.value,
+        set: (name, value, options) => {
           request.cookies.set({ name, value, ...options });
           response = NextResponse.next({
             request: { headers: request.headers },
           });
           response.cookies.set({ name, value, ...options });
         },
-        remove(name: string, options: CookieOptions) {
+        remove: (name, options) => {
           request.cookies.set({ name, value: "", ...options });
           response = NextResponse.next({
             request: { headers: request.headers },
@@ -36,41 +31,37 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // This line is important to refresh the session before continuing
   await supabase.auth.getUser();
-  // --- End of Supabase Auth Logic ---
 
-  // --- Start of Multi-Tenancy Routing Logic ---
   const url = request.nextUrl;
-  const hostname = request.headers.get("host") || "app.trysideline.com";
+  const hostname = request.headers.get("host") || "";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
 
-  // Define your root domain and the path for the marketing/main site.
-  const rootDomain = "trysideline.com";
-  const marketingSitePath = "/marketing"; // A designated folder for your main site pages
+  // Prevent rewriting for static assets and internal Next.js paths
+  if (
+    url.pathname.startsWith("/_next") ||
+    url.pathname.startsWith("/api") ||
+    url.pathname.startsWith("/static") ||
+    /\.(png|jpg|jpeg|gif|svg|ico)$/.test(url.pathname)
+  ) {
+    return response;
+  }
 
-  // If the hostname is the main domain, rewrite to the marketing folder.
-  if (hostname === `app.${rootDomain}` || hostname === rootDomain) {
-    url.pathname = `${marketingSitePath}${url.pathname}`;
+  if (hostname === rootDomain || hostname === `www.${rootDomain}`) {
+    // This is a request for the main marketing site.
+    // Rewrite to the /app/(marketing) route group.
+    url.pathname = `/marketing${url.pathname}`;
     return NextResponse.rewrite(url);
   }
 
-  // For any other hostname, extract the subdomain and rewrite to the organization's site folder.
-  // This is the core logic from your "Building Scalable SaaS" plan[cite: 575].
+  // For any other hostname, extract the subdomain.
   const subdomain = hostname.replace(`.${rootDomain}`, "");
-  url.pathname = `/sites/${subdomain}${url.pathname}`;
 
-  // Return the final response, which includes both the auth cookies and the rewritten path.
-  return NextResponse.rewrite(url, response);
+  // Rewrite the URL to the /app/sites/[subdomain] route.
+  url.pathname = `/sites/${subdomain}${url.pathname}`;
+  return NextResponse.rewrite(url);
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!_next/static|_next/image|favicon.ico|api/).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
