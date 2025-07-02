@@ -10,7 +10,8 @@ export default async function AlumniPage({
 }: {
   params: { subdomain: string };
 }) {
-  // THE FIX: Add 'await' here, just like in the layout file.
+  // THE DEFINITIVE FIX: Always 'await' the cookies() function in Server Components
+  // to ensure compatibility with the production build environment.
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
