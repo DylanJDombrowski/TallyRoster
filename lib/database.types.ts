@@ -68,6 +68,7 @@ export type Database = {
           id: string; // uuid
           name: string;
           primary_color: string | null;
+          secondary_color: string | null; // <-- ADD THIS LINE
           logo_url: string | null;
           custom_domain: string | null;
           subdomain: string | null;
@@ -77,6 +78,7 @@ export type Database = {
           id?: string; // uuid
           name: string;
           primary_color?: string | null;
+          secondary_color?: string | null; // <-- ADD THIS LINE
           logo_url?: string | null;
           custom_domain?: string | null;
           subdomain?: string | null;
@@ -86,6 +88,7 @@ export type Database = {
           id?: string; // uuid
           name?: string;
           primary_color?: string | null;
+          secondary_color?: string | null; // <-- ADD THIS LINE
           logo_url?: string | null;
           custom_domain?: string | null;
           subdomain?: string | null;
