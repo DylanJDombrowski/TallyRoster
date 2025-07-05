@@ -77,7 +77,8 @@ CREATE TABLE IF NOT EXISTS "public"."alumni" (
     "image_url" "text",
     "hs_logo_url" "text",
     "college_logo_url" "text",
-    "player_id" "uuid"
+    "player_id" "uuid",
+    "organization_id" "uuid"
 );
 
 
@@ -125,6 +126,20 @@ ALTER TABLE "public"."coaches" OWNER TO "postgres";
 
 COMMENT ON TABLE "public"."coaches" IS 'Stores coach information for each team';
 
+
+
+CREATE TABLE IF NOT EXISTS "public"."organizations" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "name" "text" NOT NULL,
+    "primary_color" "text",
+    "logo_url" "text",
+    "custom_domain" "text",
+    "subdomain" "text",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."organizations" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."partners" (
@@ -272,7 +287,8 @@ CREATE TABLE IF NOT EXISTS "public"."teams" (
     "primary_color" "text",
     "secondary_color" "text",
     "year" integer,
-    "team_image_url" "text"
+    "team_image_url" "text",
+    "organization_id" "uuid"
 );
 
 
@@ -297,6 +313,17 @@ COMMENT ON COLUMN "public"."teams"."primary_color" IS 'Primary branding color fo
 
 COMMENT ON COLUMN "public"."teams"."secondary_color" IS 'Secondary branding color for the team (hex code)';
 
+
+
+CREATE TABLE IF NOT EXISTS "public"."user_organization_roles" (
+    "user_id" "uuid" NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "role" "text" NOT NULL,
+    CONSTRAINT "user_organization_roles_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'coach'::"text", 'member'::"text"])))
+);
+
+
+ALTER TABLE "public"."user_organization_roles" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."user_roles" (
@@ -328,6 +355,16 @@ ALTER TABLE ONLY "public"."blog_posts"
 
 ALTER TABLE ONLY "public"."coaches"
     ADD CONSTRAINT "coaches_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."organizations"
+    ADD CONSTRAINT "organizations_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."organizations"
+    ADD CONSTRAINT "organizations_subdomain_key" UNIQUE ("subdomain");
 
 
 
@@ -363,6 +400,11 @@ ALTER TABLE ONLY "public"."static_pages"
 
 ALTER TABLE ONLY "public"."teams"
     ADD CONSTRAINT "teams_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."user_organization_roles"
+    ADD CONSTRAINT "user_organization_roles_pkey" PRIMARY KEY ("user_id", "organization_id");
 
 
 
@@ -420,6 +462,11 @@ CREATE INDEX "idx_schedule_events_team_id" ON "public"."schedule_events" USING "
 
 
 ALTER TABLE ONLY "public"."alumni"
+    ADD CONSTRAINT "alumni_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."alumni"
     ADD CONSTRAINT "alumni_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."players"("id");
 
 
@@ -449,6 +496,21 @@ ALTER TABLE ONLY "public"."schedule_events"
 
 
 
+ALTER TABLE ONLY "public"."teams"
+    ADD CONSTRAINT "teams_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."user_organization_roles"
+    ADD CONSTRAINT "user_organization_roles_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."user_organization_roles"
+    ADD CONSTRAINT "user_organization_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."user_roles"
     ADD CONSTRAINT "user_roles_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE CASCADE;
 
@@ -460,6 +522,24 @@ ALTER TABLE ONLY "public"."user_roles"
 
 
 CREATE POLICY "Admins have full access" ON "public"."user_roles" USING (("public"."get_my_role"() = 'admin'::"text"));
+
+
+
+CREATE POLICY "Allow admin or coach to update teams" ON "public"."teams" FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."organization_id" = "teams"."organization_id") AND ("user_organization_roles"."user_id" = "auth"."uid"()) AND (("user_organization_roles"."role" = 'admin'::"text") OR ("user_organization_roles"."role" = 'coach'::"text"))))));
+
+
+
+CREATE POLICY "Allow admin to create teams" ON "public"."teams" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."organization_id" = "teams"."organization_id") AND ("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text")))));
+
+
+
+CREATE POLICY "Allow admin to delete teams" ON "public"."teams" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."organization_id" = "teams"."organization_id") AND ("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text")))));
 
 
 
@@ -579,6 +659,18 @@ CREATE POLICY "Allow public read access to published pages" ON "public"."static_
 
 
 CREATE POLICY "Allow public read access to teams" ON "public"."teams" FOR SELECT TO "anon" USING (true);
+
+
+
+CREATE POLICY "Allow team members to view teams" ON "public"."teams" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."organization_id" = "teams"."organization_id") AND ("user_organization_roles"."user_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "Allow users to see teams in their organization" ON "public"."teams" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."organization_id" = "teams"."organization_id") AND ("user_organization_roles"."user_id" = "auth"."uid"())))));
 
 
 
@@ -817,6 +909,12 @@ GRANT ALL ON TABLE "public"."coaches" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."organizations" TO "anon";
+GRANT ALL ON TABLE "public"."organizations" TO "authenticated";
+GRANT ALL ON TABLE "public"."organizations" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."partners" TO "anon";
 GRANT ALL ON TABLE "public"."partners" TO "authenticated";
 GRANT ALL ON TABLE "public"."partners" TO "service_role";
@@ -850,6 +948,12 @@ GRANT ALL ON TABLE "public"."static_pages" TO "service_role";
 GRANT ALL ON TABLE "public"."teams" TO "anon";
 GRANT ALL ON TABLE "public"."teams" TO "authenticated";
 GRANT ALL ON TABLE "public"."teams" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."user_organization_roles" TO "anon";
+GRANT ALL ON TABLE "public"."user_organization_roles" TO "authenticated";
+GRANT ALL ON TABLE "public"."user_organization_roles" TO "service_role";
 
 
 
