@@ -1,11 +1,11 @@
-import { LoginForm } from "@/app/components/auth/login-form";
+import { SignUpForm } from "@/app/components/auth/signup-form";
 import { Container } from "@/app/components/Container";
 
-export default function LoginPage() {
+export default function SignUpPage() {
   return (
     <Container>
       <div className="py-20">
-        <LoginForm />
+        <SignUpForm />
       </div>
     </Container>
   );
