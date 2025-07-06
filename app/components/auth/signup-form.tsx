@@ -2,18 +2,40 @@
 "use client";
 
 import Link from "next/link";
+import { useActionState, useEffect } from "react";
+import { useFormStatus } from "react-dom";
+import { useToast } from "@/app/components/toast-provider";
+import { signup } from "@/app/auth/actions";
 
-// We will create the server action for this in the next step
-// import { signup } from "@/app/auth/actions";
-// import { useFormState } from "react-dom";
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full p-3 rounded-lg text-white font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {pending ? "Creating account..." : "Sign Up"}
+    </button>
+  );
+}
 
 export function SignUpForm() {
-  // const [state, formAction] = useFormState(signup, undefined);
+  const [state, formAction] = useActionState(signup, undefined);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (state?.message) {
+      // Show success message for email confirmation, error for everything else
+      const isSuccess = state.message.includes("Check your email");
+      showToast(state.message, isSuccess ? "success" : "error");
+    }
+  }, [state, showToast]);
 
   return (
     <div className="mx-auto max-w-sm">
       <h2 className="text-center text-2xl font-bold">Create an Account</h2>
-      <form /* action={formAction} */ className="mt-8 space-y-6">
+      <form action={formAction} className="mt-8 space-y-6">
         <div>
           <label
             htmlFor="email"
@@ -31,7 +53,11 @@ export function SignUpForm() {
               placeholder="you@example.com"
               className="w-full p-2 border border-slate-300 rounded-md"
             />
-            {/* {state?.errors?.email && <p className="text-red-500 text-sm mt-1">{state.errors.email}</p>} */}
+            {state?.errors?.email && (
+              <p className="text-red-500 text-sm mt-1">
+                {state.errors.email[0]}
+              </p>
+            )}
           </div>
         </div>
 
@@ -51,17 +77,15 @@ export function SignUpForm() {
               placeholder="••••••••"
               className="w-full p-2 border border-slate-300 rounded-md"
             />
-            {/* {state?.errors?.password && <p className="text-red-500 text-sm mt-1">{state.errors.password}</p>} */}
+            {state?.errors?.password && (
+              <p className="text-red-500 text-sm mt-1">
+                {state.errors.password[0]}
+              </p>
+            )}
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="w-full p-3 rounded-lg text-white font-bold bg-blue-600 hover:bg-blue-700"
-        >
-          Sign Up
-        </button>
-        {/* {state?.message && <p className="text-red-500 text-sm mt-2">{state.message}</p>} */}
+        <SubmitButton />
       </form>
       <p className="mt-4 text-center text-sm text-slate-600">
         Already have an account?{" "}

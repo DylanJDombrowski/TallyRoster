@@ -2,12 +2,38 @@
 "use client";
 
 import Link from "next/link";
+import { useActionState, useEffect } from "react";
+import { useFormStatus } from "react-dom";
+import { useToast } from "@/app/components/toast-provider";
+import { login } from "@/app/auth/actions";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full p-3 rounded-lg text-white font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {pending ? "Signing in..." : "Log In"}
+    </button>
+  );
+}
 
 export function LoginForm() {
+  const [state, formAction] = useActionState(login, undefined);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (state?.message) {
+      showToast(state.message, "error");
+    }
+  }, [state, showToast]);
+
   return (
     <div className="mx-auto max-w-sm">
       <h2 className="text-center text-2xl font-bold">Log In to Your Account</h2>
-      <form className="mt-8 space-y-6">
+      <form action={formAction} className="mt-8 space-y-6">
         <div>
           <label
             htmlFor="email"
@@ -47,12 +73,7 @@ export function LoginForm() {
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="w-full p-3 rounded-lg text-white font-bold bg-blue-600 hover:bg-blue-700"
-        >
-          Log In
-        </button>
+        <SubmitButton />
       </form>
       <p className="mt-4 text-center text-sm text-slate-600">
         Don&apos;t have an account?{" "}
