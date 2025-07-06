@@ -8,7 +8,7 @@ import { CheckIcon } from "@heroicons/react/24/outline"; // You'll need to insta
 const tiers = [
   {
     name: "Starter",
-    href: "/signup?plan=starter", // This will eventually link to the signup flow
+    href: "/signup?plan=starter", // Fixed: points to root-level signup
     priceMonthly: 49,
     description:
       "All the essentials to get your organization online and organized.",
@@ -21,7 +21,7 @@ const tiers = [
   },
   {
     name: "Pro",
-    href: "/signup?plan=pro",
+    href: "/signup?plan=pro", // Fixed: points to root-level signup
     priceMonthly: 99,
     description:
       "Perfect for growing organizations that need more power and customization.",
