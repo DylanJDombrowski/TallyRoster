@@ -173,6 +173,41 @@ export type Database = {
           },
         ]
       }
+      organization_links: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          organization_id: string
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          organization_id: string
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          organization_id?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_links_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
@@ -181,6 +216,7 @@ export type Database = {
           logo_url: string | null
           name: string
           primary_color: string | null
+          secondary_color: string | null
           subdomain: string | null
         }
         Insert: {
@@ -190,6 +226,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           primary_color?: string | null
+          secondary_color?: string | null
           subdomain?: string | null
         }
         Update: {
@@ -199,6 +236,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           primary_color?: string | null
+          secondary_color?: string | null
           subdomain?: string | null
         }
         Relationships: []
