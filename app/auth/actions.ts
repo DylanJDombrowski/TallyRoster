@@ -41,8 +41,8 @@ export async function signup(prevState: unknown, formData: FormData) {
     email,
     password,
     options: {
-      // Now that email is set up, include the redirect URL
-      emailRedirectTo: `${origin}/auth/callback`,
+      // Use environment variable or fallback to current origin
+      emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` : `${origin}/auth/callback`,
     },
   });
 
