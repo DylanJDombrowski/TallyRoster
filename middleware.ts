@@ -39,7 +39,8 @@ export async function middleware(request: NextRequest) {
 
   console.log("Hostname:", hostname);
   console.log("Root Domain:", rootDomain);
-  console.log("Rewriting to:", url.pathname);
+  console.log("Original path:", url.pathname);
+
   // Prevent rewriting for static assets and internal Next.js paths
   if (
     url.pathname.startsWith("/_next") ||
@@ -49,20 +50,35 @@ export async function middleware(request: NextRequest) {
   ) {
     return response;
   }
-  if (
-    (hostname === rootDomain || hostname === `www.${rootDomain}`) &&
-    !url.pathname.startsWith("/marketing")
-  ) {
-    // This is a request for the marketing site that hasn't been rewritten yet.
-    url.pathname = `/marketing${url.pathname}`;
-    return NextResponse.rewrite(url);
+
+  // Check if this is the root domain (marketing site)
+  if (hostname === rootDomain || hostname === `www.${rootDomain}`) {
+    // Auth routes and dashboard should stay at root level
+    if (
+      url.pathname.startsWith("/login") ||
+      url.pathname.startsWith("/signup") ||
+      url.pathname.startsWith("/auth") ||
+      url.pathname.startsWith("/dashboard")
+    ) {
+      console.log("Auth/Dashboard route, no rewrite needed");
+      return response;
+    }
+
+    // Marketing routes - rewrite to /marketing prefix if not already there
+    if (!url.pathname.startsWith("/marketing")) {
+      url.pathname = `/marketing${url.pathname}`;
+      console.log("Rewriting to:", url.pathname);
+      return NextResponse.rewrite(url);
+    }
+
+    // If already starts with /marketing, let it through
+    return response;
   }
 
-  // For any other hostname, extract the subdomain.
+  // For any other hostname (subdomains), extract the subdomain and rewrite to /sites/[subdomain]
   const subdomain = hostname.replace(`.${rootDomain}`, "");
-
-  // Rewrite the URL to the /app/sites/[subdomain] route.
   url.pathname = `/sites/${subdomain}${url.pathname}`;
+  console.log("Subdomain rewrite to:", url.pathname);
   return NextResponse.rewrite(url);
 }
 
