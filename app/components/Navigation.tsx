@@ -1,60 +1,29 @@
 // app/components/Navigation.tsx
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
-import { Team } from "@/lib/types";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { Team } from "@/lib/types";
+
+interface NavLink {
+  href: string;
+  label: string;
+  subLinks?: { href: string; label: string }[];
+}
 
 interface NavigationProps {
   teams?: Team[];
+  navLinks: NavLink[];
 }
 
 export default function Navigation({
-  teams: initialTeams = [],
+  teams = [],
+  navLinks = [],
 }: NavigationProps) {
-  const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
   const pathname = usePathname();
-  const supabase = createClient();
-
-  const loadTeams = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from("teams")
-        .select(
-          "id, name, year, created_at, primary_color, season, secondary_color, team_image_url, organization_id"
-        )
-        .order("year", { ascending: false });
-
-      if (error) throw error;
-      setTeams(data || []);
-    } catch (error) {
-      console.error("Error loading teams:", error);
-      // Fallback to static team years if database fails
-      const fallbackTeams = Array.from({ length: 9 }, (_, i) => ({
-        id: (2014 - i).toString(),
-        name: `Miami Valley Xpress ${2014 - i}`,
-        year: 2014 - i,
-        created_at: "",
-        primary_color: null,
-        season: null,
-        secondary_color: null,
-        team_image_url: null,
-        organization_id: null, // Add this field to match the Team type
-      }));
-      setTeams(fallbackTeams);
-    }
-  }, [supabase]);
-
-  useEffect(() => {
-    // If no initial teams provided, load from database
-    if (initialTeams.length === 0) {
-      loadTeams();
-    }
-  }, [initialTeams.length, loadTeams]);
 
   useEffect(() => {
     // Close mobile menu when route changes
@@ -73,6 +42,8 @@ export default function Navigation({
   const isActive = (path: string) => {
     return pathname === path;
   };
+
+  // Find the teams link to handle special dropdown logic
 
   return (
     <>
@@ -104,99 +75,64 @@ export default function Navigation({
 
           {/* Desktop Navigation */}
           <ul className="hidden md:flex justify-center space-x-8">
-            <li>
-              <Link
-                href="/"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/") ? "text-[#D29C9C]" : ""
-                }`}
-              >
-                Home
-              </Link>
-            </li>
-
-            <li className="relative group">
-              <button
-                className="hover:text-[#D29C9C] cursor-pointer text-lg transition-colors"
-                onMouseEnter={() => setIsTeamsDropdownOpen(true)}
-                onMouseLeave={() => setIsTeamsDropdownOpen(false)}
-              >
-                Xpress Teams
-              </button>
-              <ul
-                className={`absolute hidden group-hover:block bg-[#161659] p-2 z-10 min-w-max shadow-lg rounded-b-md ${
-                  isTeamsDropdownOpen ? "block" : ""
-                }`}
-                onMouseEnter={() => setIsTeamsDropdownOpen(true)}
-                onMouseLeave={() => setIsTeamsDropdownOpen(false)}
-              >
-                {teams.map((team) => (
-                  <li key={team.id}>
-                    <Link
-                      href={`/teams/${team.id}`}
-                      className="hover:text-[#D29C9C] block py-1 px-2 whitespace-nowrap transition-colors"
+            {navLinks.map((link) => {
+              // Special handling for Teams dropdown
+              if (link.label === "Teams" && teams.length > 0) {
+                return (
+                  <li key={link.href} className="relative group">
+                    <button
+                      className="hover:text-[#D29C9C] cursor-pointer text-lg transition-colors"
+                      onMouseEnter={() => setIsTeamsDropdownOpen(true)}
+                      onMouseLeave={() => setIsTeamsDropdownOpen(false)}
                     >
-                      {team.name}
-                    </Link>
+                      {link.label}
+                    </button>
+                    <ul
+                      className={`absolute hidden group-hover:block bg-[#161659] p-2 z-10 min-w-max shadow-lg rounded-b-md ${
+                        isTeamsDropdownOpen ? "block" : ""
+                      }`}
+                      onMouseEnter={() => setIsTeamsDropdownOpen(true)}
+                      onMouseLeave={() => setIsTeamsDropdownOpen(false)}
+                    >
+                      {/* Link to teams index page */}
+                      <li>
+                        <Link
+                          href="/teams"
+                          className="hover:text-[#D29C9C] block py-1 px-2 whitespace-nowrap transition-colors"
+                        >
+                          View All Teams
+                        </Link>
+                      </li>
+                      {/* Individual team links */}
+                      {teams.map((team) => (
+                        <li key={team.id}>
+                          <Link
+                            href={`/teams/${team.id}`}
+                            className="hover:text-[#D29C9C] block py-1 px-2 whitespace-nowrap transition-colors"
+                          >
+                            {team.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
                   </li>
-                ))}
-              </ul>
-            </li>
+                );
+              }
 
-            <li>
-              <Link
-                href="/alumni"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/alumni") ? "text-[#D29C9C]" : ""
-                }`}
-              >
-                Xpress Alumni
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/on-the-field"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  pathname?.startsWith("/blog") ? "text-[#D29C9C]" : ""
-                }`}
-              >
-                On The Field
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/all-aboard"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/all-aboard") ? "text-[#D29C9C]" : ""
-                }`}
-              >
-                All Aboard
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/extended-team"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/extended-team") ? "text-[#D29C9C]" : ""
-                }`}
-              >
-                Our Extended Team
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/xpress-social"
-                className={`hover:text-[#D29C9C] text-lg transition-colors ${
-                  isActive("/xpress-social") ? "text-[#D29C9C]" : ""
-                }`}
-              >
-                Xpress Social
-              </Link>
-            </li>
+              // Regular navigation links
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`hover:text-[#D29C9C] text-lg transition-colors ${
+                      isActive(link.href) ? "text-[#D29C9C]" : ""
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </nav>
@@ -229,94 +165,55 @@ export default function Navigation({
           </button>
 
           <ul className="space-y-4">
-            <li>
-              <Link
-                href="/"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/") ? "text-[#D29C9C]" : ""
-                }`}
-                onClick={closeMobileMenu}
-              >
-                Home
-              </Link>
-            </li>
-
-            <li>
-              <div className="text-lg text-[#D29C9C] mb-2">Teams:</div>
-              <ul className="pl-4 space-y-2">
-                {teams.map((team) => (
-                  <li key={team.id}>
-                    <Link
-                      href={`/teams/${team.id}`}
-                      className="hover:text-[#D29C9C] block py-1 text-sm transition-colors"
-                      onClick={closeMobileMenu}
-                    >
-                      {team.name}
-                    </Link>
+            {navLinks.map((link) => {
+              // Special handling for Teams in mobile menu
+              if (link.label === "Teams" && teams.length > 0) {
+                return (
+                  <li key={link.href}>
+                    <div className="text-lg text-[#D29C9C] mb-2">
+                      {link.label}:
+                    </div>
+                    <ul className="pl-4 space-y-2">
+                      <li>
+                        <Link
+                          href="/teams"
+                          className="hover:text-[#D29C9C] block py-1 text-sm transition-colors"
+                          onClick={closeMobileMenu}
+                        >
+                          View All Teams
+                        </Link>
+                      </li>
+                      {teams.map((team) => (
+                        <li key={team.id}>
+                          <Link
+                            href={`/teams/${team.id}`}
+                            className="hover:text-[#D29C9C] block py-1 text-sm transition-colors"
+                            onClick={closeMobileMenu}
+                          >
+                            {team.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
                   </li>
-                ))}
-              </ul>
-            </li>
+                );
+              }
 
-            <li>
-              <Link
-                href="/alumni"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/alumni") ? "text-[#D29C9C]" : ""
-                }`}
-                onClick={closeMobileMenu}
-              >
-                Xpress Alumni
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/on-the-field"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  pathname?.startsWith("/blog") ? "text-[#D29C9C]" : ""
-                }`}
-                onClick={closeMobileMenu}
-              >
-                On The Field
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/all-aboard"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/all-aboard") ? "text-[#D29C9C]" : ""
-                }`}
-                onClick={closeMobileMenu}
-              >
-                All Aboard
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/extended-team"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/extended-team") ? "text-[#D29C9C]" : ""
-                }`}
-                onClick={closeMobileMenu}
-              >
-                Our Extended Team
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/xpress-social"
-                className={`hover:text-[#D29C9C] text-lg block transition-colors ${
-                  isActive("/xpress-social") ? "text-[#D29C9C]" : ""
-                }`}
-                onClick={closeMobileMenu}
-              >
-                Xpress Social
-              </Link>
-            </li>
+              // Regular mobile navigation links
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`hover:text-[#D29C9C] text-lg block transition-colors ${
+                      isActive(link.href) ? "text-[#D29C9C]" : ""
+                    }`}
+                    onClick={closeMobileMenu}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
