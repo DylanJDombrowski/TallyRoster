@@ -28,17 +28,17 @@ export default function MarketingLayout({
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-slate-300">
                 <li>
-                  <a href="/marketing/features" className="hover:text-white">
+                  <a href="/features" className="hover:text-white">
                     Features
                   </a>
                 </li>
                 <li>
-                  <a href="/marketing/pricing" className="hover:text-white">
+                  <a href="/pricing" className="hover:text-white">
                     Pricing
                   </a>
                 </li>
                 <li>
-                  <a href="/marketing/examples" className="hover:text-white">
+                  <a href="/examples" className="hover:text-white">
                     Examples
                   </a>
                 </li>
@@ -49,12 +49,12 @@ export default function MarketingLayout({
               <h4 className="font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-slate-300">
                 <li>
-                  <a href="/marketing/help" className="hover:text-white">
+                  <a href="/help" className="hover:text-white">
                     Help Center
                   </a>
                 </li>
                 <li>
-                  <a href="/marketing/contact" className="hover:text-white">
+                  <a href="/contact" className="hover:text-white">
                     Contact
                   </a>
                 </li>
