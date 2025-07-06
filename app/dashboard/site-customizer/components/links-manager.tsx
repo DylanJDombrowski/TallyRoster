@@ -1,9 +1,13 @@
-// app/dashboard/site-customizer/components/links-manager.tsx (with drag-and-drop)
+// app/dashboard/site-customizer/components/links-manager.tsx (with persistent drag-and-drop)
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/app/components/toast-provider";
-import { getOrganizationLinks, deleteOrganizationLink } from "../actions";
+import {
+  getOrganizationLinks,
+  deleteOrganizationLink,
+  updateLinksOrder,
+} from "../actions";
 import { LinkForm } from "./link-form";
 import { DraggableLinks } from "./draggable-links";
 import { Database } from "@/lib/database.types";
@@ -68,18 +72,33 @@ export function LinksManager() {
     setEditingLink(null);
   }, []);
 
-  // Handle drag-and-drop reordering
+  // Handle drag-and-drop reordering with persistence
   const handleReorder = useCallback(
-    (reorderedLinks: OrganizationLink[]) => {
+    async (reorderedLinks: OrganizationLink[]) => {
+      // Optimistically update the UI
       setLinks(reorderedLinks);
-      // You could add a server action here to persist the new order
-      // For now, the order will reset on page refresh
-      showToast(
-        "Links reordered! (Order will reset on page refresh)",
-        "success"
-      );
+
+      try {
+        // Extract just the IDs in the new order
+        const linkIds = reorderedLinks.map((link) => link.id);
+
+        // Call the server action to persist the order
+        const result = await updateLinksOrder(linkIds);
+
+        if (result.success) {
+          showToast(result.message, "success");
+        } else {
+          // If server update failed, revert the UI change
+          showToast(result.message, "error");
+          fetchLinks(); // Refresh to get the actual order from server
+        }
+      } catch {
+        // If anything goes wrong, revert and show error
+        showToast("Failed to save link order", "error");
+        fetchLinks();
+      }
     },
-    [showToast]
+    [showToast, fetchLinks]
   );
 
   if (loading) {

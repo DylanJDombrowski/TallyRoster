@@ -248,7 +248,8 @@ export async function getOrganizationLinks() {
       .from("organization_links")
       .select("*")
       .eq("organization_id", organizationId)
-      .order("created_at", { ascending: false });
+      .order("position", { ascending: true }) // Order by position first
+      .order("created_at", { ascending: true }); // Then by creation date as fallback
 
     if (error) {
       throw error;
@@ -402,6 +403,92 @@ export async function deleteOrganizationLink(id: string) {
     return {
       success: false,
       message: `Error: ${errorMessage}`,
+    };
+  }
+}
+
+// Add this to app/dashboard/site-customizer/actions.ts
+
+export async function updateLinksOrder(linkIds: string[]) {
+  try {
+    const organizationId = await getUserOrganizationId();
+
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+
+    // Verify all links belong to this organization before updating
+    const { data: existingLinks, error: verifyError } = await supabase
+      .from("organization_links")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .in("id", linkIds);
+
+    if (verifyError) {
+      throw verifyError;
+    }
+
+    // Check that all provided link IDs exist and belong to this org
+    if (!existingLinks || existingLinks.length !== linkIds.length) {
+      throw new Error(
+        "Some links don't exist or don't belong to your organization"
+      );
+    }
+
+    // Update each link with its new position
+    // We use a Promise.all to update all records efficiently
+    const updatePromises = linkIds.map(
+      (linkId, index) =>
+        supabase
+          .from("organization_links")
+          .update({ position: index })
+          .eq("id", linkId)
+          .eq("organization_id", organizationId) // Double security check
+    );
+
+    const results = await Promise.all(updatePromises);
+
+    // Check if any updates failed
+    const failedUpdates = results.filter((result) => result.error);
+    if (failedUpdates.length > 0) {
+      console.error("Some link order updates failed:", failedUpdates);
+      throw new Error("Failed to update some link positions");
+    }
+
+    // Get the organization's subdomain for revalidation
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("subdomain")
+      .eq("id", organizationId)
+      .single();
+
+    // Revalidate both the dashboard and public pages
+    revalidatePath("/dashboard/site-customizer");
+    if (org?.subdomain) {
+      revalidatePath(`/sites/${org.subdomain}/forms-and-links`);
+    }
+
+    return {
+      success: true,
+      message: "Link order updated successfully!",
+    };
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred.";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    return {
+      success: false,
+      message: `Error updating link order: ${errorMessage}`,
     };
   }
 }
