@@ -2,7 +2,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { headers, cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -41,24 +41,33 @@ export async function signup(prevState: unknown, formData: FormData) {
     email,
     password,
     options: {
-      // Supabase will send a confirmation email to the user.
-      // The user must click the link in the email to be able to log in.
+      // Now that email is set up, include the redirect URL
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 
   if (error) {
     console.error("Signup Error:", error.message);
-    // You can check for specific errors, e.g., if a user already exists.
+
+    // Handle common Supabase errors
     if (error.message.includes("User already registered")) {
       return { message: "A user with this email already exists." };
     }
-    return { message: "Could not authenticate user. Please try again." };
+    if (error.message.includes("Password should be")) {
+      return { message: "Password must be at least 8 characters long." };
+    }
+    if (error.message.includes("Invalid email")) {
+      return { message: "Please enter a valid email address." };
+    }
+
+    return { message: "Could not create account. Please try again." };
   }
 
-  // A confirmation link has been sent to the user's email.
-  // You might want to show a message on the UI prompting them to check their email.
-  return { message: "Check your email to continue signing up." };
+  // Success message for email confirmation
+  return {
+    message: "Check your email to confirm your account and complete signup.",
+    success: true,
+  };
 }
 
 export async function login(prevState: unknown, formData: FormData) {
@@ -85,10 +94,18 @@ export async function login(prevState: unknown, formData: FormData) {
 
   if (error) {
     console.error("Login Error:", error.message);
-    return { message: "Could not authenticate user." };
+
+    // Handle common login errors
+    if (error.message.includes("Invalid login credentials")) {
+      return { message: "Invalid email or password." };
+    }
+    if (error.message.includes("Email not confirmed")) {
+      return { message: "Please check your email and confirm your account before signing in." };
+    }
+
+    return { message: "Could not sign in. Please try again." };
   }
 
-  // A successful login will trigger the middleware to allow access
-  // to the dashboard, so we can redirect them.
+  // Successful login - redirect to dashboard
   redirect("/dashboard");
 }

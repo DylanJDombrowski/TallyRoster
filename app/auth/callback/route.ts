@@ -1,7 +1,7 @@
 // app/auth/callback/route.ts
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -18,11 +18,13 @@ export async function GET(request: Request) {
     if (!error) {
       // Successful confirmation - redirect to dashboard
       return NextResponse.redirect(`${origin}/dashboard`);
+    } else {
+      console.error("Auth callback error:", error);
+      // If there was an error, redirect to login with an error message
+      return NextResponse.redirect(`${origin}/login?error=confirmation_failed`);
     }
   }
 
-  // If there was an error, redirect to login with an error message
-  return NextResponse.redirect(
-    `${origin}/login?message=Could not authenticate user`
-  );
+  // If no code provided, redirect to login
+  return NextResponse.redirect(`${origin}/login?error=invalid_confirmation_link`);
 }
