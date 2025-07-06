@@ -16,7 +16,7 @@ function HeroSection() {
       </p>
       <div className="mt-8 flex justify-center gap-4">
         <Link
-          href="/marketing/pricing"
+          href="/pricing"
           className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700"
         >
           Choose Your Plan

@@ -42,20 +42,17 @@ export function MarketingHeader() {
 
           {/* Marketing Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link
-              href="/marketing"
-              className="text-slate-600 hover:text-slate-900"
-            >
+            <Link href="/" className="text-slate-600 hover:text-slate-900">
               Home
             </Link>
             <Link
-              href="/marketing/features"
+              href="/features"
               className="text-slate-600 hover:text-slate-900"
             >
               Features
             </Link>
             <Link
-              href="/marketing/pricing"
+              href="/pricing"
               className="text-slate-600 hover:text-slate-900"
             >
               Pricing
