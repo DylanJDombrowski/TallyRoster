@@ -128,6 +128,20 @@ COMMENT ON TABLE "public"."coaches" IS 'Stores coach information for each team';
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."organization_links" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "title" "text" NOT NULL,
+    "description" "text",
+    "url" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "position" integer DEFAULT 0
+);
+
+
+ALTER TABLE "public"."organization_links" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."organizations" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "name" "text" NOT NULL,
@@ -135,7 +149,13 @@ CREATE TABLE IF NOT EXISTS "public"."organizations" (
     "logo_url" "text",
     "custom_domain" "text",
     "subdomain" "text",
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "secondary_color" "text",
+    "owner_id" "uuid",
+    "organization_type" "text",
+    "sport" "text",
+    "subscription_plan" "text" DEFAULT 'trial'::"text",
+    "trial_ends_at" timestamp without time zone
 );
 
 
@@ -358,6 +378,11 @@ ALTER TABLE ONLY "public"."coaches"
 
 
 
+ALTER TABLE ONLY "public"."organization_links"
+    ADD CONSTRAINT "organization_links_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."organizations"
     ADD CONSTRAINT "organizations_pkey" PRIMARY KEY ("id");
 
@@ -433,6 +458,10 @@ CREATE INDEX "idx_coaches_team_id" ON "public"."coaches" USING "btree" ("team_id
 
 
 
+CREATE INDEX "idx_organization_links_position" ON "public"."organization_links" USING "btree" ("organization_id", "position");
+
+
+
 CREATE INDEX "idx_partners_active" ON "public"."partners" USING "btree" ("active");
 
 
@@ -478,6 +507,16 @@ ALTER TABLE ONLY "public"."blog_posts"
 
 ALTER TABLE ONLY "public"."coaches"
     ADD CONSTRAINT "coaches_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."organization_links"
+    ADD CONSTRAINT "organization_links_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."organizations"
+    ADD CONSTRAINT "organizations_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id");
 
 
 
@@ -662,6 +701,12 @@ CREATE POLICY "Allow public read access to teams" ON "public"."teams" FOR SELECT
 
 
 
+CREATE POLICY "Allow read access to own organization's links" ON "public"."organization_links" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles" "uor"
+  WHERE (("uor"."organization_id" = "organization_links"."organization_id") AND ("uor"."user_id" = "auth"."uid"())))));
+
+
+
 CREATE POLICY "Allow team members to view teams" ON "public"."teams" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."user_organization_roles"
   WHERE (("user_organization_roles"."organization_id" = "teams"."organization_id") AND ("user_organization_roles"."user_id" = "auth"."uid"())))));
@@ -685,6 +730,9 @@ ALTER TABLE "public"."blog_posts" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."coaches" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."organization_links" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."partners" ENABLE ROW LEVEL SECURITY;
@@ -906,6 +954,12 @@ GRANT ALL ON TABLE "public"."blog_posts" TO "service_role";
 GRANT ALL ON TABLE "public"."coaches" TO "anon";
 GRANT ALL ON TABLE "public"."coaches" TO "authenticated";
 GRANT ALL ON TABLE "public"."coaches" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."organization_links" TO "anon";
+GRANT ALL ON TABLE "public"."organization_links" TO "authenticated";
+GRANT ALL ON TABLE "public"."organization_links" TO "service_role";
 
 
 
