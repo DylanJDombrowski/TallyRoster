@@ -7,29 +7,25 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get: (name) => request.cookies.get(name)?.value,
-        set: (name, value, options) => {
-          request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove: (name, options) => {
-          request.cookies.set({ name, value: "", ...options });
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          });
-          response.cookies.set({ name, value: "", ...options });
-        },
+  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: {
+      get: (name) => request.cookies.get(name)?.value,
+      set: (name, value, options) => {
+        request.cookies.set({ name, value, ...options });
+        response = NextResponse.next({
+          request: { headers: request.headers },
+        });
+        response.cookies.set({ name, value, ...options });
       },
-    }
-  );
+      remove: (name, options) => {
+        request.cookies.set({ name, value: "", ...options });
+        response = NextResponse.next({
+          request: { headers: request.headers },
+        });
+        response.cookies.set({ name, value: "", ...options });
+      },
+    },
+  });
 
   await supabase.auth.getUser();
 
@@ -53,14 +49,15 @@ export async function middleware(request: NextRequest) {
 
   // Check if this is the root domain (marketing site)
   if (hostname === rootDomain || hostname === `www.${rootDomain}`) {
-    // Auth routes and dashboard should stay at root level
+    // Auth routes, dashboard, and onboarding should stay at root level
     if (
       url.pathname.startsWith("/login") ||
       url.pathname.startsWith("/signup") ||
       url.pathname.startsWith("/auth") ||
-      url.pathname.startsWith("/dashboard")
+      url.pathname.startsWith("/dashboard") ||
+      url.pathname.startsWith("/onboarding") // ADD THIS LINE
     ) {
-      console.log("Auth/Dashboard route, no rewrite needed");
+      console.log("Auth/Dashboard/Onboarding route, no rewrite needed");
       return response;
     }
 
