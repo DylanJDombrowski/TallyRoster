@@ -1,6 +1,5 @@
 // app/dashboard/layout.tsx
-
-import { ThemeStyle } from "@/app/components/theme-style"; // Import the new component
+import { ThemeStyle } from "@/app/components/theme-style";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { ReactNode } from "react";
@@ -15,35 +14,78 @@ async function ThemeInjector() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let primaryColor = "#171717"; // Default to black for admin
-  let secondaryColor = "#e5e5e5"; // Default to light gray for admin
+  let primaryColor = "#171717"; // Default colors
+  let secondaryColor = "#e5e5e5";
+  let organizationName = "Admin"; // Default name
 
   if (user) {
-    const { data: userRole } = await supabase.from("user_roles").select("team_id").eq("user_id", user.id).single();
+    // FIXED: Use user_organization_roles instead of user_roles
+    const { data: userOrgRole } = await supabase
+      .from("user_organization_roles")
+      .select(
+        `
+        organization_id,
+        role,
+        organizations (
+          id, name, primary_color, secondary_color
+        )
+      `
+      )
+      .eq("user_id", user.id)
+      .single();
 
-    if (userRole?.team_id) {
-      const { data: teamData } = await supabase.from("teams").select("primary_color, secondary_color").eq("id", userRole.team_id).single();
+    if (userOrgRole?.organizations) {
+      const org = Array.isArray(userOrgRole.organizations) ? userOrgRole.organizations[0] : userOrgRole.organizations;
 
-      // Use team colors if they exist
-      if (teamData?.primary_color) primaryColor = teamData.primary_color;
-      if (teamData?.secondary_color) secondaryColor = teamData.secondary_color;
+      if (org.primary_color) primaryColor = org.primary_color;
+      if (org.secondary_color) secondaryColor = org.secondary_color;
+      if (org.name) organizationName = org.name;
     }
   }
 
-  const primaryFgColor = "#ffffff"; // Assuming white text on primary color is always desired
+  const primaryFgColor = "#ffffff";
 
-  // It then passes the server-fetched data as props to the client component.
-  return <ThemeStyle primaryColor={primaryColor} secondaryColor={secondaryColor} primaryFgColor={primaryFgColor} />;
+  return (
+    <>
+      <ThemeStyle primaryColor={primaryColor} secondaryColor={secondaryColor} primaryFgColor={primaryFgColor} />
+      {/* Pass organization name to the layout */}
+      <style jsx global>{`
+        :root {
+          --organization-name: "${organizationName}";
+        }
+      `}</style>
+    </>
+  );
 }
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  // Get organization name for display
+  const cookieStore = cookies();
+  const supabase = createClient(await cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let orgName = "Admin";
+  if (user) {
+    const { data: userOrgRole } = await supabase
+      .from("user_organization_roles")
+      .select("organizations(name)")
+      .eq("user_id", user.id)
+      .single();
+
+    if (userOrgRole?.organizations) {
+      const org = Array.isArray(userOrgRole.organizations) ? userOrgRole.organizations[0] : userOrgRole.organizations;
+      orgName = org.name || "Admin";
+    }
+  }
+
   return (
     <>
       <ThemeInjector />
-      {/* Updated background to bg-slate-100 */}
       <div className="min-h-screen bg-slate-100">
         <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between h-16 px-4 bg-white border-b border-slate-200 md:left-64">
-          <h1 className="text-xl font-bold text-slate-900 md:hidden">MVX Admin</h1>
+          <h1 className="text-xl font-bold text-slate-900 md:hidden">{orgName}</h1>
           <div className="ml-auto">
             <LogoutButton />
           </div>
@@ -51,7 +93,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
         <aside className="fixed top-0 left-0 hidden w-64 h-full bg-white border-r border-slate-200 md:block">
           <div className="flex items-center h-16 px-6 border-b">
-            <h1 className="text-xl font-bold text-slate-900">MVX Admin</h1>
+            <h1 className="text-xl font-bold text-slate-900">{orgName}</h1>
           </div>
           <SidebarNav />
         </aside>

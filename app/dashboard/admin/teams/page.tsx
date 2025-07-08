@@ -7,8 +7,8 @@ import { TeamManager } from "./components/team-manager";
 export const dynamic = "force-dynamic";
 
 export default async function ManageTeamsPage() {
-  const cookieStore = cookies(); // NEW WAY
-  const supabase = createClient(await cookieStore); // NEW WAY
+  const cookieStore = cookies();
+  const supabase = createClient(await cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -17,13 +17,25 @@ export default async function ManageTeamsPage() {
     redirect("/login");
   }
 
-  const { data: userRole } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
+  // FIXED: Use user_organization_roles instead of user_roles
+  const { data: userOrgRole, error: roleError } = await supabase
+    .from("user_organization_roles")
+    .select("organization_id, role")
+    .eq("user_id", user.id)
+    .single();
 
-  if (userRole?.role !== "admin") {
+  if (roleError || !userOrgRole) {
+    console.error("Error fetching user organization:", roleError);
+    return <p className="p-8">Error loading your organization data.</p>;
+  }
+
+  // Check if user is admin
+  if (userOrgRole.role !== "admin") {
     return <p className="p-8">You do not have permission to view this page.</p>;
   }
 
-  const { data: teams } = await supabase.from("teams").select("*").order("name");
+  // FIXED: Only fetch teams from user's organization
+  const { data: teams } = await supabase.from("teams").select("*").eq("organization_id", userOrgRole.organization_id).order("name");
 
   return (
     <div className="p-4 md:p-8">
