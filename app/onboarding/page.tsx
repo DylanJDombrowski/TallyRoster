@@ -8,6 +8,7 @@ import { useToast } from "@/app/components/toast-provider";
 import { OnboardingStepProps, OnboardingWizardData } from "@/app/types/onboarding";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 // Site Preview Step Component
 function SitePreviewStep({ onNext, onBack, data }: OnboardingStepProps) {
@@ -220,20 +221,41 @@ const ONBOARDING_STEPS = [
 export default function OnboardingPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOnboardingComplete = async (allData: OnboardingWizardData): Promise<void> => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
-      // TODO: Save organization data to database
-      console.log("Onboarding completed with data:", allData);
+      const response = await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(allData),
+      });
 
-      showToast("Welcome to Sideline! Setting up your site...", "success");
+      const result = await response.json();
 
-      // TODO: Create organization, set up Stripe subscription, generate site
-      // For now, redirect to dashboard
-      router.push("/dashboard");
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to complete onboarding");
+      }
+
+      showToast(`Welcome to Sideline! Your organization "${result.organization.name}" has been created.`, "success");
+
+      // If there's a Stripe checkout URL, redirect there
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+      } else {
+        // Otherwise, go to dashboard with a trial banner
+        router.push(result.dashboardUrl);
+      }
     } catch (error) {
       console.error("Error completing onboarding:", error);
-      showToast("Error setting up your account. Please try again.", "error");
+      showToast(error instanceof Error ? error.message : "Error setting up your account. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
