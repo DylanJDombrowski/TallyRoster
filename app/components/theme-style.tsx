@@ -5,9 +5,10 @@ interface ThemeStyleProps {
   primaryColor: string;
   secondaryColor: string;
   primaryFgColor: string;
+  organizationName?: string;
 }
 
-export function ThemeStyle({ primaryColor, secondaryColor, primaryFgColor }: ThemeStyleProps) {
+export function ThemeStyle({ primaryColor, secondaryColor, primaryFgColor, organizationName }: ThemeStyleProps) {
   // This creates a standard <style> tag with the CSS variables.
   // It's a client component, which satisfies Vercel, but it contains no
   // client-side hooks, so it renders instantly with the server-provided props.
@@ -17,7 +18,7 @@ export function ThemeStyle({ primaryColor, secondaryColor, primaryFgColor }: The
       :root {
         --color-primary: ${primaryColor};
         --color-secondary: ${secondaryColor};
-        --color-primary-foreground: ${primaryFgColor};
+        --color-primary-foreground: ${primaryFgColor};${organizationName ? `\n        --organization-name: "${organizationName}";` : ""}
       }
     `}
     </style>

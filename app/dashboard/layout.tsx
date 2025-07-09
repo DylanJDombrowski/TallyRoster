@@ -46,15 +46,12 @@ async function ThemeInjector() {
   const primaryFgColor = "#ffffff";
 
   return (
-    <>
-      <ThemeStyle primaryColor={primaryColor} secondaryColor={secondaryColor} primaryFgColor={primaryFgColor} />
-      {/* Pass organization name to the layout */}
-      <style jsx global>{`
-        :root {
-          --organization-name: "${organizationName}";
-        }
-      `}</style>
-    </>
+    <ThemeStyle
+      primaryColor={primaryColor}
+      secondaryColor={secondaryColor}
+      primaryFgColor={primaryFgColor}
+      organizationName={organizationName}
+    />
   );
 }
 
