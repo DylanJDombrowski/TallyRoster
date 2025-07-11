@@ -100,7 +100,8 @@ CREATE TABLE IF NOT EXISTS "public"."blog_posts" (
     "tournament_name" "text",
     "place" "text",
     "status" "text" DEFAULT 'published'::"text" NOT NULL,
-    "author_id" "uuid"
+    "author_id" "uuid",
+    "organization_id" "uuid" NOT NULL
 );
 
 
@@ -442,6 +443,10 @@ CREATE INDEX "idx_alumni_grad_year" ON "public"."alumni" USING "btree" ("grad_ye
 
 
 
+CREATE INDEX "idx_blog_posts_organization_id" ON "public"."blog_posts" USING "btree" ("organization_id");
+
+
+
 CREATE INDEX "idx_blog_posts_published_date" ON "public"."blog_posts" USING "btree" ("published_date" DESC);
 
 
@@ -502,6 +507,11 @@ ALTER TABLE ONLY "public"."alumni"
 
 ALTER TABLE ONLY "public"."blog_posts"
     ADD CONSTRAINT "blog_posts_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."blog_posts"
+    ADD CONSTRAINT "blog_posts_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
 
 
 
@@ -677,6 +687,12 @@ CREATE POLICY "Allow coaches to view players on their team" ON "public"."players
 
 
 
+CREATE POLICY "Allow org members to manage their blog posts" ON "public"."blog_posts" USING (("organization_id" IN ( SELECT "user_organization_roles"."organization_id"
+   FROM "public"."user_organization_roles"
+  WHERE ("user_organization_roles"."user_id" = "auth"."uid"()))));
+
+
+
 CREATE POLICY "Allow public read access to active partners" ON "public"."partners" FOR SELECT USING (("active" = true));
 
 
@@ -689,6 +705,18 @@ CREATE POLICY "Allow public read access to alumni" ON "public"."alumni" FOR SELE
 
 
 
+CREATE POLICY "Allow public read access to coaches" ON "public"."coaches" FOR SELECT TO "anon" USING (true);
+
+
+
+CREATE POLICY "Allow public read access to organization links" ON "public"."organization_links" FOR SELECT TO "anon" USING (true);
+
+
+
+CREATE POLICY "Allow public read access to organizations" ON "public"."organizations" FOR SELECT TO "anon" USING (true);
+
+
+
 CREATE POLICY "Allow public read access to published blog posts" ON "public"."blog_posts" FOR SELECT USING (("status" = 'published'::"text"));
 
 
@@ -697,7 +725,15 @@ CREATE POLICY "Allow public read access to published pages" ON "public"."static_
 
 
 
+CREATE POLICY "Allow public read access to schedule events" ON "public"."schedule_events" FOR SELECT TO "anon" USING (true);
+
+
+
 CREATE POLICY "Allow public read access to teams" ON "public"."teams" FOR SELECT TO "anon" USING (true);
+
+
+
+CREATE POLICY "Allow public read for published blog posts by org" ON "public"."blog_posts" FOR SELECT TO "anon" USING (("status" = 'published'::"text"));
 
 
 
