@@ -89,9 +89,21 @@ export async function middleware(request: NextRequest) {
   // Extract subdomain for organization sites
   let subdomain = hostname.replace(`.${rootDomain}`, "");
 
+  // Remove www prefix if present
+  if (subdomain.startsWith("www.")) {
+    subdomain = subdomain.replace("www.", "");
+  }
+
   // Handle local development subdomains
   if (isLocal && hostname.includes(".localhost")) {
     subdomain = hostname.split(".")[0];
+  }
+
+  // Skip if subdomain is empty or www
+  if (!subdomain || subdomain === "www" || subdomain === hostname) {
+    console.log("❌ Invalid subdomain, redirecting to main site");
+    const redirectUrl = new URL("/", `https://${rootDomain}`);
+    return NextResponse.redirect(redirectUrl);
   }
 
   console.log("🏢 Organization subdomain detected:", subdomain);
