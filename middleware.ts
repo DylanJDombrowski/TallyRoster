@@ -31,54 +31,107 @@ export async function middleware(request: NextRequest) {
 
   const url = request.nextUrl;
   const hostname = request.headers.get("host") || "";
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
 
-  console.log("Hostname:", hostname);
-  console.log("Root Domain:", rootDomain);
-  console.log("Original path:", url.pathname);
+  // Define your root domain - adjust this based on your environment
+  const isLocal = hostname.includes("localhost") || hostname.includes("127.0.0.1");
+  const rootDomain = isLocal ? (hostname.includes("3000") ? "localhost:3000" : "localhost") : "trysideline.com";
 
-  // Prevent rewriting for static assets and internal Next.js paths
+  console.log("🌐 Middleware Debug:", {
+    hostname,
+    rootDomain,
+    path: url.pathname,
+    isLocal,
+  });
+
+  // Skip middleware for static assets and internal Next.js paths
   if (
     url.pathname.startsWith("/_next") ||
     url.pathname.startsWith("/api") ||
     url.pathname.startsWith("/static") ||
-    /\.(png|jpg|jpeg|gif|svg|ico)$/.test(url.pathname)
+    url.pathname.includes(".") // Skip files with extensions
   ) {
     return response;
   }
 
   // Check if this is the root domain (marketing site)
-  if (hostname === rootDomain || hostname === `www.${rootDomain}`) {
+  const isRootDomain =
+    hostname === rootDomain ||
+    hostname === `www.${rootDomain}` ||
+    (isLocal && (hostname === "localhost" || hostname.includes("localhost")));
+
+  if (isRootDomain) {
+    console.log("📍 Root domain detected");
+
     // Auth routes, dashboard, and onboarding should stay at root level
     if (
       url.pathname.startsWith("/login") ||
       url.pathname.startsWith("/signup") ||
       url.pathname.startsWith("/auth") ||
       url.pathname.startsWith("/dashboard") ||
-      url.pathname.startsWith("/onboarding") // ADD THIS LINE
+      url.pathname.startsWith("/onboarding") ||
+      url.pathname.startsWith("/invite")
     ) {
-      console.log("Auth/Dashboard/Onboarding route, no rewrite needed");
+      console.log("✅ Auth/Dashboard route, no rewrite needed");
       return response;
     }
 
     // Marketing routes - rewrite to /marketing prefix if not already there
     if (!url.pathname.startsWith("/marketing")) {
-      url.pathname = `/marketing${url.pathname}`;
-      console.log("Rewriting to:", url.pathname);
-      return NextResponse.rewrite(url);
+      const newUrl = url.clone();
+      newUrl.pathname = `/marketing${url.pathname}`;
+      console.log("📝 Rewriting to marketing:", newUrl.pathname);
+      return NextResponse.rewrite(newUrl);
     }
 
-    // If already starts with /marketing, let it through
     return response;
   }
 
-  // For any other hostname (subdomains), extract the subdomain and rewrite to /sites/[subdomain]
-  const subdomain = hostname.replace(`.${rootDomain}`, "");
-  url.pathname = `/sites/${subdomain}${url.pathname}`;
-  console.log("Subdomain rewrite to:", url.pathname);
-  return NextResponse.rewrite(url);
+  // Extract subdomain for organization sites
+  let subdomain = hostname.replace(`.${rootDomain}`, "");
+
+  // Handle local development subdomains
+  if (isLocal && hostname.includes(".localhost")) {
+    subdomain = hostname.split(".")[0];
+  }
+
+  console.log("🏢 Organization subdomain detected:", subdomain);
+
+  // Verify subdomain exists in database
+  try {
+    const { data: org } = await supabase.from("organizations").select("id, subdomain").eq("subdomain", subdomain).single();
+
+    if (!org) {
+      console.log("❌ Organization not found for subdomain:", subdomain);
+      // Redirect to main site if subdomain doesn't exist
+      const redirectUrl = new URL("/", `https://${rootDomain}`);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    console.log("✅ Valid organization found:", org.id);
+  } catch (error) {
+    console.error("🚨 Database error checking subdomain:", error);
+    // On error, redirect to main site
+    const redirectUrl = new URL("/", `https://${rootDomain}`);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Rewrite to organization site
+  const newUrl = url.clone();
+  newUrl.pathname = `/sites/${subdomain}${url.pathname}`;
+  console.log("🔄 Rewriting to organization site:", newUrl.pathname);
+
+  return NextResponse.rewrite(newUrl);
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - api routes
+     */
+    "/((?!_next/static|_next/image|favicon.ico|api).*)",
+  ],
 };
