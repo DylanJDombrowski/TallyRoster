@@ -22,14 +22,17 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (user) {
-        // Check if user has an organization (completed onboarding)
-        const { data: organizations } = await supabase.from("organizations").select("id").eq("owner_id", user.id).limit(1);
+        // Check if user is associated with any organization
+        const { data: userOrgRoles } = await supabase
+          .from("user_organization_roles")
+          .select("organization_id, role, organizations(name)")
+          .eq("user_id", user.id);
 
-        if (organizations && organizations.length > 0) {
+        if (userOrgRoles && userOrgRoles.length > 0) {
           // User has organization, go to dashboard
           return NextResponse.redirect(`${origin}/dashboard`);
         } else {
-          // New user, send to onboarding
+          // New user with no organization, send to onboarding
           return NextResponse.redirect(`${origin}/onboarding`);
         }
       }
@@ -38,11 +41,9 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/onboarding`);
     } else {
       console.error("Auth callback error:", error);
-      // If there was an error, redirect to login with an error message
       return NextResponse.redirect(`${origin}/login?error=confirmation_failed`);
     }
   }
 
-  // If no code provided, redirect to login
   return NextResponse.redirect(`${origin}/login?error=invalid_confirmation_link`);
 }

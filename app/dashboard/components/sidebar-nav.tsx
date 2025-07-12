@@ -1,32 +1,76 @@
 // app/dashboard/components/sidebar-nav.tsx
 "use client";
 
-import { Home, Shield, User, Users } from "lucide-react";
+import { FileText, Home, Settings, Shield, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navLinks = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/dashboard/players", label: "Players", icon: User },
-  { href: "/dashboard/admin/teams", label: "Teams", icon: Users },
-  { href: "/dashboard/admin/users", label: "Users", icon: Shield },
+interface NavLink {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number }>;
+  roles: string[]; // Which roles can see this link
+}
+
+const navLinks: NavLink[] = [
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: Home,
+    roles: ["admin", "coach", "member"],
+  },
+  {
+    href: "/dashboard/players",
+    label: "Players",
+    icon: User,
+    roles: ["admin", "coach"],
+  },
+  {
+    href: "/dashboard/admin/teams",
+    label: "Teams",
+    icon: Users,
+    roles: ["admin"],
+  },
+  {
+    href: "/dashboard/admin/users",
+    label: "Users",
+    icon: Shield,
+    roles: ["admin"],
+  },
+  {
+    href: "/dashboard/site-customizer",
+    label: "Website",
+    icon: Settings,
+    roles: ["admin"],
+  },
+  {
+    href: "/dashboard/blog",
+    label: "Blog Posts",
+    icon: FileText,
+    roles: ["admin", "coach"],
+  },
 ];
 
-export function SidebarNav() {
+interface SidebarNavProps {
+  userRole: string;
+}
+
+export function SidebarNav({ userRole }: SidebarNavProps) {
   const pathname = usePathname();
+
+  // Filter links based on user role
+  const availableLinks = navLinks.filter((link) => link.roles.includes(userRole));
 
   return (
     <nav className="flex flex-col p-4 space-y-2">
-      {navLinks.map((link) => {
+      {availableLinks.map((link) => {
         const isActive = pathname === link.href;
         return (
           <Link
             key={link.href}
             href={link.href}
             className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-              isActive
-                ? "bg-slate-200 text-slate-900" // Updated active colors
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900" // Updated inactive colors
+              isActive ? "bg-slate-200 text-slate-900" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
             <link.icon size={18} />
@@ -34,6 +78,14 @@ export function SidebarNav() {
           </Link>
         );
       })}
+
+      {/* Role indicator */}
+      <div className="mt-8 pt-4 border-t border-slate-200">
+        <div className="px-3 py-2 text-xs text-slate-500">
+          <div>Your Role</div>
+          <div className="font-medium text-slate-700 capitalize mt-1">{userRole}</div>
+        </div>
+      </div>
     </nav>
   );
 }
