@@ -1,9 +1,9 @@
-// app/dashboard/site-customizer/components/customizer-form.tsx
+// app/dashboard/site-customizer/components/customizer-form.tsx - FIXED VERSION
 "use client";
 
 import { useToast } from "@/app/components/toast-provider";
 import { Database } from "@/lib/database.types";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFormState } from "react-dom";
 import { ImageUploader } from "../../players/components/image-uploader";
 import { updateOrganizationSettings } from "../actions";
@@ -30,39 +30,52 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
   const [primaryColor, setPrimaryColor] = useState(organization.primary_color);
   const [secondaryColor, setSecondaryColor] = useState(organization.secondary_color);
 
-  // Post updates to the iframe for live preview
-  useEffect(() => {
-    if (iframeRef.current) {
+  // Prevent message spam
+  const [lastMessageTime, setLastMessageTime] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Debounced message posting to prevent spam
+  const postThemeUpdate = useCallback(() => {
+    const now = Date.now();
+    if (now - lastMessageTime < 100) return; // Throttle to max 10 messages per second
+
+    if (iframeRef.current && iframeRef.current.contentWindow) {
       try {
-        iframeRef.current.contentWindow?.postMessage(
+        iframeRef.current.contentWindow.postMessage(
           {
             type: "SIDELINE_THEME_UPDATE",
             payload: { name, logoUrl, primaryColor, secondaryColor },
           },
-          "*" // In production, restrict this to your domain
+          "*"
         );
+        setLastMessageTime(now);
       } catch (error) {
         console.log("Preview update failed:", error);
       }
     }
-  }, [name, logoUrl, primaryColor, secondaryColor]);
+  }, [name, logoUrl, primaryColor, secondaryColor, lastMessageTime]);
+
+  // Post updates to the iframe for live preview (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(postThemeUpdate, 300); // Debounce for 300ms
+    return () => clearTimeout(timeoutId);
+  }, [postThemeUpdate]);
 
   // Show toast on form submission result
   useEffect(() => {
     if (state.message) {
       showToast(state.message, state.success ? "success" : "error");
+      setIsSubmitting(false);
 
-      // If successful, refresh the preview iframe
-      if (state.success && iframeRef.current) {
-        setTimeout(() => {
-          iframeRef.current?.contentWindow?.location.reload();
-        }, 1000);
-      }
+      // NO IFRAME RELOAD - let the revalidatePath handle the updates
+      // The public site will update automatically due to server-side revalidation
     }
   }, [state, showToast]);
 
   // Handle form submission
   const handleSubmit = async (formData: FormData) => {
+    setIsSubmitting(true);
+
     // Add current state values to form data
     formData.set("name", name);
     formData.set("logo_url", logoUrl || "");
@@ -72,6 +85,14 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
     // Call the server action
     formAction(formData);
   };
+
+  // Handle iframe load (only send initial message, no reloads)
+  const handleIframeLoad = useCallback(() => {
+    // Wait a bit for iframe to fully load, then send initial theme
+    setTimeout(() => {
+      postThemeUpdate();
+    }, 1000);
+  }, [postThemeUpdate]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -103,6 +124,7 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                   onChange={(e) => setName(e.target.value)}
                   className="w-full p-2 border border-slate-300 rounded-md shadow-sm text-slate-900 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Your Organization Name"
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -124,6 +146,7 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                     value={primaryColor || "#161659"}
                     onChange={(e) => setPrimaryColor(e.target.value)}
                     className="w-12 h-12 border border-slate-300 rounded-lg cursor-pointer"
+                    disabled={isSubmitting}
                   />
                   <input
                     type="text"
@@ -131,6 +154,7 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                     onChange={(e) => setPrimaryColor(e.target.value)}
                     className="flex-1 p-2 border border-slate-300 rounded-md text-sm"
                     placeholder="#161659"
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -148,6 +172,7 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                     value={secondaryColor || "#BD1515"}
                     onChange={(e) => setSecondaryColor(e.target.value)}
                     className="w-12 h-12 border border-slate-300 rounded-lg cursor-pointer"
+                    disabled={isSubmitting}
                   />
                   <input
                     type="text"
@@ -155,6 +180,7 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                     onChange={(e) => setSecondaryColor(e.target.value)}
                     className="flex-1 p-2 border border-slate-300 rounded-md text-sm"
                     placeholder="#BD1515"
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -183,9 +209,10 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
           <div className="border-t pt-6">
             <button
               type="submit"
-              className="w-full p-3 rounded-lg text-white font-bold bg-blue-600 transition-opacity hover:opacity-90 disabled:opacity-50"
+              disabled={isSubmitting}
+              className="w-full p-3 rounded-lg text-white font-bold bg-blue-600 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save & Publish Changes
+              {isSubmitting ? "Saving..." : "Save & Publish Changes"}
             </button>
             <p className="text-xs text-slate-500 mt-2 text-center">Changes will be visible on your live website immediately</p>
           </div>
@@ -203,18 +230,9 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                 src={`/sites/${organization.subdomain}`}
                 className="w-full h-full"
                 title="Live Website Preview"
-                onLoad={() => {
-                  // Send initial theme update when iframe loads
-                  setTimeout(() => {
-                    iframeRef.current?.contentWindow?.postMessage(
-                      {
-                        type: "SIDELINE_THEME_UPDATE",
-                        payload: { name, logoUrl, primaryColor, secondaryColor },
-                      },
-                      "*"
-                    );
-                  }, 500);
-                }}
+                onLoad={handleIframeLoad}
+                // Prevent iframe from constantly reloading
+                key={organization.subdomain} // Only recreate iframe if subdomain changes
               />
             ) : (
               <div className="flex items-center justify-center h-full text-slate-500">
