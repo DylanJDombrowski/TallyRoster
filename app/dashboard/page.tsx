@@ -71,12 +71,12 @@ export default async function DashboardHomePage() {
             <div className="text-right">
               <p className="text-sm text-slate-600">Your Public Site:</p>
               <a
-                href={`https://${organization.subdomain}.trysideline.com`}
+                href={`https://${organization.subdomain}.tallyroster.com`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline font-medium"
               >
-                {organization.subdomain}.trysideline.com
+                {organization.subdomain}.tallyroster.com
               </a>
             </div>
           )}

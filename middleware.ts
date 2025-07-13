@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
 
   // Define your root domain - UPDATED FOR TALLYROSTER
   const isLocal = hostname.includes("localhost") || hostname.includes("127.0.0.1");
-  const rootDomain = isLocal ? (hostname.includes("3000") ? "localhost:3000" : "localhost") : "tallyroster.com"; // CHANGED FROM trysideline.com
+  const rootDomain = isLocal ? (hostname.includes("3000") ? "localhost:3000" : "localhost") : "tallyroster.com";
 
   console.log("🌐 Middleware Debug:", {
     hostname,
@@ -37,14 +37,6 @@ export async function middleware(request: NextRequest) {
     path: url.pathname,
     isLocal,
   });
-
-  // Handle legacy domain redirects (trysideline.com -> tallyroster.com)
-  if (hostname.includes("trysideline.com")) {
-    console.log("🔄 Redirecting legacy domain to TallyRoster");
-    const newHostname = hostname.replace("trysideline.com", "tallyroster.com");
-    const redirectUrl = new URL(url.pathname + url.search, `https://${newHostname}`);
-    return NextResponse.redirect(redirectUrl, 301); // Permanent redirect for SEO
-  }
 
   // Initialize Supabase client
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {

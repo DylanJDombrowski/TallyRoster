@@ -161,7 +161,7 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
             placeholder="yourteam"
             className="flex-1 p-3 border border-slate-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
-          <span className="px-3 py-3 bg-slate-100 border border-l-0 border-slate-300 rounded-r-lg text-slate-600">.trysideline.com</span>
+          <span className="px-3 py-3 bg-slate-100 border border-l-0 border-slate-300 rounded-r-lg text-slate-600">.tallyroster.com</span>
         </div>
         {isCheckingSubdomain && <p className="text-sm text-slate-500 mt-1">Checking availability...</p>}
         {subdomainAvailable === true && <p className="text-sm text-green-600 mt-1">✓ Available</p>}

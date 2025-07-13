@@ -1,6 +1,6 @@
 // app/marketing/components/MarketingHeader.tsx
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 
 export function MarketingHeader() {
   return (
@@ -8,10 +8,10 @@ export function MarketingHeader() {
       {/* Top ribbon */}
       <div className="py-1 px-4 bg-blue-600 text-white">
         <div className="container mx-auto flex justify-between items-center text-sm">
-          <div>hello@trysideline.com</div>
+          <div>hello@tallyroster.com</div>
           <div className="flex space-x-4">
             <a
-              href="https://twitter.com/trysideline"
+              href="https://twitter.com/tallyroster"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Twitter"
@@ -42,31 +42,19 @@ export function MarketingHeader() {
 
           {/* Marketing Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link
-              href="/marketing"
-              className="text-slate-600 hover:text-slate-900"
-            >
+            <Link href="/marketing" className="text-slate-600 hover:text-slate-900">
               Home
             </Link>
-            <Link
-              href="/marketing/features"
-              className="text-slate-600 hover:text-slate-900"
-            >
+            <Link href="/marketing/features" className="text-slate-600 hover:text-slate-900">
               Features
             </Link>
-            <Link
-              href="/marketing/pricing"
-              className="text-slate-600 hover:text-slate-900"
-            >
+            <Link href="/marketing/pricing" className="text-slate-600 hover:text-slate-900">
               Pricing
             </Link>
             <Link href="/login" className="text-slate-600 hover:text-slate-900">
               Sign In
             </Link>
-            <Link
-              href="/signup"
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
+            <Link href="/signup" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
               Get Started
             </Link>
           </nav>

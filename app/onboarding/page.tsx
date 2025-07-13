@@ -257,7 +257,7 @@ export default function OnboardingPage() {
                   required
                 />
                 <span className="px-3 py-3 bg-slate-100 border border-l-0 border-slate-300 rounded-r-lg text-slate-600">
-                  .trysideline.com
+                  .tallyroster.com
                 </span>
               </div>
             </div>
