@@ -1,12 +1,12 @@
 // app/dashboard/players/components/player-manager.tsx
 "use client";
 
+import { createClient } from "@/lib/supabase/client";
 import { Player, Team } from "@/lib/types";
 import { useCallback, useMemo, useState } from "react";
 import { PlayerForm } from "./player-form";
 import { PlayerImporter } from "./player-importer";
 import { PlayerList } from "./player-list";
-import { createClient } from "@/lib/supabase/client";
 
 export type PlayerWithTeam = Player & {
   teams: Pick<Team, "name"> | null;
@@ -18,11 +18,7 @@ interface PlayerManagerProps {
   organizationId: string; // The manager now needs the organization ID for imports
 }
 
-export function PlayerManager({
-  initialPlayers,
-  teams,
-  organizationId,
-}: PlayerManagerProps) {
+export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerManagerProps) {
   const [players, setPlayers] = useState<PlayerWithTeam[]>(initialPlayers);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [view, setView] = useState<"active" | "archived">("active");
@@ -58,9 +54,7 @@ export function PlayerManager({
     if (isNew) {
       setPlayers((prev) => [...prev, playerWithTeam]);
     } else {
-      setPlayers((prev) =>
-        prev.map((p) => (p.id === savedPlayer.id ? playerWithTeam : p))
-      );
+      setPlayers((prev) => prev.map((p) => (p.id === savedPlayer.id ? playerWithTeam : p)));
     }
     setEditingPlayer(null);
   };
@@ -81,6 +75,7 @@ export function PlayerManager({
           playerToEdit={editingPlayer}
           onSaveSuccess={handleSaveSuccess}
           onCancelEdit={() => setEditingPlayer(null)}
+          organizationId={organizationId} // Pass the organization ID to the form
         />
         {/* The PlayerImporter is now integrated here */}
         <PlayerImporter
@@ -91,9 +86,7 @@ export function PlayerManager({
       </div>
       <div className="md:col-span-2 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-slate-900">
-            {view === "active" ? "Active Roster" : "Archived Players"}
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-900">{view === "active" ? "Active Roster" : "Archived Players"}</h2>
           <button
             onClick={() => setView(view === "active" ? "archived" : "active")}
             className="text-sm font-medium text-blue-600 hover:underline"
