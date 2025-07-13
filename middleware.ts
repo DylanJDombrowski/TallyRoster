@@ -1,4 +1,4 @@
-// middleware.ts - with enhanced debugging
+// middleware.ts - Complete TallyRoster Migration
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -13,6 +13,40 @@ export async function middleware(request: NextRequest) {
     pathname: request.nextUrl.pathname,
   });
 
+  const url = request.nextUrl;
+  const hostname = request.headers.get("host") || "";
+
+  // Skip middleware for static assets and internal Next.js paths
+  if (
+    url.pathname.startsWith("/_next") ||
+    url.pathname.startsWith("/api") ||
+    url.pathname.startsWith("/static") ||
+    url.pathname.includes(".") // Skip files with extensions
+  ) {
+    console.log("⏭️ Skipping middleware for static/API path");
+    return response;
+  }
+
+  // Define your root domain - UPDATED FOR TALLYROSTER
+  const isLocal = hostname.includes("localhost") || hostname.includes("127.0.0.1");
+  const rootDomain = isLocal ? (hostname.includes("3000") ? "localhost:3000" : "localhost") : "tallyroster.com"; // CHANGED FROM trysideline.com
+
+  console.log("🌐 Middleware Debug:", {
+    hostname,
+    rootDomain,
+    path: url.pathname,
+    isLocal,
+  });
+
+  // Handle legacy domain redirects (trysideline.com -> tallyroster.com)
+  if (hostname.includes("trysideline.com")) {
+    console.log("🔄 Redirecting legacy domain to TallyRoster");
+    const newHostname = hostname.replace("trysideline.com", "tallyroster.com");
+    const redirectUrl = new URL(url.pathname + url.search, `https://${newHostname}`);
+    return NextResponse.redirect(redirectUrl, 301); // Permanent redirect for SEO
+  }
+
+  // Initialize Supabase client
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {
       get: (name) => request.cookies.get(name)?.value,
@@ -34,31 +68,6 @@ export async function middleware(request: NextRequest) {
   });
 
   await supabase.auth.getUser();
-
-  const url = request.nextUrl;
-  const hostname = request.headers.get("host") || "";
-
-  // Define your root domain - adjust this based on your environment
-  const isLocal = hostname.includes("localhost") || hostname.includes("127.0.0.1");
-  const rootDomain = isLocal ? (hostname.includes("3000") ? "localhost:3000" : "localhost") : "trysideline.com";
-
-  console.log("🌐 Middleware Debug:", {
-    hostname,
-    rootDomain,
-    path: url.pathname,
-    isLocal,
-  });
-
-  // Skip middleware for static assets and internal Next.js paths
-  if (
-    url.pathname.startsWith("/_next") ||
-    url.pathname.startsWith("/api") ||
-    url.pathname.startsWith("/static") ||
-    url.pathname.includes(".") // Skip files with extensions
-  ) {
-    console.log("⏭️ Skipping middleware for static/API path");
-    return response;
-  }
 
   // Check if this is the root domain (marketing site)
   const isRootDomain =

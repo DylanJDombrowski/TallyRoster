@@ -129,6 +129,26 @@ COMMENT ON TABLE "public"."coaches" IS 'Stores coach information for each team';
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."organization_invitations" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "code" "text" NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "role" "text" NOT NULL,
+    "created_by" "uuid" NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL,
+    "used" boolean DEFAULT false NOT NULL,
+    "used_by" "uuid",
+    "used_at" timestamp with time zone,
+    "max_uses" integer DEFAULT 1,
+    "current_uses" integer DEFAULT 0,
+    CONSTRAINT "organization_invitations_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'coach'::"text", 'member'::"text"])))
+);
+
+
+ALTER TABLE "public"."organization_invitations" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."organization_links" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "organization_id" "uuid" NOT NULL,
@@ -220,7 +240,8 @@ CREATE TABLE IF NOT EXISTS "public"."players" (
     "school" "text",
     "grad_year" integer,
     "gpa" numeric(3,2),
-    "twitter_handle" "text"
+    "twitter_handle" "text",
+    "organization_id" "uuid" NOT NULL
 );
 
 
@@ -379,6 +400,16 @@ ALTER TABLE ONLY "public"."coaches"
 
 
 
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_code_key" UNIQUE ("code");
+
+
+
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."organization_links"
     ADD CONSTRAINT "organization_links_pkey" PRIMARY KEY ("id");
 
@@ -463,6 +494,18 @@ CREATE INDEX "idx_coaches_team_id" ON "public"."coaches" USING "btree" ("team_id
 
 
 
+CREATE INDEX "idx_organization_invitations_code" ON "public"."organization_invitations" USING "btree" ("code");
+
+
+
+CREATE INDEX "idx_organization_invitations_expires_at" ON "public"."organization_invitations" USING "btree" ("expires_at");
+
+
+
+CREATE INDEX "idx_organization_invitations_org_id" ON "public"."organization_invitations" USING "btree" ("organization_id");
+
+
+
 CREATE INDEX "idx_organization_links_position" ON "public"."organization_links" USING "btree" ("organization_id", "position");
 
 
@@ -520,6 +563,21 @@ ALTER TABLE ONLY "public"."coaches"
 
 
 
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_used_by_fkey" FOREIGN KEY ("used_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."organization_links"
     ADD CONSTRAINT "organization_links_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
 
@@ -532,6 +590,11 @@ ALTER TABLE ONLY "public"."organizations"
 
 ALTER TABLE ONLY "public"."player_stats"
     ADD CONSTRAINT "player_stats_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."players"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."players"
+    ADD CONSTRAINT "players_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
 
 
 
@@ -638,6 +701,12 @@ CREATE POLICY "Allow admins full access to teams" ON "public"."teams" USING ((EX
 
 
 
+CREATE POLICY "Allow admins to manage invitations for their org" ON "public"."organization_invitations" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."organization_id" = "organization_invitations"."organization_id") AND ("user_organization_roles"."role" = 'admin'::"text")))));
+
+
+
 CREATE POLICY "Allow authenticated users to view coaches" ON "public"."coaches" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -737,6 +806,10 @@ CREATE POLICY "Allow public read for published blog posts by org" ON "public"."b
 
 
 
+CREATE POLICY "Allow public read for valid invitations" ON "public"."organization_invitations" FOR SELECT TO "authenticated", "anon" USING ((("used" = false) AND ("expires_at" > "now"())));
+
+
+
 CREATE POLICY "Allow read access to own organization's links" ON "public"."organization_links" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."user_organization_roles" "uor"
   WHERE (("uor"."organization_id" = "organization_links"."organization_id") AND ("uor"."user_id" = "auth"."uid"())))));
@@ -766,6 +839,9 @@ ALTER TABLE "public"."blog_posts" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."coaches" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."organization_invitations" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."organization_links" ENABLE ROW LEVEL SECURITY;
@@ -990,6 +1066,12 @@ GRANT ALL ON TABLE "public"."blog_posts" TO "service_role";
 GRANT ALL ON TABLE "public"."coaches" TO "anon";
 GRANT ALL ON TABLE "public"."coaches" TO "authenticated";
 GRANT ALL ON TABLE "public"."coaches" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."organization_invitations" TO "anon";
+GRANT ALL ON TABLE "public"."organization_invitations" TO "authenticated";
+GRANT ALL ON TABLE "public"."organization_invitations" TO "service_role";
 
 
 
