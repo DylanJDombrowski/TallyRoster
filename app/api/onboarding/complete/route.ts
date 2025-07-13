@@ -22,6 +22,43 @@ const OnboardingDataSchema = z.object({
   selectedPlan: z.enum(["starter", "pro", "elite"]),
 });
 
+// Function to add domain to Vercel
+async function addDomainToVercel(domain: string): Promise<boolean> {
+  if (!process.env.VERCEL_TOKEN || !process.env.VERCEL_PROJECT_ID) {
+    console.warn("⚠️ Vercel credentials not configured, skipping domain addition");
+    return false;
+  }
+
+  try {
+    console.log(`🌐 Adding domain to Vercel: ${domain}`);
+
+    const response = await fetch(`https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: domain }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Failed to add domain to Vercel:`, {
+        status: response.status,
+        error: errorText,
+      });
+      return false;
+    }
+
+    const result = await response.json();
+    console.log(`✅ Successfully added domain to Vercel:`, result);
+    return true;
+  } catch (error) {
+    console.error("🚨 Error adding domain to Vercel:", error);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -64,6 +101,7 @@ export async function POST(request: NextRequest) {
         owner_id: user.id,
         subscription_plan: "trial", // Start with trial
         trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days
+        domain_added: false, // Track domain status
       })
       .select()
       .single();
@@ -83,6 +121,15 @@ export async function POST(request: NextRequest) {
     if (roleError) {
       console.error("Error creating user role:", roleError);
       return NextResponse.json({ error: "Failed to assign user role" }, { status: 500 });
+    }
+
+    // Add domain to Vercel (async, don't block onboarding if it fails)
+    const domainToAdd = `${validatedData.subdomain.toLowerCase()}.tallyroster.com`;
+    const domainAdded = await addDomainToVercel(domainToAdd);
+
+    // Update organization with domain status
+    if (domainAdded) {
+      await supabase.from("organizations").update({ domain_added: true }).eq("id", organization.id);
     }
 
     // Create Stripe Checkout Session (when Stripe is set up)
@@ -108,6 +155,8 @@ export async function POST(request: NextRequest) {
       },
       checkoutUrl,
       dashboardUrl: `/dashboard?org=${organization.id}`,
+      domainAdded, // Let frontend know if domain was added successfully
+      subdomainUrl: `https://${domainToAdd}`, // Provide the full URL
     });
   } catch (error) {
     console.error("Onboarding error:", error);
