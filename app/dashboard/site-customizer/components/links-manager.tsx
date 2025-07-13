@@ -1,19 +1,14 @@
 // app/dashboard/site-customizer/components/links-manager.tsx (with persistent drag-and-drop)
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/app/components/toast-provider";
-import {
-  getOrganizationLinks,
-  deleteOrganizationLink,
-  updateLinksOrder,
-} from "../actions";
-import { LinkForm } from "./link-form";
-import { DraggableLinks } from "./draggable-links";
 import { Database } from "@/lib/database.types";
+import { useCallback, useEffect, useState } from "react";
+import { deleteOrganizationLink, getOrganizationLinks, updateLinksOrder } from "../actions";
+import { DraggableLinks } from "./draggable-links";
+import { LinkForm } from "./link-form";
 
-type OrganizationLink =
-  Database["public"]["Tables"]["organization_links"]["Row"];
+type OrganizationLink = Database["public"]["Tables"]["organization_links"]["Row"];
 
 export function LinksManager() {
   const [links, setLinks] = useState<OrganizationLink[]>([]);
@@ -104,9 +99,7 @@ export function LinksManager() {
   if (loading) {
     return (
       <div className="border-t pt-6">
-        <h3 className="text-lg font-semibold text-slate-700 mb-4">
-          Forms & Links
-        </h3>
+        <h3 className="text-lg font-semibold text-slate-700 mb-4">Forms & Links</h3>
         <p className="text-slate-500">Loading...</p>
       </div>
     );
@@ -114,26 +107,16 @@ export function LinksManager() {
 
   return (
     <div className="border-t pt-6">
-      <h3 className="text-lg font-semibold text-slate-700 mb-4">
-        Forms & Links
-      </h3>
+      <h3 className="text-lg font-semibold text-slate-700 mb-4">Forms & Links</h3>
 
-      <p className="text-sm text-slate-600 mb-4">
-        Create links to important forms and resources that will appear on your
-        public website.
-      </p>
+      <p className="text-sm text-slate-600 mb-4">Create links to important forms and resources that will appear on your public website.</p>
 
       {/* Form to Create a New Link or Edit Existing */}
       <div className="mb-6 p-4 border rounded-lg bg-slate-50">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="font-semibold">
-            {editingLink ? "Edit Link" : "Add New Link"}
-          </h4>
+          <h4 className="font-semibold">{editingLink ? "Edit Link" : "Add New Link"}</h4>
           {editingLink && (
-            <button
-              onClick={handleCancelEdit}
-              className="text-sm text-slate-600 hover:text-slate-800"
-            >
+            <button onClick={handleCancelEdit} className="text-sm text-slate-600 hover:text-slate-800">
               Cancel
             </button>
           )}
@@ -158,12 +141,7 @@ export function LinksManager() {
       {/* List of Existing Links with Drag-and-Drop */}
       <div>
         <h4 className="font-semibold mb-3 text-slate-700">
-          Existing Links{" "}
-          {links.length > 1 && (
-            <span className="text-sm font-normal text-slate-500">
-              (Drag to reorder)
-            </span>
-          )}
+          Existing Links {links.length > 1 && <span className="text-sm font-normal text-slate-500">(Drag to reorder)</span>}
         </h4>
         <DraggableLinks
           links={links}
