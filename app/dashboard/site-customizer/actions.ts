@@ -7,8 +7,11 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 
 const OrgSettingsSchema = z.object({
-  id: z.string().uuid(),
+  // This is the ID of the organization being updated.
+  organizationId: z.string().uuid(),
   name: z.string().min(3, "Organization name must be at least 3 characters."),
+  // Add the new slogan field, allowing it to be optional
+  slogan: z.string().max(100, "Slogan must be 100 characters or less.").optional(),
   logo_url: z.string().url("Invalid logo URL.").nullable().or(z.literal("")),
   primary_color: z
     .string()
@@ -74,33 +77,21 @@ export async function updateOrganizationSettings(
   formData: FormData
 ) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    });
-
-    // Get and validate the organization ID
-    const organizationId = await getUserOrganizationId();
+    const authenticatedOrgId = await getUserOrganizationId();
 
     const rawData = {
-      id: formData.get("id"),
+      organizationId: formData.get("organizationId"),
       name: formData.get("name"),
+      slogan: formData.get("slogan"),
       logo_url: formData.get("logo_url") || null,
       primary_color: formData.get("primary_color"),
       secondary_color: formData.get("secondary_color"),
       subdomain: formData.get("subdomain"),
     };
 
-    console.log("Raw form data:", rawData);
-
     const validation = OrgSettingsSchema.safeParse(rawData);
 
     if (!validation.success) {
-      console.error("Validation errors:", validation.error.flatten());
       return {
         success: false,
         message: "Invalid data provided.",
@@ -108,58 +99,38 @@ export async function updateOrganizationSettings(
       };
     }
 
-    const { id, subdomain, logo_url, ...updateData } = validation.data;
-
-    // Ensure the user can only update their own organization
-    if (id !== organizationId) {
+    // **THE FIX**: Ensure the ID from the form matches the authenticated user's org ID
+    if (validation.data.organizationId !== authenticatedOrgId) {
       return {
         success: false,
-        message: "You can only update your own organization.",
+        message: "Authorization Error: You can only update your own organization.",
       };
     }
 
-    // Clean up logo_url - convert empty string to null
-    const cleanedUpdateData = {
-      ...updateData,
-      logo_url: logo_url === "" ? null : logo_url,
-    };
+    const { organizationId, subdomain, ...updateData } = validation.data;
 
-    console.log("Updating organization with data:", cleanedUpdateData);
+    const cookieStore = await cookies();
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      cookies: { get: (name: string) => cookieStore.get(name)?.value },
+    });
 
-    const { error } = await supabase.from("organizations").update(cleanedUpdateData).eq("id", id);
+    const { error } = await supabase.from("organizations").update(updateData).eq("id", organizationId);
 
     if (error) {
-      console.error("Database update error:", error);
       throw error;
     }
 
-    console.log("Organization updated successfully");
-
-    // Revalidate the public-facing site to show changes immediately
     if (subdomain) {
-      console.log(`Revalidating paths for subdomain: ${subdomain}`);
-      revalidatePath(`/sites/${subdomain}`);
-      revalidatePath(`/sites/${subdomain}/`);
-      // Also revalidate the forms and links page which uses organization data
-      revalidatePath(`/sites/${subdomain}/forms-and-links`);
+      revalidatePath(`/sites/${subdomain}`, "layout");
     }
-
-    // Revalidate the dashboard page
     revalidatePath(`/dashboard/site-customizer`);
-    revalidatePath(`/dashboard`);
 
     return {
       success: true,
-      message: "Settings updated successfully! Changes are now live on your website.",
+      message: "Settings updated successfully!",
     };
   } catch (error: unknown) {
-    console.error("updateOrganizationSettings error:", error);
-
-    let errorMessage = "An unknown error occurred.";
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
     return {
       success: false,
       message: `Error: ${errorMessage}`,

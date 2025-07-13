@@ -286,9 +286,11 @@ export type Database = {
           owner_id: string | null;
           primary_color: string | null;
           secondary_color: string | null;
+          slogan: string | null;
           sport: string | null;
           subdomain: string | null;
           subscription_plan: string | null;
+          theme: string | null;
           trial_ends_at: string | null;
         };
         Insert: {
@@ -302,9 +304,11 @@ export type Database = {
           owner_id?: string | null;
           primary_color?: string | null;
           secondary_color?: string | null;
+          slogan?: string | null;
           sport?: string | null;
           subdomain?: string | null;
           subscription_plan?: string | null;
+          theme?: string | null;
           trial_ends_at?: string | null;
         };
         Update: {
@@ -318,9 +322,11 @@ export type Database = {
           owner_id?: string | null;
           primary_color?: string | null;
           secondary_color?: string | null;
+          slogan?: string | null;
           sport?: string | null;
           subdomain?: string | null;
           subscription_plan?: string | null;
+          theme?: string | null;
           trial_ends_at?: string | null;
         };
         Relationships: [];
