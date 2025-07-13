@@ -1,10 +1,16 @@
-// middleware.ts
+// middleware.ts - with enhanced debugging
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
+  });
+
+  console.log("🔍 MIDDLEWARE START", {
+    url: request.url,
+    hostname: request.headers.get("host"),
+    pathname: request.nextUrl.pathname,
   });
 
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
@@ -50,6 +56,7 @@ export async function middleware(request: NextRequest) {
     url.pathname.startsWith("/static") ||
     url.pathname.includes(".") // Skip files with extensions
   ) {
+    console.log("⏭️ Skipping middleware for static/API path");
     return response;
   }
 
@@ -60,7 +67,7 @@ export async function middleware(request: NextRequest) {
     (isLocal && (hostname === "localhost" || hostname.includes("localhost")));
 
   if (isRootDomain) {
-    console.log("📍 Root domain detected");
+    console.log("📍 Root domain detected - routing to marketing");
 
     // Auth routes, dashboard, and onboarding should stay at root level
     if (
@@ -101,16 +108,20 @@ export async function middleware(request: NextRequest) {
 
   // Skip if subdomain is empty or www
   if (!subdomain || subdomain === "www" || subdomain === hostname) {
-    console.log("❌ Invalid subdomain, redirecting to main site");
+    console.log("❌ Invalid subdomain, redirecting to main site", { subdomain, hostname });
     const redirectUrl = new URL("/", `https://${rootDomain}`);
     return NextResponse.redirect(redirectUrl);
   }
 
   console.log("🏢 Organization subdomain detected:", subdomain);
 
-  // Verify subdomain exists in database
+  // Verify subdomain exists in database with enhanced logging
   try {
-    const { data: org } = await supabase.from("organizations").select("id, subdomain").eq("subdomain", subdomain).single();
+    console.log("🔍 Checking database for subdomain:", subdomain);
+
+    const { data: org, error } = await supabase.from("organizations").select("id, subdomain, name").eq("subdomain", subdomain).single();
+
+    console.log("📊 Database query result:", { org, error });
 
     if (!org) {
       console.log("❌ Organization not found for subdomain:", subdomain);
@@ -119,7 +130,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    console.log("✅ Valid organization found:", org.id);
+    console.log("✅ Valid organization found:", org);
   } catch (error) {
     console.error("🚨 Database error checking subdomain:", error);
     // On error, redirect to main site

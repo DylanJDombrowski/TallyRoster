@@ -1,4 +1,4 @@
-// app/dashboard/players/components/player-form.tsx
+// app/dashboard/players/components/player-form.tsx - FIXED VERSION
 "use client";
 
 import { useToast } from "@/app/components/toast-provider";
@@ -14,9 +14,10 @@ interface PlayerFormProps {
   playerToEdit?: Player | null;
   onSaveSuccess: (savedPlayer: Player, isNew: boolean) => void;
   onCancelEdit: () => void;
+  organizationId: string; // THIS IS THE FIX - require organization ID as prop
 }
 
-export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }: PlayerFormProps) {
+export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit, organizationId }: PlayerFormProps) {
   const supabase = createClient();
   const { showToast } = useToast();
 
@@ -83,10 +84,8 @@ export function PlayerForm({ teams, playerToEdit, onSaveSuccess, onCancelEdit }:
       let savedPlayer: Player | null = null;
       const isNew = !data.id;
 
-      // TODO: Replace this with the actual organization_id from context, session, or props
-      const organization_id = ""; // <-- Set this to the correct value
-
-      const payload = { ...data, organization_id };
+      // FIXED: Use the organization_id passed as prop
+      const payload = { ...data, organization_id: organizationId };
       delete (payload as Partial<PlayerFormData>).id;
 
       if (isNew) {
