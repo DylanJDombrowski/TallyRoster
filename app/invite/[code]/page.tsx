@@ -170,7 +170,7 @@ export default function InvitePage({ params }: InvitePageProps) {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">You&apos;ve been invited!</h1>
-          <p className="text-slate-600">Join {invitation.organizations.name} on Sideline</p>
+          <p className="text-slate-600">Join {invitation.organizations.name} on TallyRoster</p>
         </div>
 
         <div className="bg-slate-50 rounded-lg p-4 mb-6">

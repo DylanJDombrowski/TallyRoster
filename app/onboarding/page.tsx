@@ -152,7 +152,7 @@ export default function OnboardingPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome to Sideline!</h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome to TallyRoster!</h1>
             <p className="text-slate-600">Let&apos;s get you set up with your team</p>
           </div>
 
@@ -170,7 +170,7 @@ export default function OnboardingPage() {
               className="w-full p-4 border-2 border-green-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-colors text-left"
             >
               <div className="font-semibold text-slate-900">Join an Existing Organization</div>
-              <div className="text-sm text-slate-600">Connect with a team that&apos;s already using Sideline</div>
+              <div className="text-sm text-slate-600">Connect with a team that&apos;s already using TallyRoster</div>
             </button>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function OnboardingPage() {
               ← Back to options
             </button>
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Create Your Organization</h2>
-            <p className="text-slate-600">Set up your team or league on Sideline</p>
+            <p className="text-slate-600">Set up your team or league on TallyRoster</p>
           </div>
 
           <form

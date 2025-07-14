@@ -27,15 +27,9 @@ export function MarketingHeader() {
       <div className="container mx-auto py-6 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Image
-              src="/sideline-logo.png" // Your Sideline logo
-              alt="Sideline Logo"
-              width={40}
-              height={40}
-              className="mr-3"
-            />
+            <Image src="/TallyRoster.png" alt="TallyRoster Logo" width={40} height={40} className="mr-3" />
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Sideline</h1>
+              <h1 className="text-2xl font-bold text-slate-900">TallyRoster</h1>
               <p className="text-sm text-slate-600">Your Team, Your Site</p>
             </div>
           </div>
