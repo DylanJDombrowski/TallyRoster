@@ -105,6 +105,7 @@ export default async function SiteLayout({ children, params }: { children: React
             secondaryColor={secondaryColor}
             primaryFgColor="#ffffff"
             organizationName={organization.name}
+            theme={theme}
           />
           <ThemeListener />
           <div className="flex flex-col min-h-screen">
