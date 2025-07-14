@@ -1,4 +1,4 @@
-// middleware.ts - Enhanced with cache tags
+// middleware.ts - Enhanced with custom domain support
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -28,8 +28,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // Define your root domain
-  const isLocal = hostname.includes("localhost") || hostname.includes("127.0.0.1");
-  const rootDomain = isLocal ? (hostname.includes("3000") ? "localhost:3000" : "localhost") : "tallyroster.com";
+  const isLocal =
+    hostname.includes("localhost") || hostname.includes("127.0.0.1");
+  const rootDomain = isLocal
+    ? hostname.includes("3000")
+      ? "localhost:3000"
+      : "localhost"
+    : "tallyroster.com";
 
   console.log("🌐 Middleware Debug:", {
     hostname,
@@ -39,25 +44,29 @@ export async function middleware(request: NextRequest) {
   });
 
   // Initialize Supabase client
-  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: {
-      get: (name) => request.cookies.get(name)?.value,
-      set: (name, value, options) => {
-        request.cookies.set({ name, value, ...options });
-        response = NextResponse.next({
-          request: { headers: request.headers },
-        });
-        response.cookies.set({ name, value, ...options });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => request.cookies.get(name)?.value,
+        set: (name, value, options) => {
+          request.cookies.set({ name, value, ...options });
+          response = NextResponse.next({
+            request: { headers: request.headers },
+          });
+          response.cookies.set({ name, value, ...options });
+        },
+        remove: (name, options) => {
+          request.cookies.set({ name, value: "", ...options });
+          response = NextResponse.next({
+            request: { headers: request.headers },
+          });
+          response.cookies.set({ name, value: "", ...options });
+        },
       },
-      remove: (name, options) => {
-        request.cookies.set({ name, value: "", ...options });
-        response = NextResponse.next({
-          request: { headers: request.headers },
-        });
-        response.cookies.set({ name, value: "", ...options });
-      },
-    },
-  });
+    }
+  );
 
   await supabase.auth.getUser();
 
@@ -94,7 +103,58 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Extract subdomain for organization sites
+  // Check if this is a custom domain (not a tallyroster.com subdomain)
+  const isTallyRosterDomain = hostname.includes("tallyroster.com");
+
+  if (!isTallyRosterDomain && !isLocal) {
+    console.log("🌐 Custom domain detected:", hostname);
+
+    // Look up custom domain in database
+    try {
+      const { data: org, error } = await supabase
+        .from("organizations")
+        .select("id, subdomain, name, domain_verified")
+        .eq("custom_domain", hostname)
+        .single();
+
+      if (error || !org) {
+        console.log("❌ Custom domain not found or not verified:", hostname);
+        // Redirect to main site if custom domain not found
+        const redirectUrl = new URL("/", `https://${rootDomain}`);
+        return NextResponse.redirect(redirectUrl);
+      }
+
+      if (!org.domain_verified) {
+        console.log("⚠️ Custom domain not verified:", hostname);
+        // Could show a "domain verification pending" page
+        const redirectUrl = new URL("/", `https://${rootDomain}`);
+        return NextResponse.redirect(redirectUrl);
+      }
+
+      console.log("✅ Valid custom domain found:", org);
+
+      // Rewrite to the organization's subdomain route
+      const newUrl = url.clone();
+      newUrl.pathname = `/sites/${org.subdomain}${url.pathname}`;
+      console.log(
+        "🔄 Rewriting custom domain to organization site:",
+        newUrl.pathname
+      );
+
+      const rewriteResponse = NextResponse.rewrite(newUrl);
+      rewriteResponse.headers.set(
+        "x-cache-tags",
+        `org-${org.id},subdomain-${org.subdomain},custom-domain-${hostname}`
+      );
+      return rewriteResponse;
+    } catch (error) {
+      console.error("🚨 Database error checking custom domain:", error);
+      const redirectUrl = new URL("/", `https://${rootDomain}`);
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  // Handle TallyRoster subdomains (existing logic)
   let subdomain = hostname.replace(`.${rootDomain}`, "");
 
   // Remove www prefix if present
@@ -109,7 +169,10 @@ export async function middleware(request: NextRequest) {
 
   // Skip if subdomain is empty or www
   if (!subdomain || subdomain === "www" || subdomain === hostname) {
-    console.log("❌ Invalid subdomain, redirecting to main site", { subdomain, hostname });
+    console.log("❌ Invalid subdomain, redirecting to main site", {
+      subdomain,
+      hostname,
+    });
     const redirectUrl = new URL("/", `https://${rootDomain}`);
     return NextResponse.redirect(redirectUrl);
   }
@@ -120,7 +183,11 @@ export async function middleware(request: NextRequest) {
   try {
     console.log("🔍 Checking database for subdomain:", subdomain);
 
-    const { data: org, error } = await supabase.from("organizations").select("id, subdomain, name").eq("subdomain", subdomain).single();
+    const { data: org, error } = await supabase
+      .from("organizations")
+      .select("id, subdomain, name")
+      .eq("subdomain", subdomain)
+      .single();
 
     console.log("📊 Database query result:", { org, error });
 
@@ -140,7 +207,10 @@ export async function middleware(request: NextRequest) {
 
     // Add cache tags for better invalidation
     const rewriteResponse = NextResponse.rewrite(newUrl);
-    rewriteResponse.headers.set("x-cache-tags", `org-${org.id},subdomain-${subdomain}`);
+    rewriteResponse.headers.set(
+      "x-cache-tags",
+      `org-${org.id},subdomain-${subdomain}`
+    );
 
     return rewriteResponse;
   } catch (error) {
