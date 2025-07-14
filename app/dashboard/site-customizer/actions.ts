@@ -35,47 +35,25 @@ const OrganizationLinkSchema = z.object({
 async function getUserOrganizationId() {
   const cookieStore = await cookies();
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
-      },
-    },
+    cookies: { get: (name: string) => cookieStore.get(name)?.value },
   });
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
+  if (!user) throw new Error("User not authenticated");
 
   const { data: orgRole, error } = await supabase
     .from("user_organization_roles")
     .select("organization_id, role")
     .eq("user_id", user.id)
     .single();
-
-  if (error || !orgRole) {
-    throw new Error("Could not find user's organization");
-  }
-
-  // Only admins can update organization settings
-  if (orgRole.role !== "admin") {
-    throw new Error("Only administrators can update organization settings");
-  }
+  if (error || !orgRole) throw new Error("Could not find user's organization");
+  if (orgRole.role !== "admin") throw new Error("Only administrators can update organization settings");
 
   return orgRole.organization_id;
 }
 
-export async function updateOrganizationSettings(
-  prevState: {
-    success: boolean;
-    message: string;
-    errors?: Record<string, string[]> | undefined;
-  },
-  formData: FormData
-) {
+export async function updateOrganizationSettings(prevState: unknown, formData: FormData) {
   try {
     const authenticatedOrgId = await getUserOrganizationId();
 
@@ -83,58 +61,54 @@ export async function updateOrganizationSettings(
       organizationId: formData.get("organizationId"),
       name: formData.get("name"),
       slogan: formData.get("slogan"),
-      logo_url: formData.get("logo_url") || null,
+      logo_url: formData.get("logo_url"),
       primary_color: formData.get("primary_color"),
       secondary_color: formData.get("secondary_color"),
+      theme: formData.get("theme"),
       subdomain: formData.get("subdomain"),
     };
 
     const validation = OrgSettingsSchema.safeParse(rawData);
 
     if (!validation.success) {
-      return {
-        success: false,
-        message: "Invalid data provided.",
-        errors: validation.error.flatten().fieldErrors,
-      };
+      console.error("Validation errors:", validation.error.flatten());
+      return { success: false, message: "Invalid data provided.", errors: validation.error.flatten().fieldErrors };
     }
 
-    // **THE FIX**: Ensure the ID from the form matches the authenticated user's org ID
     if (validation.data.organizationId !== authenticatedOrgId) {
-      return {
-        success: false,
-        message: "Authorization Error: You can only update your own organization.",
-      };
+      return { success: false, message: "Authorization Error: You can only update your own organization." };
     }
 
     const { organizationId, subdomain, ...updateData } = validation.data;
+
+    // Clean up logo_url - convert empty string to null
+    const cleanedUpdateData = {
+      ...updateData,
+      logo_url: updateData.logo_url === "" ? null : updateData.logo_url,
+    };
 
     const cookieStore = await cookies();
     const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       cookies: { get: (name: string) => cookieStore.get(name)?.value },
     });
 
-    const { error } = await supabase.from("organizations").update(updateData).eq("id", organizationId);
+    const { error } = await supabase.from("organizations").update(cleanedUpdateData).eq("id", organizationId);
 
     if (error) {
       throw error;
     }
 
+    // Revalidate all necessary paths
     if (subdomain) {
       revalidatePath(`/sites/${subdomain}`, "layout");
+      revalidatePath(`/sites/${subdomain}`, "page");
     }
     revalidatePath(`/dashboard/site-customizer`);
 
-    return {
-      success: true,
-      message: "Settings updated successfully!",
-    };
+    return { success: true, message: "Settings updated successfully!" };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-    return {
-      success: false,
-      message: `Error: ${errorMessage}`,
-    };
+    return { success: false, message: `Error: ${errorMessage}` };
   }
 }
 
