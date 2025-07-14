@@ -7,11 +7,9 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 
 const OrgSettingsSchema = z.object({
-  // This is the ID of the organization being updated.
   organizationId: z.string().uuid(),
   name: z.string().min(3, "Organization name must be at least 3 characters."),
-  // Add the new slogan field, allowing it to be optional
-  slogan: z.string().max(100, "Slogan must be 100 characters or less.").optional(),
+  slogan: z.string().max(100, "Slogan must be 100 characters or less.").optional().nullable(),
   logo_url: z.string().url("Invalid logo URL.").nullable().or(z.literal("")),
   primary_color: z
     .string()
@@ -21,9 +19,10 @@ const OrgSettingsSchema = z.object({
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Secondary color must be a valid hex color.")
     .default("#BD1515"),
+  // FIXED: Added the 'theme' field to the validation schema.
+  theme: z.enum(["light", "dark"]).default("light"),
   subdomain: z.string().nullable(),
 });
-
 const OrganizationLinkSchema = z.object({
   id: z.string().uuid().optional(),
   title: z.string().min(1, "Title is required.").max(100, "Title must be 100 characters or less."),
@@ -81,7 +80,6 @@ export async function updateOrganizationSettings(prevState: unknown, formData: F
 
     const { organizationId, subdomain, ...updateData } = validation.data;
 
-    // Clean up logo_url - convert empty string to null
     const cleanedUpdateData = {
       ...updateData,
       logo_url: updateData.logo_url === "" ? null : updateData.logo_url,
@@ -98,10 +96,10 @@ export async function updateOrganizationSettings(prevState: unknown, formData: F
       throw error;
     }
 
-    // Revalidate all necessary paths
     if (subdomain) {
+      console.log(`Revalidating layout for /sites/${subdomain}`);
+      // This revalidates the layout, which is what fetches the organization data (including the theme).
       revalidatePath(`/sites/${subdomain}`, "layout");
-      revalidatePath(`/sites/${subdomain}`, "page");
     }
     revalidatePath(`/dashboard/site-customizer`);
 
