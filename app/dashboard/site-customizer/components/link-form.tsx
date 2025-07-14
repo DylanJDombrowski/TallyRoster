@@ -1,9 +1,9 @@
 // app/dashboard/site-customizer/components/link-form.tsx
 "use client";
 
+import { useToast } from "@/app/components/toast-provider";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { useToast } from "@/app/components/toast-provider";
 import { createOrganizationLink, updateOrganizationLink } from "../actions";
 
 const initialState = {
@@ -23,15 +23,9 @@ interface LinkFormProps {
   };
 }
 
-export function LinkForm({
-  onSuccess,
-  buttonText,
-  initialData,
-}: LinkFormProps) {
+export function LinkForm({ onSuccess, buttonText, initialData }: LinkFormProps) {
   // Choose the action based on whether we're editing or creating
-  const action = initialData?.id
-    ? updateOrganizationLink
-    : createOrganizationLink;
+  const action = initialData?.id ? updateOrganizationLink : createOrganizationLink;
   const [state, formAction] = useActionState(action, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const { showToast } = useToast();
@@ -85,15 +79,10 @@ export function LinkForm({
   return (
     <form ref={formRef} action={formAction} className="space-y-4">
       {/* Hidden field for edit mode */}
-      {initialData?.id && (
-        <input type="hidden" name="id" value={initialData.id} />
-      )}
+      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
 
       <div>
-        <label
-          htmlFor="title"
-          className="block text-sm font-medium text-slate-700 mb-1"
-        >
+        <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">
           Title
         </label>
         <input
@@ -104,16 +93,11 @@ export function LinkForm({
           className="w-full p-2 border border-slate-300 rounded-md shadow-sm text-slate-900 focus:ring-blue-500 focus:border-blue-500"
           placeholder="e.g., Registration Form, Tryout Information"
         />
-        {state.errors?.title && (
-          <p className="text-red-500 text-sm mt-1">{state.errors.title[0]}</p>
-        )}
+        {state.errors?.title && <p className="text-red-500 text-sm mt-1">{state.errors.title[0]}</p>}
       </div>
 
       <div>
-        <label
-          htmlFor="url"
-          className="block text-sm font-medium text-slate-700 mb-1"
-        >
+        <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">
           URL
         </label>
         <input
@@ -124,31 +108,18 @@ export function LinkForm({
           defaultValue={initialData?.url}
           onChange={handleUrlChange}
           className={`w-full p-2 border rounded-md shadow-sm text-slate-900 focus:ring-blue-500 focus:border-blue-500 ${
-            urlValidation?.isValid === false
-              ? "border-red-300"
-              : "border-slate-300"
+            urlValidation?.isValid === false ? "border-red-300" : "border-slate-300"
           }`}
           placeholder="https://example.com/form"
         />
         {urlValidation && (
-          <p
-            className={`text-sm mt-1 ${
-              urlValidation.isValid ? "text-green-600" : "text-red-500"
-            }`}
-          >
-            {urlValidation.message}
-          </p>
+          <p className={`text-sm mt-1 ${urlValidation.isValid ? "text-green-600" : "text-red-500"}`}>{urlValidation.message}</p>
         )}
-        {state.errors?.url && (
-          <p className="text-red-500 text-sm mt-1">{state.errors.url[0]}</p>
-        )}
+        {state.errors?.url && <p className="text-red-500 text-sm mt-1">{state.errors.url[0]}</p>}
       </div>
 
       <div>
-        <label
-          htmlFor="description"
-          className="block text-sm font-medium text-slate-700 mb-1"
-        >
+        <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-1">
           Description (Optional)
         </label>
         <textarea
@@ -159,28 +130,15 @@ export function LinkForm({
           className="w-full p-2 border border-slate-300 rounded-md shadow-sm text-slate-900 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Brief description of this link (e.g., 'Complete this form to register for the upcoming season')"
         />
-        {state.errors?.description && (
-          <p className="text-red-500 text-sm mt-1">
-            {state.errors.description[0]}
-          </p>
-        )}
+        {state.errors?.description && <p className="text-red-500 text-sm mt-1">{state.errors.description[0]}</p>}
       </div>
 
-      <SubmitButton
-        text={buttonText}
-        disabled={urlValidation?.isValid === false}
-      />
+      <SubmitButton text={buttonText} disabled={urlValidation?.isValid === false} />
     </form>
   );
 }
 
-function SubmitButton({
-  text,
-  disabled,
-}: {
-  text: string;
-  disabled?: boolean;
-}) {
+function SubmitButton({ text, disabled }: { text: string; disabled?: boolean }) {
   const { pending } = useFormStatus();
   return (
     <button
