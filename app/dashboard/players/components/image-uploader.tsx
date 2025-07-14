@@ -54,7 +54,16 @@ export function ImageUploader({
 
     try {
       // Check environment variables
+      console.log("🔍 Checking env vars:", {
+        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+        apiKey: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY ? "✅ Present" : "❌ Missing",
+      });
+
       if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || !process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY) {
+        console.error("❌ Missing env vars:", {
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+          NEXT_PUBLIC_CLOUDINARY_API_KEY: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY ? "present" : "missing",
+        });
         throw new Error("Cloudinary configuration missing");
       }
 
