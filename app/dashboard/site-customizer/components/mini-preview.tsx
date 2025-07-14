@@ -81,7 +81,7 @@ export function MiniPreview({ name, slogan, logoUrl, primaryColor, secondaryColo
         <div className="pt-4 border-t">
           <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-slate-600"}`}>Your live website:</p>
           <a
-            href={`/sites/${organization.subdomain}`} // Use a relative path for local preview
+            href={`{organization.subdomain}.tallyroster.com`} // Use a relative path for local preview
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-500 hover:underline font-medium text-sm"

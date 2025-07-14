@@ -1,4 +1,4 @@
-// app/sites/[subdomain]/layout.tsx
+// app/sites/[subdomain]/layout.tsx - FIXED VERSION
 import Navigation from "@/app/components/Navigation";
 import { ThemeStyle } from "@/app/components/theme-style";
 import { ThemeListener } from "@/app/components/ThemeListener";
@@ -22,13 +22,27 @@ async function getOrganizationData(subdomain: string) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // Fetch all necessary fields from the organization
-  const { data: organization, error } = await supabase.from("organizations").select("*").eq("subdomain", subdomain).single();
+  console.log(`🎨 Loading theme data for subdomain: ${subdomain}`);
+
+  // Fetch ALL organization fields including theme data
+  const { data: organization, error } = await supabase
+    .from("organizations")
+    .select("*") // This ensures we get ALL fields including theme, slogan, etc.
+    .eq("subdomain", subdomain)
+    .single();
 
   if (error || !organization) {
-    console.error(`Error or no organization for subdomain ${subdomain}:`, error);
+    console.error(`❌ Error loading organization for subdomain ${subdomain}:`, error);
     return { organization: null, teams: [] };
   }
+
+  console.log(`✅ Loaded organization theme data:`, {
+    name: organization.name,
+    theme: organization.theme,
+    primaryColor: organization.primary_color,
+    secondaryColor: organization.secondary_color,
+    slogan: organization.slogan,
+  });
 
   const { data: teams, error: teamsError } = await supabase
     .from("teams")
@@ -69,21 +83,33 @@ export default async function SiteLayout({ children, params }: { children: React
     { href: "/forms-and-links", label: "Forms & Resources" },
   ];
 
+  // Ensure we have fallback values for theme properties
+  const primaryColor = organization.primary_color || "#161659";
+  const secondaryColor = organization.secondary_color || "#BD1515";
+  const theme = organization.theme || "light";
+  const slogan = organization.slogan || "Excellence in Sports";
+
+  console.log(`🎨 Applying theme to ${subdomain}:`, {
+    primaryColor,
+    secondaryColor,
+    theme,
+    slogan,
+  });
+
   return (
-    // UPDATED: Apply dark class to the html element based on theme
-    <html lang="en" className={organization.theme === "dark" ? "dark" : ""}>
+    <html lang="en" className={theme === "dark" ? "dark" : ""}>
       <body className="bg-white dark:bg-gray-900 transition-colors duration-300">
         <OrganizationProvider organization={organization}>
           <ThemeStyle
-            primaryColor={organization.primary_color || "#161659"}
-            secondaryColor={organization.secondary_color || "#BD1515"}
-            primaryFgColor={"#ffffff"}
+            primaryColor={primaryColor}
+            secondaryColor={secondaryColor}
+            primaryFgColor="#ffffff"
             organizationName={organization.name}
           />
           <ThemeListener />
           <div className="flex flex-col min-h-screen">
             <header className="font-oswald bg-white dark:bg-gray-800 shadow-sm">
-              <div className="py-1 px-4 text-white text-center" style={{ backgroundColor: "var(--color-secondary)" }}>
+              <div className="py-1 px-4 text-white text-center" style={{ backgroundColor: secondaryColor }}>
                 <div className="text-sm">Welcome to {organization.name}</div>
               </div>
               <div className="container mx-auto py-4 px-4">
@@ -102,7 +128,7 @@ export default async function SiteLayout({ children, params }: { children: React
                   ) : (
                     <div
                       className="h-16 md:h-24 w-16 md:w-24 mr-4 rounded-full flex items-center justify-center text-white font-bold text-xl"
-                      style={{ backgroundColor: "var(--color-primary)" }}
+                      style={{ backgroundColor: primaryColor }}
                     >
                       {organization.name?.charAt(0) || "O"}
                     </div>
@@ -110,13 +136,12 @@ export default async function SiteLayout({ children, params }: { children: React
                   <div className="text-center md:text-left">
                     <h1
                       className="text-2xl md:text-5xl uppercase font-medium text-gray-800 dark:text-gray-100"
-                      style={{ color: "var(--color-primary)" }}
+                      style={{ color: primaryColor }}
                     >
                       {organization.name}
                     </h1>
-                    {/* UPDATED: Display the slogan from the database */}
-                    <p className="text-sm md:text-2xl uppercase hidden md:block" style={{ color: "var(--color-secondary)" }}>
-                      {organization.slogan || "Excellence in Sports"}
+                    <p className="text-sm md:text-2xl uppercase hidden md:block" style={{ color: secondaryColor }}>
+                      {slogan}
                     </p>
                   </div>
                 </div>
@@ -126,11 +151,11 @@ export default async function SiteLayout({ children, params }: { children: React
             <Navigation teams={teams} navLinks={navLinks} />
             <main className="flex-grow">{children}</main>
 
-            <footer className="font-oswald text-white py-10 px-5" style={{ backgroundColor: "var(--color-secondary)" }}>
+            <footer className="font-oswald text-white py-10 px-5" style={{ backgroundColor: secondaryColor }}>
               <div className="max-w-screen-xl mx-auto text-center">
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold mb-2">{organization.name}</h2>
-                  <p className="opacity-90">{organization.slogan || "Excellence in Sports"}</p>
+                  <p className="opacity-90">{slogan}</p>
                 </div>
                 <div className="border-t border-white/20 pt-6">
                   <p className="text-sm">

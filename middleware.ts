@@ -1,4 +1,4 @@
-// middleware.ts - Complete TallyRoster Migration
+// middleware.ts - Enhanced with cache tags
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Define your root domain - UPDATED FOR TALLYROSTER
+  // Define your root domain
   const isLocal = hostname.includes("localhost") || hostname.includes("127.0.0.1");
   const rootDomain = isLocal ? (hostname.includes("3000") ? "localhost:3000" : "localhost") : "tallyroster.com";
 
@@ -132,19 +132,23 @@ export async function middleware(request: NextRequest) {
     }
 
     console.log("✅ Valid organization found:", org);
+
+    // Rewrite to organization site with cache tags
+    const newUrl = url.clone();
+    newUrl.pathname = `/sites/${subdomain}${url.pathname}`;
+    console.log("🔄 Rewriting to organization site:", newUrl.pathname);
+
+    // Add cache tags for better invalidation
+    const rewriteResponse = NextResponse.rewrite(newUrl);
+    rewriteResponse.headers.set("x-cache-tags", `org-${org.id},subdomain-${subdomain}`);
+
+    return rewriteResponse;
   } catch (error) {
     console.error("🚨 Database error checking subdomain:", error);
     // On error, redirect to main site
     const redirectUrl = new URL("/", `https://${rootDomain}`);
     return NextResponse.redirect(redirectUrl);
   }
-
-  // Rewrite to organization site
-  const newUrl = url.clone();
-  newUrl.pathname = `/sites/${subdomain}${url.pathname}`;
-  console.log("🔄 Rewriting to organization site:", newUrl.pathname);
-
-  return NextResponse.rewrite(newUrl);
 }
 
 export const config = {
