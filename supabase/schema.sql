@@ -129,6 +129,117 @@ COMMENT ON TABLE "public"."coaches" IS 'Stores coach information for each team';
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."communication_deliveries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "communication_id" "uuid" NOT NULL,
+    "recipient_email" character varying(255) NOT NULL,
+    "recipient_name" character varying(255),
+    "recipient_type" character varying(50),
+    "delivery_channel" character varying(20) NOT NULL,
+    "status" character varying(50) DEFAULT 'pending'::character varying,
+    "sent_at" timestamp with time zone,
+    "delivered_at" timestamp with time zone,
+    "opened_at" timestamp with time zone,
+    "clicked_at" timestamp with time zone,
+    "error_message" "text",
+    "external_message_id" character varying(255),
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."communication_deliveries" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."communication_groups" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "name" character varying(255) NOT NULL,
+    "description" "text",
+    "auto_managed" boolean DEFAULT false,
+    "team_id" "uuid",
+    "created_by" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."communication_groups" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."communication_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "name" character varying(255) NOT NULL,
+    "subject_template" character varying(500),
+    "content_template" "text",
+    "template_type" character varying(50),
+    "created_by" "uuid" NOT NULL,
+    "is_system_template" boolean DEFAULT false,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."communication_templates" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."communications" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "sender_id" "uuid" NOT NULL,
+    "subject" character varying(500) NOT NULL,
+    "content" "text" NOT NULL,
+    "message_type" character varying(50) DEFAULT 'announcement'::character varying,
+    "priority" character varying(20) DEFAULT 'normal'::character varying,
+    "scheduled_send_at" timestamp with time zone,
+    "sent_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "send_email" boolean DEFAULT true,
+    "send_sms" boolean DEFAULT false,
+    "send_push" boolean DEFAULT false,
+    "target_all_org" boolean DEFAULT false,
+    "target_teams" "uuid"[],
+    "target_groups" "uuid"[],
+    "target_individuals" "uuid"[]
+);
+
+
+ALTER TABLE "public"."communications" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."games" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "team_id" "uuid",
+    "opponent" "text" NOT NULL,
+    "game_date" "date" NOT NULL,
+    "location" "text",
+    "home_score" integer DEFAULT 0,
+    "away_score" integer DEFAULT 0,
+    "inning" integer DEFAULT 1,
+    "status" "text" DEFAULT 'scheduled'::"text",
+    "is_home" boolean DEFAULT true,
+    "created_at" timestamp without time zone DEFAULT "now"(),
+    "organization_id" "uuid"
+);
+
+
+ALTER TABLE "public"."games" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."group_members" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "group_id" "uuid" NOT NULL,
+    "player_id" "uuid",
+    "email" character varying(255) NOT NULL,
+    "phone" character varying(20),
+    "member_type" character varying(50) NOT NULL,
+    "member_name" character varying(255),
+    "active" boolean DEFAULT true,
+    "added_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."group_members" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."organization_invitations" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
@@ -176,7 +287,15 @@ CREATE TABLE IF NOT EXISTS "public"."organizations" (
     "organization_type" "text",
     "sport" "text",
     "subscription_plan" "text" DEFAULT 'trial'::"text",
-    "trial_ends_at" timestamp without time zone
+    "trial_ends_at" timestamp without time zone,
+    "domain_added" boolean DEFAULT false,
+    "slogan" "text",
+    "theme" "text" DEFAULT 'light'::"text",
+    "domain_verification_token" character varying(255),
+    "domain_verified" boolean DEFAULT false,
+    "domain_verification_method" character varying(50),
+    "domain_ssl_status" character varying(50) DEFAULT 'pending'::character varying,
+    "domain_added_at" timestamp with time zone
 );
 
 
@@ -241,7 +360,12 @@ CREATE TABLE IF NOT EXISTS "public"."players" (
     "grad_year" integer,
     "gpa" numeric(3,2),
     "twitter_handle" "text",
-    "organization_id" "uuid" NOT NULL
+    "organization_id" "uuid" NOT NULL,
+    "parent_email" character varying(255),
+    "parent_phone" character varying(20),
+    "parent_name" character varying(255),
+    "player_email" character varying(255),
+    "emergency_contact_email" character varying(255)
 );
 
 
@@ -400,6 +524,36 @@ ALTER TABLE ONLY "public"."coaches"
 
 
 
+ALTER TABLE ONLY "public"."communication_deliveries"
+    ADD CONSTRAINT "communication_deliveries_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."communication_groups"
+    ADD CONSTRAINT "communication_groups_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."communication_templates"
+    ADD CONSTRAINT "communication_templates_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."communications"
+    ADD CONSTRAINT "communications_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."games"
+    ADD CONSTRAINT "games_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."group_members"
+    ADD CONSTRAINT "group_members_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."organization_invitations"
     ADD CONSTRAINT "organization_invitations_code_key" UNIQUE ("code");
 
@@ -494,6 +648,30 @@ CREATE INDEX "idx_coaches_team_id" ON "public"."coaches" USING "btree" ("team_id
 
 
 
+CREATE INDEX "idx_communications_org_sent" ON "public"."communications" USING "btree" ("organization_id", "sent_at" DESC);
+
+
+
+CREATE INDEX "idx_communications_scheduled" ON "public"."communications" USING "btree" ("scheduled_send_at") WHERE ("scheduled_send_at" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_deliveries_communication" ON "public"."communication_deliveries" USING "btree" ("communication_id");
+
+
+
+CREATE INDEX "idx_deliveries_status" ON "public"."communication_deliveries" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_group_members_group" ON "public"."group_members" USING "btree" ("group_id");
+
+
+
+CREATE INDEX "idx_group_members_player" ON "public"."group_members" USING "btree" ("player_id");
+
+
+
 CREATE INDEX "idx_organization_invitations_code" ON "public"."organization_invitations" USING "btree" ("code");
 
 
@@ -522,6 +700,10 @@ CREATE INDEX "idx_player_stats_player_id" ON "public"."player_stats" USING "btre
 
 
 
+CREATE INDEX "idx_players_organization_id" ON "public"."players" USING "btree" ("organization_id");
+
+
+
 CREATE INDEX "idx_players_status" ON "public"."players" USING "btree" ("status");
 
 
@@ -535,6 +717,10 @@ CREATE INDEX "idx_schedule_events_date" ON "public"."schedule_events" USING "btr
 
 
 CREATE INDEX "idx_schedule_events_team_id" ON "public"."schedule_events" USING "btree" ("team_id");
+
+
+
+CREATE INDEX "idx_user_organization_roles_user_org" ON "public"."user_organization_roles" USING "btree" ("user_id", "organization_id");
 
 
 
@@ -560,6 +746,66 @@ ALTER TABLE ONLY "public"."blog_posts"
 
 ALTER TABLE ONLY "public"."coaches"
     ADD CONSTRAINT "coaches_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."communication_deliveries"
+    ADD CONSTRAINT "communication_deliveries_communication_id_fkey" FOREIGN KEY ("communication_id") REFERENCES "public"."communications"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."communication_groups"
+    ADD CONSTRAINT "communication_groups_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."communication_groups"
+    ADD CONSTRAINT "communication_groups_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."communication_groups"
+    ADD CONSTRAINT "communication_groups_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id");
+
+
+
+ALTER TABLE ONLY "public"."communication_templates"
+    ADD CONSTRAINT "communication_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."communication_templates"
+    ADD CONSTRAINT "communication_templates_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."communications"
+    ADD CONSTRAINT "communications_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."communications"
+    ADD CONSTRAINT "communications_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."games"
+    ADD CONSTRAINT "games_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."games"
+    ADD CONSTRAINT "games_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."group_members"
+    ADD CONSTRAINT "group_members_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "public"."communication_groups"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."group_members"
+    ADD CONSTRAINT "group_members_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."players"("id") ON DELETE CASCADE;
 
 
 
@@ -663,31 +909,7 @@ CREATE POLICY "Allow admins full access to blog posts" ON "public"."blog_posts" 
 
 
 
-CREATE POLICY "Allow admins full access to coaches" ON "public"."coaches" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
-
-
-
 CREATE POLICY "Allow admins full access to partners" ON "public"."partners" USING (("public"."get_my_role"() = 'admin'::"text"));
-
-
-
-CREATE POLICY "Allow admins full access to player stats" ON "public"."player_stats" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
-
-
-
-CREATE POLICY "Allow admins full access to players" ON "public"."players" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
-
-
-
-CREATE POLICY "Allow admins full access to schedule" ON "public"."schedule_events" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
 
 
 
@@ -695,15 +917,23 @@ CREATE POLICY "Allow admins full access to static pages" ON "public"."static_pag
 
 
 
-CREATE POLICY "Allow admins full access to teams" ON "public"."teams" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "Allow admins to manage games in their org" ON "public"."games" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."organization_id" = "games"."organization_id") AND ("user_organization_roles"."role" = 'admin'::"text")))));
 
 
 
 CREATE POLICY "Allow admins to manage invitations for their org" ON "public"."organization_invitations" USING ((EXISTS ( SELECT 1
    FROM "public"."user_organization_roles"
   WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."organization_id" = "organization_invitations"."organization_id") AND ("user_organization_roles"."role" = 'admin'::"text")))));
+
+
+
+CREATE POLICY "Allow admins to update their organization" ON "public"."organizations" FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."organization_id" = "organizations"."id") AND ("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."organization_id" = "organizations"."id") AND ("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text")))));
 
 
 
@@ -723,42 +953,75 @@ CREATE POLICY "Allow authenticated users to view teams" ON "public"."teams" FOR 
 
 
 
-CREATE POLICY "Allow coaches to manage coaches on their team" ON "public"."coaches" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'coach'::"text") AND ("user_roles"."team_id" = "coaches"."team_id")))));
+CREATE POLICY "Allow org admins to manage all players in their org" ON "public"."players" USING (("organization_id" IN ( SELECT "user_organization_roles"."organization_id"
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text")))));
 
 
 
-CREATE POLICY "Allow coaches to manage players on their team" ON "public"."players" USING (((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'coach'::"text") AND ("user_roles"."team_id" = "players"."team_id")))) AND ("status" = 'active'::"text"))) WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'coach'::"text") AND ("user_roles"."team_id" = "players"."team_id")))));
+CREATE POLICY "Allow org admins to manage coaches in their org" ON "public"."coaches" USING (("team_id" IN ( SELECT "t"."id"
+   FROM ("public"."teams" "t"
+     JOIN "public"."user_organization_roles" "uor" ON (("t"."organization_id" = "uor"."organization_id")))
+  WHERE (("uor"."user_id" = "auth"."uid"()) AND ("uor"."role" = 'admin'::"text")))));
 
 
 
-CREATE POLICY "Allow coaches to manage schedule for their team" ON "public"."schedule_events" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'coach'::"text") AND ("user_roles"."team_id" = "schedule_events"."team_id")))));
+CREATE POLICY "Allow org admins to manage player stats in their org" ON "public"."player_stats" USING (("player_id" IN ( SELECT "p"."id"
+   FROM ("public"."players" "p"
+     JOIN "public"."user_organization_roles" "uor" ON (("p"."organization_id" = "uor"."organization_id")))
+  WHERE (("uor"."user_id" = "auth"."uid"()) AND ("uor"."role" = 'admin'::"text")))));
 
 
 
-CREATE POLICY "Allow coaches to manage stats for their team players" ON "public"."player_stats" USING ((EXISTS ( SELECT 1
-   FROM ("public"."user_roles" "ur"
-     JOIN "public"."players" "p" ON (("p"."team_id" = "ur"."team_id")))
-  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = 'coach'::"text") AND ("p"."id" = "player_stats"."player_id")))));
+CREATE POLICY "Allow org admins to manage schedule in their org" ON "public"."schedule_events" USING (("team_id" IN ( SELECT "t"."id"
+   FROM ("public"."teams" "t"
+     JOIN "public"."user_organization_roles" "uor" ON (("t"."organization_id" = "uor"."organization_id")))
+  WHERE (("uor"."user_id" = "auth"."uid"()) AND ("uor"."role" = 'admin'::"text")))));
 
 
 
-CREATE POLICY "Allow coaches to view players on their team" ON "public"."players" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'coach'::"text") AND ("user_roles"."team_id" = "players"."team_id")))) AND ("status" = 'active'::"text")));
+CREATE POLICY "Allow org admins to manage teams in their org" ON "public"."teams" USING (("organization_id" IN ( SELECT "user_organization_roles"."organization_id"
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text")))));
+
+
+
+CREATE POLICY "Allow org coaches to manage player stats in their org" ON "public"."player_stats" USING (("player_id" IN ( SELECT "p"."id"
+   FROM ("public"."players" "p"
+     JOIN "public"."user_organization_roles" "uor" ON (("p"."organization_id" = "uor"."organization_id")))
+  WHERE (("uor"."user_id" = "auth"."uid"()) AND ("uor"."role" = ANY (ARRAY['admin'::"text", 'coach'::"text"]))))));
+
+
+
+CREATE POLICY "Allow org coaches to manage players in their org" ON "public"."players" USING ((("organization_id" IN ( SELECT "user_organization_roles"."organization_id"
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = ANY (ARRAY['admin'::"text", 'coach'::"text"]))))) AND ("status" = 'active'::"text")));
+
+
+
+CREATE POLICY "Allow org coaches to manage schedule in their org" ON "public"."schedule_events" USING (("team_id" IN ( SELECT "t"."id"
+   FROM ("public"."teams" "t"
+     JOIN "public"."user_organization_roles" "uor" ON (("t"."organization_id" = "uor"."organization_id")))
+  WHERE (("uor"."user_id" = "auth"."uid"()) AND ("uor"."role" = ANY (ARRAY['admin'::"text", 'coach'::"text"]))))));
+
+
+
+CREATE POLICY "Allow org coaches to view coaches in their org" ON "public"."coaches" FOR SELECT USING (("team_id" IN ( SELECT "t"."id"
+   FROM ("public"."teams" "t"
+     JOIN "public"."user_organization_roles" "uor" ON (("t"."organization_id" = "uor"."organization_id")))
+  WHERE (("uor"."user_id" = "auth"."uid"()) AND ("uor"."role" = ANY (ARRAY['admin'::"text", 'coach'::"text"]))))));
 
 
 
 CREATE POLICY "Allow org members to manage their blog posts" ON "public"."blog_posts" USING (("organization_id" IN ( SELECT "user_organization_roles"."organization_id"
    FROM "public"."user_organization_roles"
   WHERE ("user_organization_roles"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Allow org members to view players in their org" ON "public"."players" FOR SELECT USING ((("organization_id" IN ( SELECT "user_organization_roles"."organization_id"
+   FROM "public"."user_organization_roles"
+  WHERE ("user_organization_roles"."user_id" = "auth"."uid"()))) AND ("status" = 'active'::"text")));
 
 
 
@@ -775,6 +1038,10 @@ CREATE POLICY "Allow public read access to alumni" ON "public"."alumni" FOR SELE
 
 
 CREATE POLICY "Allow public read access to coaches" ON "public"."coaches" FOR SELECT TO "anon" USING (true);
+
+
+
+CREATE POLICY "Allow public read access to games" ON "public"."games" FOR SELECT TO "anon" USING (true);
 
 
 
@@ -828,6 +1095,16 @@ CREATE POLICY "Allow users to see teams in their organization" ON "public"."team
 
 
 
+CREATE POLICY "Users can create organizations" ON "public"."organizations" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "owner_id"));
+
+
+
+CREATE POLICY "Users can read their organizations" ON "public"."organizations" FOR SELECT TO "authenticated" USING ((("owner_id" = "auth"."uid"()) OR ("id" IN ( SELECT "user_organization_roles"."organization_id"
+   FROM "public"."user_organization_roles"
+  WHERE ("user_organization_roles"."user_id" = "auth"."uid"())))));
+
+
+
 CREATE POLICY "Users can view their own role" ON "public"."user_roles" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
@@ -841,10 +1118,16 @@ ALTER TABLE "public"."blog_posts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."coaches" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."games" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."organization_invitations" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."organization_links" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."organizations" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."partners" ENABLE ROW LEVEL SECURITY;
@@ -1066,6 +1349,42 @@ GRANT ALL ON TABLE "public"."blog_posts" TO "service_role";
 GRANT ALL ON TABLE "public"."coaches" TO "anon";
 GRANT ALL ON TABLE "public"."coaches" TO "authenticated";
 GRANT ALL ON TABLE "public"."coaches" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."communication_deliveries" TO "anon";
+GRANT ALL ON TABLE "public"."communication_deliveries" TO "authenticated";
+GRANT ALL ON TABLE "public"."communication_deliveries" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."communication_groups" TO "anon";
+GRANT ALL ON TABLE "public"."communication_groups" TO "authenticated";
+GRANT ALL ON TABLE "public"."communication_groups" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."communication_templates" TO "anon";
+GRANT ALL ON TABLE "public"."communication_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."communication_templates" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."communications" TO "anon";
+GRANT ALL ON TABLE "public"."communications" TO "authenticated";
+GRANT ALL ON TABLE "public"."communications" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."games" TO "anon";
+GRANT ALL ON TABLE "public"."games" TO "authenticated";
+GRANT ALL ON TABLE "public"."games" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."group_members" TO "anon";
+GRANT ALL ON TABLE "public"."group_members" TO "authenticated";
+GRANT ALL ON TABLE "public"."group_members" TO "service_role";
 
 
 
