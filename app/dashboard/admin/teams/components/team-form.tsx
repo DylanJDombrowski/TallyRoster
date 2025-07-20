@@ -2,7 +2,6 @@
 "use client";
 
 import { useToast } from "@/app/components/toast-provider";
-import { createClient } from "@/lib/supabase/client";
 import { Team } from "@/lib/types";
 import Image from "next/image";
 import { useActionState, useEffect, useRef, useState } from "react";
@@ -46,52 +45,126 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
   const formRef = useRef<HTMLFormElement>(null);
   const seasons = generateSeasonOptions();
 
-  // NEW: State for managing image upload
+  // 🔧 FIX: State for managing Cloudinary image upload (like players)
   const [imageUrl, setImageUrl] = useState<string | null>(teamToEdit?.team_image_url || null);
   const [isUploading, setIsUploading] = useState(false);
-  const supabase = createClient();
+
+  // 🔧 FIX: Removed problematic dependency - use a stable reference
+  const stableOnSaveSuccess = useRef(onSaveSuccess);
+  stableOnSaveSuccess.current = onSaveSuccess;
+
   // This useEffect handles the result of the form submission
   useEffect(() => {
     if (state?.success && state.team) {
       const isNew = !teamToEdit?.id;
       showToast(state.success, "success");
-      onSaveSuccess(state.team, isNew);
+      stableOnSaveSuccess.current(state.team, isNew); // 🔧 Use stable ref
       if (isNew) {
         formRef.current?.reset();
-        setImageUrl(null); // Reset image on new form
+        setImageUrl(null);
       }
     }
     if (state?.error) {
       showToast(state.error, "error");
     }
-  }, [state, onSaveSuccess, showToast, teamToEdit]);
+  }, [state, teamToEdit?.id, showToast]); // 🔧 Removed onSaveSuccess from dependencies
 
   // This useEffect populates the form when a team is selected for editing
   useEffect(() => {
     setImageUrl(teamToEdit?.team_image_url || null);
   }, [teamToEdit]);
 
+  // 🔧 FIX: Cloudinary upload matching your player pattern
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    const fileName = `${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
-      .from("team-photos") // NOTE: Make sure you have a "team-photos" bucket in Supabase Storage
-      .upload(fileName, file);
+    console.log("🖼️ Starting team image upload:", {
+      fileName: file.name,
+      fileSize: file.size,
+    });
 
-    if (error) {
-      showToast(`Upload Error: ${error.message}`, "error");
-      setIsUploading(false);
+    // Validate file
+    if (!file.type.startsWith("image/")) {
+      showToast("Please select an image file", "error");
       return;
     }
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("team-photos").getPublicUrl(data.path);
-    setImageUrl(publicUrl);
-    setIsUploading(false);
+    if (file.size > 10 * 1024 * 1024) {
+      // 10MB limit
+      showToast("File size must be under 10MB", "error");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const timestamp = Math.round(new Date().getTime() / 1000);
+
+      // 🔧 FIX: Use team-specific upload preset and folder
+      const paramsToSign = {
+        timestamp: timestamp.toString(),
+        upload_preset: "team_photos", // 🔧 You'll need to create this preset
+        folder: "teams", // 🔧 Organize team images in teams folder
+      };
+
+      console.log("🔐 Getting signature for team upload:", paramsToSign);
+
+      // Get signature from your API
+      const signResponse = await fetch("/api/sign-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ paramsToSign }),
+      });
+
+      if (!signResponse.ok) {
+        const errorData = await signResponse.json();
+        throw new Error(errorData.error || "Failed to get upload signature");
+      }
+
+      const { signature } = await signResponse.json();
+      console.log("✅ Signature received for team");
+
+      // Prepare form data for Cloudinary
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY!);
+      formData.append("timestamp", timestamp.toString());
+      formData.append("signature", signature);
+      formData.append("upload_preset", "team_photos");
+      formData.append("folder", "teams");
+
+      console.log("☁️ Uploading team image to Cloudinary...");
+
+      // Upload to Cloudinary
+      const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        console.error("❌ Cloudinary upload failed:", errorData);
+        throw new Error(errorData.error?.message || "Upload failed");
+      }
+
+      const uploadData = await uploadResponse.json();
+      console.log("✅ Team upload successful:", uploadData);
+
+      if (uploadData.secure_url) {
+        setImageUrl(uploadData.secure_url);
+        showToast("Team image uploaded successfully!", "success");
+      } else {
+        throw new Error("No URL returned from upload");
+      }
+    } catch (error) {
+      console.error("💥 Team upload error:", error);
+      showToast(error instanceof Error ? error.message : "Upload failed", "error");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -103,6 +176,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
     <form ref={formRef} action={formAction} key={teamToEdit?.id ?? "new"} className="space-y-4 p-4 border rounded-md bg-white shadow-sm">
       <input type="hidden" name="id" defaultValue={teamToEdit?.id ?? ""} />
       <input type="hidden" name="team_image_url" value={imageUrl || ""} />
+
       <div className="flex justify-between items-center">
         <h2 className="text-xl text-slate-900 font-semibold">{teamToEdit ? "Edit Team" : "Add New Team"}</h2>
         {teamToEdit && (
@@ -146,7 +220,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
         </select>
       </div>
 
-      {/* ADDED: Year Input */}
+      {/* Year Input */}
       <div>
         <label htmlFor="year" className="block text-slate-800 text-sm font-medium">
           Year (e.g., 2025)
@@ -160,7 +234,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
         />
       </div>
 
-      {/* ADDED: Team Image URL Input */}
+      {/* 🔧 FIX: Team Image Upload (Cloudinary style) */}
       <div>
         <label htmlFor="team_image_upload" className="block text-slate-800 text-sm font-medium">
           Team Image
@@ -169,10 +243,9 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
         {/* Preview the uploaded image */}
         {imageUrl && <Image src={imageUrl} alt="Team Preview" width={96} height={96} className="mt-2 w-24 h-24 object-cover rounded-md" />}
 
-        {/* The file input itself */}
+        {/* The file input */}
         <input
           id="team_image_upload"
-          name="team_image_upload" // This name doesn't get sent to the server, it's for the label
           type="file"
           accept="image/*"
           onChange={handleImageUpload}
@@ -180,6 +253,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
           className="mt-2 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
         />
         {isUploading && <p className="text-sm text-slate-500 mt-1">Uploading...</p>}
+        <p className="text-xs text-slate-500 mt-1">PNG, JPG, or GIF up to 10MB</p>
       </div>
 
       {/* Color Pickers */}

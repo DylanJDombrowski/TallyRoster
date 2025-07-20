@@ -16,6 +16,8 @@ export const metadata: Metadata = {
     default: "TallyRoster - Your Team, Your Site",
   },
   description: "The all-in-one platform for youth sports organizations.",
+  // 🔧 FIX: Add manifest in metadata instead of head
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +32,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#161659" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${inter.variable} ${oswald.variable} font-sans`}>
         <ToastProvider>{children}</ToastProvider>
