@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#161659" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest.ts" />
       </head>
       <body className={`${inter.variable} ${oswald.variable} font-sans`}>
         <ToastProvider>{children}</ToastProvider>
