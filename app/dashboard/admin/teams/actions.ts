@@ -29,13 +29,15 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
     return { error: "Not authorized to manage teams" };
   }
 
-  // ADDED: Include color fields in the Zod validation
   const validatedFields = TeamFormSchema.safeParse({
     id: formData.get("id") || undefined,
     name: formData.get("name"),
     season: formData.get("season"),
-    primary_color: formData.get("primary_color"), // ADDED
-    secondary_color: formData.get("secondary_color"), // ADDED
+    primary_color: formData.get("primary_color"),
+    secondary_color: formData.get("secondary_color"),
+    // ADDED: Get the new fields from the form data
+    year: formData.get("year"),
+    team_image_url: formData.get("team_image_url") || null, // Use null if empty
   });
 
   if (!validatedFields.success) {
@@ -46,14 +48,16 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
   }
 
   // ADDED: Destructure the color fields
-  const { id, name, season, primary_color, secondary_color } = validatedFields.data;
+  const { id, name, season, primary_color, secondary_color, year, team_image_url } = validatedFields.data;
 
-  // FIXED: Include all fields, including organization_id, when creating/updating teams
   const teamData = {
     name,
     season,
-    primary_color, // ADDED
-    secondary_color, // ADDED
+    primary_color,
+    secondary_color,
+    // ADDED: Add the new fields to the data object for Supabase
+    year,
+    team_image_url,
     organization_id: userOrgRole.organization_id,
   };
 
@@ -92,4 +96,37 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
 
   revalidatePath("/dashboard/admin/teams");
   return { success: `Team "${data.name}" saved successfully.`, team: data };
+}
+
+export async function deleteTeam(teamId: string) {
+  const cookieStore = cookies();
+  const supabase = createClient(await cookieStore);
+
+  // Get user's organization for security
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { data: userOrgRole } = await supabase
+    .from("user_organization_roles")
+    .select("organization_id, role")
+    .eq("user_id", user.id)
+    .single();
+
+  if (!userOrgRole || userOrgRole.role !== "admin") {
+    return { error: "Not authorized to delete teams" };
+  }
+
+  // Only allow deleting teams from user's organization
+  const { error } = await supabase.from("teams").delete().eq("id", teamId).eq("organization_id", userOrgRole.organization_id);
+
+  if (error) {
+    return { error: `Failed to delete team: ${error.message}` };
+  }
+
+  revalidatePath("/dashboard/admin/teams");
+  return { success: "Team deleted successfully." };
 }

@@ -65,15 +65,27 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
   }, [state?.success, state?.error]);
 
   useEffect(() => {
+    // This effect now correctly populates all form fields when editing
     if (teamToEdit) {
       const idInput = formRef.current?.querySelector<HTMLInputElement>('input[name="id"]');
       if (idInput) idInput.value = teamToEdit.id;
+
       const nameInput = formRef.current?.querySelector<HTMLInputElement>('input[name="name"]');
       if (nameInput) nameInput.value = teamToEdit.name;
+
       const seasonSelect = formRef.current?.querySelector<HTMLSelectElement>('select[name="season"]');
       if (seasonSelect) seasonSelect.value = teamToEdit.season || "";
+
+      // FIXED: Populate the new 'year' and 'team_image_url' fields
+      const yearInput = formRef.current?.querySelector<HTMLInputElement>('input[name="year"]');
+      if (yearInput) yearInput.value = String(teamToEdit.year || new Date().getFullYear());
+
+      const imageUrlInput = formRef.current?.querySelector<HTMLInputElement>('input[name="team_image_url"]');
+      if (imageUrlInput) imageUrlInput.value = teamToEdit.team_image_url || "";
+
       const primaryColorInput = formRef.current?.querySelector<HTMLInputElement>('input[name="primary_color"]');
       if (primaryColorInput) primaryColorInput.value = teamToEdit.primary_color || "#000000";
+
       const secondaryColorInput = formRef.current?.querySelector<HTMLInputElement>('input[name="secondary_color"]');
       if (secondaryColorInput) secondaryColorInput.value = teamToEdit.secondary_color || "#ffffff";
     } else {
@@ -87,12 +99,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
   };
 
   return (
-    <form
-      ref={formRef}
-      action={formAction}
-      key={teamToEdit?.id ?? "new"} // Add key to force re-render on edit change
-      className="space-y-4 p-4 border rounded-md bg-white shadow-sm"
-    >
+    <form ref={formRef} action={formAction} key={teamToEdit?.id ?? "new"} className="space-y-4 p-4 border rounded-md bg-white shadow-sm">
       <input type="hidden" name="id" defaultValue={teamToEdit?.id ?? ""} />
       <div className="flex justify-between items-center">
         <h2 className="text-xl text-slate-900 font-semibold">{teamToEdit ? "Edit Team" : "Add New Team"}</h2>
@@ -102,6 +109,8 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
           </button>
         )}
       </div>
+
+      {/* Team Name */}
       <div>
         <label htmlFor="name" className="block text-slate-800 text-sm font-medium">
           Team Name
@@ -114,8 +123,10 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
           required
         />
       </div>
+
+      {/* Season */}
       <div>
-        <label htmlFor="season" className="block  text-slate-800 text-sm font-medium">
+        <label htmlFor="season" className="block text-slate-800 text-sm font-medium">
           Season
         </label>
         <select
@@ -132,6 +143,37 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
           ))}
         </select>
       </div>
+
+      {/* ADDED: Year Input */}
+      <div>
+        <label htmlFor="year" className="block text-slate-800 text-sm font-medium">
+          Year (e.g., 2025)
+        </label>
+        <input
+          id="year"
+          name="year"
+          type="number"
+          defaultValue={teamToEdit?.year ?? new Date().getFullYear()}
+          className="mt-1 block w-full p-2 border text-slate-800 border-gray-300 rounded-md"
+        />
+      </div>
+
+      {/* ADDED: Team Image URL Input */}
+      <div>
+        <label htmlFor="team_image_url" className="block text-slate-800 text-sm font-medium">
+          Team Image URL (Optional)
+        </label>
+        <input
+          id="team_image_url"
+          name="team_image_url"
+          type="url"
+          defaultValue={teamToEdit?.team_image_url || ""}
+          className="mt-1 block w-full p-2 border text-slate-800 border-gray-300 rounded-md"
+          placeholder="https://example.com/image.png"
+        />
+      </div>
+
+      {/* Color Pickers */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="primary_color" className="block text-slate-800 text-sm font-medium">
@@ -158,6 +200,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
           />
         </div>
       </div>
+
       <SubmitButton />
     </form>
   );
