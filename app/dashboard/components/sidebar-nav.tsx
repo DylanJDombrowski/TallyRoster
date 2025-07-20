@@ -1,7 +1,7 @@
 // app/dashboard/components/sidebar-nav.tsx
 "use client";
 
-import { FileText, Home, Settings, Shield, User, Users } from "lucide-react";
+import { FileText, Home, Mail, Settings, Shield, Trophy, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -23,6 +23,18 @@ const navLinks: NavLink[] = [
     href: "/dashboard/players",
     label: "Players",
     icon: User,
+    roles: ["admin", "coach"],
+  },
+  {
+    href: "/dashboard/games",
+    label: "Games",
+    icon: Trophy,
+    roles: ["admin", "coach"],
+  },
+  {
+    href: "/dashboard/communications",
+    label: "Communications",
+    icon: Mail,
     roles: ["admin", "coach"],
   },
   {

@@ -78,6 +78,7 @@ export default async function SiteLayout({ children, params }: { children: React
         label: team.name,
       })),
     },
+    { href: "/live-scores", label: "Live Scores" },
     { href: "/alumni", label: "Alumni" },
     { href: "/on-the-field", label: "On The Field" },
     { href: "/forms-and-links", label: "Forms & Resources" },
