@@ -45,45 +45,91 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
   const formRef = useRef<HTMLFormElement>(null);
   const seasons = generateSeasonOptions();
 
-  // 🔧 FIX: State for managing Cloudinary image upload (like players)
+  // State for managing Cloudinary image upload
   const [imageUrl, setImageUrl] = useState<string | null>(teamToEdit?.team_image_url || null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // 🔧 FIX: Track if we've already processed this success to prevent loops
+  // 🔧 FIX: Track processed state to prevent loops
   const [processedStateId, setProcessedStateId] = useState<string | null>(null);
 
-  // This useEffect handles the result of the form submission
+  // 🔧 FIX: Form validation state
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
+  // 🔧 FIX: Use a ref to store the callback to avoid dependency issues
+  const onSaveSuccessRef = useRef(onSaveSuccess);
+  onSaveSuccessRef.current = onSaveSuccess;
+
+  // Handle form submission results
   useEffect(() => {
-    // Create a unique ID for this state to prevent processing the same success multiple times
-    const stateId = state?.success && state?.team ? `${state.team.id}-${state.success}` : null;
+    if (!state) return;
 
-    if (state?.success && state.team && stateId && stateId !== processedStateId) {
-      const isNew = !teamToEdit?.id;
-      showToast(state.success, "success");
-      onSaveSuccess(state.team, isNew);
-      setProcessedStateId(stateId); // Mark this state as processed
+    // Create unique ID to prevent processing same state multiple times
+    const stateId = state.success && state.team ? `${state.team.id}-${Date.now()}` : state.error ? `error-${Date.now()}` : null;
 
-      if (isNew) {
-        formRef.current?.reset();
-        setImageUrl(null);
+    if (stateId && stateId !== processedStateId) {
+      setProcessedStateId(stateId);
+
+      if (state.success && state.team) {
+        const isNew = !teamToEdit?.id;
+        showToast(state.success, "success");
+        onSaveSuccessRef.current(state.team, isNew);
+
+        if (isNew) {
+          formRef.current?.reset();
+          setImageUrl(null);
+        }
+
+        // Clear any validation errors on success
+        setValidationErrors({});
+      }
+
+      if (state.error) {
+        showToast(state.error, "error");
+
+        // Handle field-specific validation errors
+        if (state.fields) {
+          // Convert string[] to string for each field
+          const flatFields: { [key: string]: string } = {};
+          Object.entries(state.fields).forEach(([key, value]) => {
+            flatFields[key] = Array.isArray(value) ? value.join(", ") : value ?? "";
+          });
+          setValidationErrors(flatFields);
+        }
       }
     }
-    if (state?.error) {
-      showToast(state.error, "error");
-    }
-  }, [state, teamToEdit?.id, showToast, onSaveSuccess, processedStateId]);
+  }, [state, teamToEdit?.id, showToast, processedStateId]); // 🔧 Removed onSaveSuccess from deps
 
-  // Reset processed state when editing a different team
+  // Reset processed state when editing changes
   useEffect(() => {
     setProcessedStateId(null);
+    setValidationErrors({});
   }, [teamToEdit?.id]);
 
-  // This useEffect populates the form when a team is selected for editing
+  // Populate form when editing
   useEffect(() => {
     setImageUrl(teamToEdit?.team_image_url || null);
   }, [teamToEdit]);
 
-  // 🔧 FIX: Cloudinary upload matching your player pattern
+  // 🔧 FIX: Client-side validation before submit
+  const handleSubmit = (formData: FormData) => {
+    const errors: { [key: string]: string } = {};
+
+    const teamName = formData.get("name") as string;
+    if (!teamName || teamName.trim().length === 0) {
+      errors.name = "Team name is required";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      showToast("Please fill in all required fields", "error");
+      return;
+    }
+
+    // Clear validation errors and proceed
+    setValidationErrors({});
+    formAction(formData);
+  };
+
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -93,14 +139,12 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
       fileSize: file.size,
     });
 
-    // Validate file
     if (!file.type.startsWith("image/")) {
       showToast("Please select an image file", "error");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      // 10MB limit
       showToast("File size must be under 10MB", "error");
       return;
     }
@@ -110,16 +154,14 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
     try {
       const timestamp = Math.round(new Date().getTime() / 1000);
 
-      // 🔧 FIX: Use team-specific upload preset and folder
       const paramsToSign = {
         timestamp: timestamp.toString(),
-        upload_preset: "team_photos", // 🔧 You'll need to create this preset
-        folder: "teams", // 🔧 Organize team images in teams folder
+        upload_preset: "team_photos",
+        folder: "teams",
       };
 
       console.log("🔐 Getting signature for team upload:", paramsToSign);
 
-      // Get signature from your API
       const signResponse = await fetch("/api/sign-image", {
         method: "POST",
         headers: {
@@ -134,9 +176,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
       }
 
       const { signature } = await signResponse.json();
-      console.log("✅ Signature received for team");
 
-      // Prepare form data for Cloudinary
       const formData = new FormData();
       formData.append("file", file);
       formData.append("api_key", process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY!);
@@ -145,9 +185,6 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
       formData.append("upload_preset", "team_photos");
       formData.append("folder", "teams");
 
-      console.log("☁️ Uploading team image to Cloudinary...");
-
-      // Upload to Cloudinary
       const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
         method: "POST",
         body: formData,
@@ -155,12 +192,10 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
 
       if (!uploadResponse.ok) {
         const errorData = await uploadResponse.json();
-        console.error("❌ Cloudinary upload failed:", errorData);
         throw new Error(errorData.error?.message || "Upload failed");
       }
 
       const uploadData = await uploadResponse.json();
-      console.log("✅ Team upload successful:", uploadData);
 
       if (uploadData.secure_url) {
         setImageUrl(uploadData.secure_url);
@@ -178,11 +213,12 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
 
   const handleCancel = () => {
     formRef.current?.reset();
+    setValidationErrors({});
     onCancelEdit();
   };
 
   return (
-    <form ref={formRef} action={formAction} key={teamToEdit?.id ?? "new"} className="space-y-4 p-4 border rounded-md bg-white shadow-sm">
+    <form ref={formRef} action={handleSubmit} key={teamToEdit?.id ?? "new"} className="space-y-4 p-4 border rounded-md bg-white shadow-sm">
       <input type="hidden" name="id" defaultValue={teamToEdit?.id ?? ""} />
       <input type="hidden" name="team_image_url" value={imageUrl || ""} />
 
@@ -198,15 +234,18 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
       {/* Team Name */}
       <div>
         <label htmlFor="name" className="block text-slate-800 text-sm font-medium">
-          Team Name
+          Team Name <span className="text-red-500">*</span>
         </label>
         <input
           id="name"
           name="name"
           defaultValue={teamToEdit?.name}
-          className="mt-1 block w-full p-2 border text-slate-800 border-gray-300 rounded-md"
+          className={`mt-1 block w-full p-2 border text-slate-800 rounded-md ${
+            validationErrors.name ? "border-red-500 bg-red-50" : "border-gray-300"
+          }`}
           required
         />
+        {validationErrors.name && <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>}
       </div>
 
       {/* Season */}
@@ -243,16 +282,14 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
         />
       </div>
 
-      {/* 🔧 FIX: Team Image Upload (Cloudinary style) */}
+      {/* Team Image Upload */}
       <div>
         <label htmlFor="team_image_upload" className="block text-slate-800 text-sm font-medium">
           Team Image
         </label>
 
-        {/* Preview the uploaded image */}
         {imageUrl && <Image src={imageUrl} alt="Team Preview" width={96} height={96} className="mt-2 w-24 h-24 object-cover rounded-md" />}
 
-        {/* The file input */}
         <input
           id="team_image_upload"
           type="file"
