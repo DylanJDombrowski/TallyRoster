@@ -49,16 +49,20 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
   const [imageUrl, setImageUrl] = useState<string | null>(teamToEdit?.team_image_url || null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // 🔧 FIX: Removed problematic dependency - use a stable reference
-  const stableOnSaveSuccess = useRef(onSaveSuccess);
-  stableOnSaveSuccess.current = onSaveSuccess;
+  // 🔧 FIX: Track if we've already processed this success to prevent loops
+  const [processedStateId, setProcessedStateId] = useState<string | null>(null);
 
   // This useEffect handles the result of the form submission
   useEffect(() => {
-    if (state?.success && state.team) {
+    // Create a unique ID for this state to prevent processing the same success multiple times
+    const stateId = state?.success && state?.team ? `${state.team.id}-${state.success}` : null;
+
+    if (state?.success && state.team && stateId && stateId !== processedStateId) {
       const isNew = !teamToEdit?.id;
       showToast(state.success, "success");
-      stableOnSaveSuccess.current(state.team, isNew); // 🔧 Use stable ref
+      onSaveSuccess(state.team, isNew);
+      setProcessedStateId(stateId); // Mark this state as processed
+
       if (isNew) {
         formRef.current?.reset();
         setImageUrl(null);
@@ -67,7 +71,12 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
     if (state?.error) {
       showToast(state.error, "error");
     }
-  }, [state, teamToEdit?.id, showToast]); // 🔧 Removed onSaveSuccess from dependencies
+  }, [state, teamToEdit?.id, showToast, onSaveSuccess, processedStateId]);
+
+  // Reset processed state when editing a different team
+  useEffect(() => {
+    setProcessedStateId(null);
+  }, [teamToEdit?.id]);
 
   // This useEffect populates the form when a team is selected for editing
   useEffect(() => {
