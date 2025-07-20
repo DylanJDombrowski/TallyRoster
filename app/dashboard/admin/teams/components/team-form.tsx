@@ -21,11 +21,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full text-white p-2 rounded-md disabled:bg-slate-800"
-      style={{
-        backgroundColor: "var(--color-primary)",
-        color: "var(--color-primary-foreground)",
-      }}
+      className="w-full p-2 rounded-md font-semibold text-white bg-slate-800 hover:bg-slate-700 disabled:bg-slate-400"
     >
       {pending ? "Saving..." : "Save Team"}
     </button>

@@ -1,4 +1,5 @@
 // app/dashboard/admin/teams/components/team-manager.tsx
+
 "use client";
 
 import { Team } from "@/lib/types";
@@ -41,6 +42,7 @@ export function TeamManager({ initialTeams }: TeamManagerProps) {
   };
 
   return (
+    // UPDATED: Use a more responsive grid layout
     <div className="grid gap-8 lg:grid-cols-3">
       {/* Form Column - Hidden on mobile unless toggled */}
       <div className={`lg:col-span-1 ${isFormVisible ? "block" : "hidden"} lg:block`}>
