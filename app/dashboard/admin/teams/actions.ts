@@ -37,7 +37,7 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
     secondary_color: formData.get("secondary_color"),
     // ADDED: Get the new fields from the form data
     year: formData.get("year"),
-    team_image_url: formData.get("team_image_url") || null, // Use null if empty
+    team_image_url: formData.get("team_image_url") || null,
   });
 
   if (!validatedFields.success) {
