@@ -2,7 +2,7 @@
 "use client";
 
 import { Team } from "@/lib/types";
-import { useState } from "react";
+import { useCallback, useState } from "react"; // Import useCallback
 import { TeamForm } from "./team-form";
 import { TeamList } from "./team-list";
 
@@ -14,20 +14,23 @@ export function TeamManager({ initialTeams }: TeamManagerProps) {
   const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
-  const handleSaveSuccess = (savedTeam: Team, isNew: boolean) => {
+  // FIX: Wrap handler in useCallback to prevent re-renders
+  const handleSaveSuccess = useCallback((savedTeam: Team, isNew: boolean) => {
     if (isNew) {
       setTeams((prevTeams) => [...prevTeams, savedTeam]);
     } else {
       setTeams((prevTeams) => prevTeams.map((t) => (t.id === savedTeam.id ? savedTeam : t)));
     }
     setEditingTeam(null);
-  };
+  }, []); // Empty dependency array means the function is created only once
 
-  const handleDeleteSuccess = (deletedTeamId: string) => {
+  // FIX: Wrap handler in useCallback
+  const handleDeleteSuccess = useCallback((deletedTeamId: string) => {
     setTeams((prevTeams) => prevTeams.filter((t) => t.id !== deletedTeamId));
-  };
+  }, []);
 
   return (
+    // No changes needed to the JSX
     <div className="grid gap-8 md:grid-cols-3">
       <div className="md:col-span-1">
         <TeamForm teamToEdit={editingTeam} onSaveSuccess={handleSaveSuccess} onCancelEdit={() => setEditingTeam(null)} />
