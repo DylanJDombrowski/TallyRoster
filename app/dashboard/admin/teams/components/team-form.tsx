@@ -4,27 +4,14 @@
 import { useToast } from "@/app/components/toast-provider";
 import { Team } from "@/lib/types";
 import Image from "next/image";
-import { useActionState, useEffect, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 import { upsertTeam } from "../actions";
 
 interface TeamFormProps {
   teamToEdit?: Team | null;
   onSaveSuccess: (savedTeam: Team, isNew: boolean) => void;
   onCancelEdit: () => void;
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="w-full p-2 rounded-md font-semibold text-white bg-slate-800 hover:bg-slate-700 disabled:bg-slate-400"
-    >
-      {pending ? "Saving..." : "Save Team"}
-    </button>
-  );
+  existingTeams: Team[]; // 🔧 NEW: Pass existing teams for validation
 }
 
 // Function to generate season options
@@ -39,105 +26,99 @@ const generateSeasonOptions = () => {
   return options;
 };
 
-export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormProps) {
+export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit, existingTeams }: TeamFormProps) {
   const { showToast } = useToast();
-  const [state, formAction] = useActionState(upsertTeam, null);
   const formRef = useRef<HTMLFormElement>(null);
   const seasons = generateSeasonOptions();
 
-  // State for managing Cloudinary image upload
+  // Form state
   const [imageUrl, setImageUrl] = useState<string | null>(teamToEdit?.team_image_url || null);
   const [isUploading, setIsUploading] = useState(false);
-
-  // 🔧 FIX: Track processed state to prevent loops
-  const [processedStateId, setProcessedStateId] = useState<string | null>(null);
-
-  // 🔧 FIX: Form validation state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
-  // 🔧 FIX: Use a ref to store the callback to avoid dependency issues
-  const onSaveSuccessRef = useRef(onSaveSuccess);
-  onSaveSuccessRef.current = onSaveSuccess;
-
-  // Handle form submission results
+  // Populate form when editing
   useEffect(() => {
-    if (!state) return;
+    setImageUrl(teamToEdit?.team_image_url || null);
+    setValidationErrors({}); // Clear errors when switching teams
+  }, [teamToEdit]);
 
-    // Create unique ID to prevent processing same state multiple times
-    const stateId = state.success && state.team ? `${state.team.id}-${Date.now()}` : state.error ? `error-${Date.now()}` : null;
+  // 🔧 FIX: Custom form submission handler (no useActionState)
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-    if (stateId && stateId !== processedStateId) {
-      setProcessedStateId(stateId);
+    if (isSubmitting) return; // Prevent double submission
 
-      if (state.success && state.team) {
+    const formData = new FormData(event.currentTarget);
+    const errors: { [key: string]: string } = {};
+
+    // 🔧 FIX: Client-side validation
+    const teamName = (formData.get("name") as string)?.trim();
+    const season = formData.get("season") as string;
+
+    if (!teamName) {
+      errors.name = "Team name is required";
+    }
+
+    if (!season) {
+      errors.season = "Season is required";
+    }
+
+    // 🔧 FIX: Check for duplicate team name in same season
+    if (teamName && season) {
+      const duplicate = existingTeams.find(
+        (team) => team.name.toLowerCase() === teamName.toLowerCase() && team.season === season && team.id !== teamToEdit?.id // Allow editing same team
+      );
+
+      if (duplicate) {
+        errors.name = `A team named "${teamName}" already exists for the ${season} season`;
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      showToast("Please fix the errors below", "error");
+      return;
+    }
+
+    setValidationErrors({});
+    setIsSubmitting(true);
+
+    try {
+      // 🔧 FIX: Call server action directly
+      const result = await upsertTeam(null, formData);
+
+      if (result.error) {
+        showToast(result.error, "error");
+        if (result.fields) {
+          // Convert string[] to string for each field
+          const flatFields: { [key: string]: string } = {};
+          Object.entries(result.fields).forEach(([key, value]) => {
+            flatFields[key] = Array.isArray(value) ? value.join(", ") : value ?? "";
+          });
+          setValidationErrors(flatFields);
+        }
+      } else if (result.success && result.team) {
         const isNew = !teamToEdit?.id;
-        showToast(state.success, "success");
-        onSaveSuccessRef.current(state.team, isNew);
+        showToast(result.success, "success");
+        onSaveSuccess(result.team, isNew);
 
         if (isNew) {
           formRef.current?.reset();
           setImageUrl(null);
         }
-
-        // Clear any validation errors on success
-        setValidationErrors({});
       }
-
-      if (state.error) {
-        showToast(state.error, "error");
-
-        // Handle field-specific validation errors
-        if (state.fields) {
-          // Convert string[] to string for each field
-          const flatFields: { [key: string]: string } = {};
-          Object.entries(state.fields).forEach(([key, value]) => {
-            flatFields[key] = Array.isArray(value) ? value.join(", ") : value ?? "";
-          });
-          setValidationErrors(flatFields);
-        }
-      }
+    } catch (error) {
+      console.error("Form submission error:", error);
+      showToast("An unexpected error occurred", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [state, teamToEdit?.id, showToast, processedStateId]); // 🔧 Removed onSaveSuccess from deps
-
-  // Reset processed state when editing changes
-  useEffect(() => {
-    setProcessedStateId(null);
-    setValidationErrors({});
-  }, [teamToEdit?.id]);
-
-  // Populate form when editing
-  useEffect(() => {
-    setImageUrl(teamToEdit?.team_image_url || null);
-  }, [teamToEdit]);
-
-  // 🔧 FIX: Client-side validation before submit
-  const handleSubmit = (formData: FormData) => {
-    const errors: { [key: string]: string } = {};
-
-    const teamName = formData.get("name") as string;
-    if (!teamName || teamName.trim().length === 0) {
-      errors.name = "Team name is required";
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      showToast("Please fill in all required fields", "error");
-      return;
-    }
-
-    // Clear validation errors and proceed
-    setValidationErrors({});
-    formAction(formData);
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    console.log("🖼️ Starting team image upload:", {
-      fileName: file.name,
-      fileSize: file.size,
-    });
 
     if (!file.type.startsWith("image/")) {
       showToast("Please select an image file", "error");
@@ -159,8 +140,6 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
         upload_preset: "team_photos",
         folder: "teams",
       };
-
-      console.log("🔐 Getting signature for team upload:", paramsToSign);
 
       const signResponse = await fetch("/api/sign-image", {
         method: "POST",
@@ -214,11 +193,17 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
   const handleCancel = () => {
     formRef.current?.reset();
     setValidationErrors({});
+    setImageUrl(teamToEdit?.team_image_url || null);
     onCancelEdit();
   };
 
   return (
-    <form ref={formRef} action={handleSubmit} key={teamToEdit?.id ?? "new"} className="space-y-4 p-4 border rounded-md bg-white shadow-sm">
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      key={teamToEdit?.id ?? "new"}
+      className="space-y-4 p-4 border rounded-md bg-white shadow-sm"
+    >
       <input type="hidden" name="id" defaultValue={teamToEdit?.id ?? ""} />
       <input type="hidden" name="team_image_url" value={imageUrl || ""} />
 
@@ -251,13 +236,16 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
       {/* Season */}
       <div>
         <label htmlFor="season" className="block text-slate-800 text-sm font-medium">
-          Season
+          Season <span className="text-red-500">*</span>
         </label>
         <select
           id="season"
           name="season"
           defaultValue={teamToEdit?.season || ""}
-          className="mt-1 block w-full p-2 border text-slate-800 border-gray-300 rounded-md"
+          className={`mt-1 block w-full p-2 border text-slate-800 rounded-md ${
+            validationErrors.season ? "border-red-500 bg-red-50" : "border-gray-300"
+          }`}
+          required
         >
           <option value="">Select a season</option>
           {seasons.map((season) => (
@@ -266,6 +254,7 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
             </option>
           ))}
         </select>
+        {validationErrors.season && <p className="mt-1 text-sm text-red-600">{validationErrors.season}</p>}
       </div>
 
       {/* Year Input */}
@@ -330,7 +319,13 @@ export function TeamForm({ teamToEdit, onSaveSuccess, onCancelEdit }: TeamFormPr
         </div>
       </div>
 
-      <SubmitButton />
+      <button
+        type="submit"
+        disabled={isSubmitting || isUploading}
+        className="w-full p-2 rounded-md font-semibold text-white bg-slate-800 hover:bg-slate-700 disabled:bg-slate-400"
+      >
+        {isSubmitting ? "Saving..." : "Save Team"}
+      </button>
     </form>
   );
 }

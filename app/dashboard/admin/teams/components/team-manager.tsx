@@ -45,7 +45,12 @@ export function TeamManager({ initialTeams }: TeamManagerProps) {
     <div className="grid gap-8 lg:grid-cols-3">
       {/* Form Column */}
       <div className={`lg:col-span-1 ${isFormVisible ? "block" : "hidden"} lg:block`}>
-        <TeamForm teamToEdit={editingTeam} onSaveSuccess={handleSaveSuccess} onCancelEdit={handleCancel} />
+        <TeamForm
+          teamToEdit={editingTeam}
+          onSaveSuccess={handleSaveSuccess}
+          onCancelEdit={handleCancel}
+          existingTeams={teams} // 🔧 Pass existing teams for validation
+        />
       </div>
 
       {/* List Column */}

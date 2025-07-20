@@ -1,9 +1,9 @@
-// app/dashboard/admin/teams/actions.ts
+// app/dashboard/admin/teams/actions.ts - UPDATED with duplicate checking
 
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { TeamFormSchema } from "@/lib/types"; // Make sure this schema is also updated
+import { TeamFormSchema } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
@@ -35,7 +35,6 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
     season: formData.get("season"),
     primary_color: formData.get("primary_color"),
     secondary_color: formData.get("secondary_color"),
-    // ADDED: Get the new fields from the form data
     year: formData.get("year"),
     team_image_url: formData.get("team_image_url") || null,
   });
@@ -47,15 +46,34 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
     };
   }
 
-  // ADDED: Destructure the color fields
   const { id, name, season, primary_color, secondary_color, year, team_image_url } = validatedFields.data;
+
+  // 🔧 FIX: Server-side duplicate check
+  if (name && season) {
+    const { data: existingTeam } = await supabase
+      .from("teams")
+      .select("id, name, season")
+      .eq("organization_id", userOrgRole.organization_id)
+      .ilike("name", name) // Case-insensitive check
+      .eq("season", season)
+      .neq("id", id || "00000000-0000-0000-0000-000000000000") // Exclude current team when editing
+      .single();
+
+    if (existingTeam) {
+      return {
+        error: `A team named "${name}" already exists for the ${season} season`,
+        fields: {
+          name: [`A team named "${name}" already exists for the ${season} season`],
+        },
+      };
+    }
+  }
 
   const teamData = {
     name,
     season,
     primary_color,
     secondary_color,
-    // ADDED: Add the new fields to the data object for Supabase
     year,
     team_image_url,
     organization_id: userOrgRole.organization_id,
@@ -64,7 +82,6 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
   let data, error;
 
   try {
-    // ADDED: Wrap database call in a try/catch for better error handling
     if (id) {
       // Update existing team
       ({ data, error } = await supabase
@@ -80,16 +97,13 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
     }
 
     if (error) {
-      // This will now catch database-level errors
       return { error: `Database error: ${error.message}` };
     }
 
     if (!data) {
-      // This specifically catches the silent RLS failure
       return { error: "Failed to save team. The data was not returned after saving, which may be due to a permissions issue." };
     }
   } catch (e: unknown) {
-    // This will catch any other unexpected errors
     const errorMessage = e instanceof Error ? e.message : String(e);
     return { error: `An unexpected error occurred: ${errorMessage}` };
   }
