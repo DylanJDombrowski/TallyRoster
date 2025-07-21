@@ -114,6 +114,14 @@ mvx-platform
 │  │  │     │  ├─ edit-user-form.tsx
 │  │  │     │  └─ invite-user-form.tsx
 │  │  │     └─ page.tsx
+│  │  ├─ communications
+│  │  │  ├─ components
+│  │  │  │  ├─ communication-manager.tsx
+│  │  │  │  ├─ delivery-analytics.tsx
+│  │  │  │  ├─ message-composer.tsx
+│  │  │  │  ├─ message-history.tsx
+│  │  │  │  └─ message-templates.tsx
+│  │  │  └─ page.tsx
 │  │  ├─ components
 │  │  │  ├─ logout-button.tsx
 │  │  │  ├─ organization-switcher.tsx
