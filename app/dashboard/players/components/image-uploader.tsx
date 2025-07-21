@@ -1,6 +1,7 @@
-// app/dashboard/players/components/image-uploader.tsx - FIXED
+// app/dashboard/players/components/image-uploader.tsx
 "use client";
 
+import { Camera } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -13,7 +14,7 @@ interface ImageUploaderProps {
 export function ImageUploader({
   initialImageUrl,
   onUploadSuccess,
-  uploadPreset = "organization_logos", // Default for organizations
+  uploadPreset = "player_headshots", // Updated default for players
 }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialImageUrl);
@@ -73,7 +74,7 @@ export function ImageUploader({
       const paramsToSign = {
         timestamp: timestamp.toString(),
         upload_preset: uploadPreset,
-        folder: uploadPreset === "organization_logos" ? "organizations" : "players", // Organize by folder
+        folder: uploadPreset === "player_headshots" ? "players" : "organizations", // Organize by folder
       };
 
       console.log("🔐 Getting signature for:", paramsToSign);
@@ -104,10 +105,10 @@ export function ImageUploader({
       formData.append("upload_preset", uploadPreset);
 
       // Add folder organization
-      if (uploadPreset === "organization_logos") {
-        formData.append("folder", "organizations");
-      } else {
+      if (uploadPreset === "player_headshots") {
         formData.append("folder", "players");
+      } else {
+        formData.append("folder", "organizations");
       }
 
       console.log("☁️ Uploading to Cloudinary...");
@@ -150,28 +151,34 @@ export function ImageUploader({
 
   return (
     <div className="flex flex-col items-center space-y-4">
-      <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center border-2 border-slate-300">
-        {previewUrl ? (
-          <Image src={previewUrl} alt="Logo preview" width={128} height={128} className="object-cover w-full h-full" priority />
-        ) : (
-          <span className="text-slate-500 text-xs text-center p-2">No Image</span>
-        )}
+      <div className="relative">
+        <div className="w-24 h-24 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center border-4 border-gray-100">
+          {previewUrl ? (
+            <Image src={previewUrl} alt="Player photo" width={96} height={96} className="object-cover w-full h-full" priority />
+          ) : (
+            <span className="text-slate-500 text-xs text-center p-2">No Image</span>
+          )}
+        </div>
+
+        <label
+          htmlFor="image-upload"
+          className={`absolute bottom-0 right-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors ${
+            isUploading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+        >
+          {isUploading ? (
+            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+          ) : (
+            <Camera className="w-4 h-4" />
+          )}
+        </label>
+
+        <input id="image-upload" type="file" accept="image/*" onChange={handleUpload} disabled={isUploading} className="hidden" />
       </div>
 
       {error && <div className="text-red-500 text-sm text-center max-w-xs">{error}</div>}
 
-      <label
-        htmlFor="image-upload"
-        className={`cursor-pointer px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-          isUploading ? "bg-gray-400 text-white cursor-not-allowed" : "bg-slate-600 text-white hover:bg-slate-700"
-        }`}
-      >
-        {isUploading ? "Uploading..." : "Change Image"}
-      </label>
-
-      <input id="image-upload" type="file" accept="image/*" onChange={handleUpload} disabled={isUploading} className="hidden" />
-
-      <p className="text-xs text-slate-500 text-center max-w-xs">PNG, JPG, or GIF up to 10MB</p>
+      <p className="text-xs text-slate-500 text-center max-w-xs">Click the camera icon to upload a photo • PNG, JPG, or GIF up to 10MB</p>
     </div>
   );
 }

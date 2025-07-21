@@ -28,10 +28,12 @@ export default async function ManagePlayersPage() {
   if (roleError || !orgRole) {
     console.error("Error fetching user organization:", roleError);
     return (
-      <p>
-        Error loading your organization data. Please ensure you are part of an
-        organization.
-      </p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Error</h1>
+          <p className="text-gray-600">Error loading your organization data. Please ensure you are part of an organization.</p>
+        </div>
+      </div>
     );
   }
 
@@ -56,18 +58,15 @@ export default async function ManagePlayersPage() {
       teamsError,
       playersError,
     });
-    return <p>Error loading team data.</p>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Data Error</h1>
+          <p className="text-gray-600">Error loading team data. Please try again later.</p>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="p-4 md:p-8">
-      <h1 className="text-2xl text-slate-900 font-bold mb-4">Manage Players</h1>
-      {/* 3. Pass all required props, including the new organizationId */}
-      <PlayerManager
-        initialPlayers={playersData ?? []}
-        teams={teamsData ?? []}
-        organizationId={organizationId}
-      />
-    </div>
-  );
+  return <PlayerManager initialPlayers={playersData ?? []} teams={teamsData ?? []} organizationId={organizationId} />;
 }
