@@ -101,19 +101,23 @@ mvx-platform
 │  │  └─ toast-provider.tsx
 │  ├─ dashboard
 │  │  ├─ admin
+│  │  │  ├─ README.md
 │  │  │  ├─ teams
 │  │  │  │  ├─ actions.ts
 │  │  │  │  ├─ components
 │  │  │  │  │  ├─ team-form.tsx
 │  │  │  │  │  ├─ team-list.tsx
 │  │  │  │  │  └─ team-manager.tsx
-│  │  │  │  └─ page.tsx
+│  │  │  │  ├─ page.tsx
+│  │  │  │  └─ README.md
 │  │  │  └─ users
 │  │  │     ├─ actions.ts
 │  │  │     ├─ components
 │  │  │     │  ├─ edit-user-form.tsx
-│  │  │     │  └─ invite-user-form.tsx
-│  │  │     └─ page.tsx
+│  │  │     │  ├─ invite-user-form.tsx
+│  │  │     │  └─ user-management-client.tsx
+│  │  │     ├─ page.tsx
+│  │  │     └─ README.md
 │  │  ├─ communications
 │  │  │  ├─ components
 │  │  │  │  ├─ communication-manager.tsx
@@ -121,7 +125,8 @@ mvx-platform
 │  │  │  │  ├─ message-composer.tsx
 │  │  │  │  ├─ message-history.tsx
 │  │  │  │  └─ message-templates.tsx
-│  │  │  └─ page.tsx
+│  │  │  ├─ page.tsx
+│  │  │  └─ README.md
 │  │  ├─ components
 │  │  │  ├─ logout-button.tsx
 │  │  │  ├─ organization-switcher.tsx
@@ -129,7 +134,8 @@ mvx-platform
 │  │  ├─ games
 │  │  │  ├─ components
 │  │  │  │  └─ game-manager.tsx
-│  │  │  └─ page.tsx
+│  │  │  ├─ page.tsx
+│  │  │  └─ README.md
 │  │  ├─ layout.tsx
 │  │  ├─ page.tsx
 │  │  ├─ players
@@ -140,7 +146,9 @@ mvx-platform
 │  │  │  │  ├─ player-importer.tsx
 │  │  │  │  ├─ player-list.tsx
 │  │  │  │  └─ player-manager.tsx
-│  │  │  └─ page.tsx
+│  │  │  ├─ page.tsx
+│  │  │  └─ README.md
+│  │  ├─ README.md
 │  │  └─ site-customizer
 │  │     ├─ actions.ts
 │  │     ├─ components
@@ -149,7 +157,8 @@ mvx-platform
 │  │     │  ├─ link-form.tsx
 │  │     │  ├─ links-manager.tsx
 │  │     │  └─ mini-preview.tsx
-│  │     └─ page.tsx
+│  │     ├─ page.tsx
+│  │     └─ README.md
 │  ├─ favicon.ico
 │  ├─ globals.css
 │  ├─ invite
@@ -206,24 +215,54 @@ mvx-platform
 │  │  └─ page.tsx
 │  └─ types
 │     └─ onboarding.ts
+├─ components
+│  ├─ features
+│  │  └─ index.ts
+│  └─ ui
+│     └─ index.ts
 ├─ context
 │  └─ OrganizationProvider.tsx
+├─ DEVELOPER_GUIDE.md
 ├─ eslint.config.mjs
 ├─ lib
+│  ├─ actions
+│  │  ├─ index.ts
+│  │  └─ players.ts
 │  ├─ config
-│  │  └─ domains.ts
+│  │  ├─ app.ts
+│  │  ├─ domains.ts
+│  │  └─ index.ts
 │  ├─ database.types.ts
+│  ├─ schemas
+│  │  ├─ coach.ts
+│  │  ├─ index.ts
+│  │  ├─ player.ts
+│  │  ├─ schedule.ts
+│  │  └─ team.ts
+│  ├─ services
+│  │  ├─ database.ts
+│  │  ├─ error-handling.ts
+│  │  ├─ index.ts
+│  │  └─ validation.ts
 │  ├─ supabase
 │  │  ├─ client.ts
 │  │  └─ server.ts
+│  ├─ types
+│  │  ├─ auth.ts
+│  │  ├─ database.ts
+│  │  ├─ extended.ts
+│  │  └─ index.ts
+│  ├─ types-new.ts
 │  ├─ types.ts
 │  └─ utils
+│     ├─ images.ts
 │     └─ theme.ts
 ├─ middleware.ts
 ├─ next.config.ts
 ├─ package-lock.json
 ├─ package.json
 ├─ postcss.config.mjs
+├─ PRODUCTION_CHECKLIST.md
 ├─ public
 │  ├─ assets
 │  │  ├─ blog
@@ -285,6 +324,7 @@ mvx-platform
 │  │  └─ MVX-HomePage.mp4
 │  └─ window.svg
 ├─ README.md
+├─ REFACTORING_GUIDE.md
 ├─ scripts
 │  ├─ migrate-alumni-data.js
 │  ├─ migrate-blog-data.js
