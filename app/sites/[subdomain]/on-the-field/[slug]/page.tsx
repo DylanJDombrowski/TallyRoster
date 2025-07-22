@@ -1,5 +1,7 @@
-// app/(public)/blog/[slug]/page.tsx
-import { createClient } from "@/lib/supabase/client";
+// app/sites/[subdomain]/on-the-field/[slug]/page.tsx
+import { createClient } from "@/lib/supabase/server";
+import { AnalyticsTracker } from "@/components/analytics-tracker";
+import { cookies } from "next/headers";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,39 +9,74 @@ import { notFound } from "next/navigation";
 
 interface BlogPostPageProps {
   params: Promise<{
+    subdomain: string;
     slug: string;
   }>;
 }
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const supabase = createClient();
+  const { subdomain, slug } = await params;
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
 
-  const { data: post } = await supabase.from("blog_posts").select("*").eq("slug", slug).eq("status", "published").single();
+  // Get organization first
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id, name")
+    .eq("subdomain", subdomain)
+    .single();
+
+  if (!organization) {
+    return { title: "Post Not Found" };
+  }
+
+  const { data: post } = await supabase
+    .from("blog_posts")
+    .select("*")
+    .eq("slug", slug)
+    .eq("status", "published")
+    .eq("organization_id", organization.id)
+    .single();
 
   if (!post) {
-    return {
-      title: "Post Not Found",
-    };
+    return { title: "Post Not Found" };
   }
 
   return {
-    title: `${post.title} | Miami Valley Xpress`,
+    title: `${post.title} | ${organization.name}`,
     description: post.short_description,
     openGraph: {
       title: post.title,
       description: post.short_description || undefined,
-      images: [`/assets/${post.image_url}`],
+      images: post.image_url ? [`/assets/${post.image_url}`] : undefined,
     },
   };
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const { slug } = await params;
-  const supabase = createClient();
+  const { subdomain, slug } = await params;
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
 
-  const { data: post, error } = await supabase.from("blog_posts").select("*").eq("slug", slug).eq("status", "published").single();
+  // Get organization first
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id, name")
+    .eq("subdomain", subdomain)
+    .single();
+
+  if (!organization) {
+    notFound();
+  }
+
+  const { data: post, error } = await supabase
+    .from("blog_posts")
+    .select("*")
+    .eq("slug", slug)
+    .eq("status", "published")
+    .eq("organization_id", organization.id)
+    .single();
 
   if (error || !post) {
     notFound();
@@ -55,12 +92,18 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AnalyticsTracker 
+        organizationId={organization.id} 
+        eventType="blog_view"
+        metadata={{ blogId: post.id, blogTitle: post.title }}
+      />
+      
       {/* Sticky Header */}
       <div className="sticky top-0 z-40 bg-secondary text-white py-4 shadow-md">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-bold">On The Field</h1>
-            <Link href="/blog" className="text-white hover:text-gray-200 transition-colors">
+            <Link href="/on-the-field" className="text-white hover:text-gray-200 transition-colors">
               ← Back to All Posts
             </Link>
           </div>
@@ -137,15 +180,17 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </div>
 
             <div className="flex space-x-4">
-              <Link href="/blog" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+              <Link href="/on-the-field" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                 View All Posts
               </Link>
-              <Link
-                href={`/teams/${post.team_name?.split(" ").pop()}`}
-                className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                View Team
-              </Link>
+              {post.team_name && (
+                <Link
+                  href="/teams"
+                  className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  View Teams
+                </Link>
+              )}
             </div>
           </div>
         </footer>

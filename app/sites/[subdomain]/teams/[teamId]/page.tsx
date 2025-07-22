@@ -6,6 +6,7 @@ import { TeamHeader } from "./components/TeamHeader";
 import { PlayerCard } from "./components/PlayerCard";
 import { CoachCard } from "./components/CoachCard";
 import { ScheduleTable } from "./components/ScheduleTable";
+import { AnalyticsTracker } from "@/components/analytics-tracker";
 
 export default async function TeamIdPage({
   params,
@@ -59,6 +60,12 @@ export default async function TeamIdPage({
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <AnalyticsTracker 
+        organizationId={organization.id} 
+        eventType="team_view"
+        metadata={{ teamId: team.id, teamName: team.name }}
+      />
+      
       {/* THE FIX: Pass the entire team object to the TeamHeader component */}
       <TeamHeader team={team} />
 

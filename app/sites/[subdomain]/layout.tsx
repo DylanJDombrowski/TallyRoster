@@ -5,6 +5,7 @@ import { ThemeListener } from "@/app/components/ThemeListener";
 import { OrganizationProvider } from "@/context/OrganizationProvider";
 import { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -119,6 +120,7 @@ export default async function SiteLayout({
             theme={theme}
           />
           <ThemeListener />
+          <AnalyticsTracker organizationId={organization.id} />
           <div className="flex flex-col min-h-screen">
             <header className="font-oswald bg-white dark:bg-gray-800 shadow-sm">
               <div
