@@ -4,7 +4,7 @@
 import { useToast } from "@/app/components/toast-provider";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 
 interface Organization {
   id: string;
@@ -66,7 +66,7 @@ function InvitedUserWelcome({ userRole, orgName, onContinue }: { userRole: strin
   );
 }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const searchParams = useSearchParams();
   const isInvited = searchParams.get("type") === "invited";
   const [step, setStep] = useState<"choice" | "create" | "join" | "invited">(isInvited ? "invited" : "choice");
@@ -90,9 +90,7 @@ export default function OnboardingPage() {
   const supabase = createClient();
 
   const loadOrganizations = useCallback(async () => {
-    // For now, load all organizations (we'll make this more secure later)
     const { data } = await supabase.from("organizations").select("id, name, subdomain, sport, organization_type").order("name");
-
     setOrganizations(data || []);
   }, [supabase]);
 
@@ -106,12 +104,7 @@ export default function OnboardingPage() {
 
     const { data: userOrgRoles } = await supabase
       .from("user_organization_roles")
-      .select(
-        `
-        role,
-        organizations (name)
-      `
-      )
+      .select(`role, organizations (name)`)
       .eq("user_id", user.id);
 
     if (userOrgRoles && userOrgRoles.length > 0) {
@@ -134,7 +127,6 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Check if user already has an organization
     const { data: userOrgRoles } = await supabase.from("user_organization_roles").select("organization_id").eq("user_id", user.id);
 
     if (userOrgRoles && userOrgRoles.length > 0) {
@@ -142,21 +134,12 @@ export default function OnboardingPage() {
     }
   }, [supabase, router]);
 
-  // Update your useEffect to include invited user check
   useEffect(() => {
     checkUserOrganization();
     loadOrganizations();
     checkInvitedUserInfo();
   }, [checkUserOrganization, loadOrganizations, checkInvitedUserInfo]);
 
-  // Check if user already has an organization and load organizations and invited user info
-  useEffect(() => {
-    checkUserOrganization();
-    loadOrganizations();
-    checkInvitedUserInfo();
-  }, [checkUserOrganization, loadOrganizations, checkInvitedUserInfo]);
-
-  // Add this condition at the beginning of your render
   if (step === "invited" && invitedUserInfo) {
     return (
       <InvitedUserWelcome userRole={invitedUserInfo.role} orgName={invitedUserInfo.orgName} onContinue={() => router.push("/dashboard")} />
@@ -171,7 +154,6 @@ export default function OnboardingPage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Create organization
       const { data: organization, error: orgError } = await supabase
         .from("organizations")
         .insert({
@@ -188,7 +170,6 @@ export default function OnboardingPage() {
 
       if (orgError) throw orgError;
 
-      // Create user-organization role
       const { error: roleError } = await supabase.from("user_organization_roles").insert({
         user_id: user.id,
         organization_id: organization.id,
@@ -215,8 +196,6 @@ export default function OnboardingPage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // For now, we'll just add them as a member
-      // Later you can implement team codes or invite validation
       const { error } = await supabase.from("user_organization_roles").insert({
         user_id: user.id,
         organization_id: selectedOrgId,
@@ -235,19 +214,6 @@ export default function OnboardingPage() {
       setLoading(false);
     }
   };
-
-  // Remove unused checkSubdomainAvailability function
-  // const checkSubdomainAvailability = async (subdomain: string) => {
-  //   if (subdomain.length < 3) return;
-  //
-  //   const { data } = await supabase
-  //     .from("organizations")
-  //     .select("id")
-  //     .eq("subdomain", subdomain.toLowerCase())
-  //     .single();
-  //
-  //   return !data; // Available if no data found
-  // };
 
   if (step === "choice") {
     return (
@@ -413,22 +379,6 @@ export default function OnboardingPage() {
               </select>
             </div>
 
-            {/* Future: Team Code Input */}
-            {/* 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Team Code (optional)
-              </label>
-              <input
-                type="text"
-                value={teamCode}
-                onChange={(e) => setTeamCode(e.target.value)}
-                placeholder="Enter team invitation code"
-                className="w-full p-3 border border-slate-300 rounded-lg"
-              />
-            </div>
-            */}
-
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <p className="text-sm text-yellow-800">
                 <strong>Note:</strong> You&apos;ll be added as a member. An admin will need to assign you the appropriate role and team
@@ -448,4 +398,21 @@ export default function OnboardingPage() {
       </div>
     );
   }
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <OnboardingContent />
+    </Suspense>
+  );
 }

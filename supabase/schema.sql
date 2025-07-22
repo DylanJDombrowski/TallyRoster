@@ -60,6 +60,20 @@ $$;
 
 ALTER FUNCTION "public"."get_my_role"() OWNER TO "postgres";
 
+
+CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+    INSERT INTO public.user_profiles (user_id, email)
+    VALUES (NEW.id, NEW.email);
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -492,6 +506,20 @@ CREATE TABLE IF NOT EXISTS "public"."user_organization_roles" (
 ALTER TABLE "public"."user_organization_roles" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."user_profiles" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "email" character varying(255) NOT NULL,
+    "first_name" character varying(255),
+    "last_name" character varying(255),
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."user_profiles" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."user_roles" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -616,6 +644,16 @@ ALTER TABLE ONLY "public"."teams"
 
 ALTER TABLE ONLY "public"."user_organization_roles"
     ADD CONSTRAINT "user_organization_roles_pkey" PRIMARY KEY ("user_id", "organization_id");
+
+
+
+ALTER TABLE ONLY "public"."user_profiles"
+    ADD CONSTRAINT "user_profiles_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."user_profiles"
+    ADD CONSTRAINT "user_profiles_user_id_key" UNIQUE ("user_id");
 
 
 
@@ -869,6 +907,11 @@ ALTER TABLE ONLY "public"."user_organization_roles"
 
 
 
+ALTER TABLE ONLY "public"."user_profiles"
+    ADD CONSTRAINT "user_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."user_roles"
     ADD CONSTRAINT "user_roles_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE CASCADE;
 
@@ -879,7 +922,11 @@ ALTER TABLE ONLY "public"."user_roles"
 
 
 
-CREATE POLICY "Admins have full access" ON "public"."user_roles" USING (("public"."get_my_role"() = 'admin'::"text"));
+CREATE POLICY "Admins can view organization user profiles" ON "public"."user_profiles" FOR SELECT USING (("user_id" IN ( SELECT "uor"."user_id"
+   FROM "public"."user_organization_roles" "uor"
+  WHERE ("uor"."organization_id" IN ( SELECT "user_organization_roles"."organization_id"
+           FROM "public"."user_organization_roles"
+          WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text")))))));
 
 
 
@@ -1095,6 +1142,12 @@ CREATE POLICY "Allow users to see teams in their organization" ON "public"."team
 
 
 
+CREATE POLICY "Org admins can manage user_roles" ON "public"."user_roles" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles" "uor"
+  WHERE (("uor"."user_id" = "auth"."uid"()) AND ("uor"."role" = 'admin'::"text")))));
+
+
+
 CREATE POLICY "Users can create organizations" ON "public"."organizations" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "owner_id"));
 
 
@@ -1105,7 +1158,15 @@ CREATE POLICY "Users can read their organizations" ON "public"."organizations" F
 
 
 
-CREATE POLICY "Users can view their own role" ON "public"."user_roles" FOR SELECT USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Users can update their own profile" ON "public"."user_profiles" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can view own user_role" ON "public"."user_roles" FOR SELECT USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can view their own profile" ON "public"."user_profiles" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -1146,6 +1207,9 @@ ALTER TABLE "public"."static_pages" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."teams" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."user_profiles" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."user_roles" ENABLE ROW LEVEL SECURITY;
@@ -1319,6 +1383,12 @@ GRANT ALL ON FUNCTION "public"."get_my_role"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
+
+
+
 
 
 
@@ -1445,6 +1515,12 @@ GRANT ALL ON TABLE "public"."teams" TO "service_role";
 GRANT ALL ON TABLE "public"."user_organization_roles" TO "anon";
 GRANT ALL ON TABLE "public"."user_organization_roles" TO "authenticated";
 GRANT ALL ON TABLE "public"."user_organization_roles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."user_profiles" TO "anon";
+GRANT ALL ON TABLE "public"."user_profiles" TO "authenticated";
+GRANT ALL ON TABLE "public"."user_profiles" TO "service_role";
 
 
 
