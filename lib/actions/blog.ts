@@ -45,7 +45,7 @@ export type CreateBlogPostData = {
 export type UpdateBlogPostData = Partial<CreateBlogPostData>;
 
 // Generate a slug from title
-export function generateSlug(title: string): string {
+export async function generateSlug(title: string): Promise<string> {
   return title
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
@@ -89,7 +89,7 @@ export async function createBlogPost(data: CreateBlogPostData) {
     const organizationId = await getCurrentUserOrganization();
 
     // Ensure slug is unique within the organization
-    let slug = data.slug || generateSlug(data.title);
+    let slug = data.slug || (await generateSlug(data.title));
     let counter = 1;
     const originalSlug = slug;
 

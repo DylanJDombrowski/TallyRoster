@@ -32,7 +32,10 @@ async function getOrganizationData(subdomain: string) {
     .single();
 
   if (error || !organization) {
-    console.error(`❌ Error loading organization for subdomain ${subdomain}:`, error);
+    console.error(
+      `❌ Error loading organization for subdomain ${subdomain}:`,
+      error
+    );
     return { organization: null, teams: [] };
   }
 
@@ -60,7 +63,13 @@ async function getOrganizationData(subdomain: string) {
   };
 }
 
-export default async function SiteLayout({ children, params }: { children: React.ReactNode; params: Promise<{ subdomain: string }> }) {
+export default async function SiteLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ subdomain: string }>;
+}) {
   const { subdomain } = await params;
   const { organization, teams } = await getOrganizationData(subdomain);
 
@@ -79,6 +88,7 @@ export default async function SiteLayout({ children, params }: { children: React
       })),
     },
     { href: "/live-scores", label: "Live Scores" },
+    { href: "/blog", label: "Blog" },
     { href: "/alumni", label: "Alumni" },
     { href: "/on-the-field", label: "On The Field" },
     { href: "/forms-and-links", label: "Forms & Resources" },
@@ -111,7 +121,10 @@ export default async function SiteLayout({ children, params }: { children: React
           <ThemeListener />
           <div className="flex flex-col min-h-screen">
             <header className="font-oswald bg-white dark:bg-gray-800 shadow-sm">
-              <div className="py-1 px-4 text-white text-center" style={{ backgroundColor: secondaryColor }}>
+              <div
+                className="py-1 px-4 text-white text-center"
+                style={{ backgroundColor: secondaryColor }}
+              >
                 <div className="text-sm">Welcome to {organization.name}</div>
               </div>
               <div className="container mx-auto py-4 px-4">
@@ -142,7 +155,10 @@ export default async function SiteLayout({ children, params }: { children: React
                     >
                       {organization.name}
                     </h1>
-                    <p className="text-sm md:text-2xl uppercase hidden md:block" style={{ color: secondaryColor }}>
+                    <p
+                      className="text-sm md:text-2xl uppercase hidden md:block"
+                      style={{ color: secondaryColor }}
+                    >
                       {slogan}
                     </p>
                   </div>
@@ -153,17 +169,27 @@ export default async function SiteLayout({ children, params }: { children: React
             <Navigation teams={teams} navLinks={navLinks} />
             <main className="flex-grow">{children}</main>
 
-            <footer className="font-oswald text-white py-10 px-5" style={{ backgroundColor: secondaryColor }}>
+            <footer
+              className="font-oswald text-white py-10 px-5"
+              style={{ backgroundColor: secondaryColor }}
+            >
               <div className="max-w-screen-xl mx-auto text-center">
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold mb-2">{organization.name}</h2>
+                  <h2 className="text-2xl font-bold mb-2">
+                    {organization.name}
+                  </h2>
                   <p className="opacity-90">{slogan}</p>
                 </div>
                 <div className="border-t border-white/20 pt-6">
                   <p className="text-sm">
-                    © {new Date().getFullYear()} {organization.name}. All Rights Reserved.
+                    © {new Date().getFullYear()} {organization.name}. All Rights
+                    Reserved.
                   </p>
-                  {organization.subdomain && <p className="text-xs opacity-75 mt-1">Powered by TallyRoster</p>}
+                  {organization.subdomain && (
+                    <p className="text-xs opacity-75 mt-1">
+                      Powered by TallyRoster
+                    </p>
+                  )}
                 </div>
               </div>
             </footer>

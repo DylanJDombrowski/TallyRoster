@@ -1,7 +1,8 @@
 import { getBlogPosts } from "@/lib/actions/blog";
 import Link from "next/link";
-import { Plus, Edit, Trash2, Eye, Calendar, User } from "lucide-react";
+import { Plus, Edit, Eye, Calendar, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import DeleteBlogPostButton from "./components/DeleteBlogPostButton";
 
 export default async function BlogPage() {
   const result = await getBlogPosts();
@@ -151,22 +152,10 @@ export default async function BlogPage() {
                         >
                           <Edit className="w-4 h-4" />
                         </Link>
-                        <button
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete"
-                          onClick={() => {
-                            if (
-                              confirm(
-                                "Are you sure you want to delete this post?"
-                              )
-                            ) {
-                              // We'll implement delete functionality later
-                              console.log("Delete post:", post.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <DeleteBlogPostButton
+                          postId={post.id}
+                          postTitle={post.title}
+                        />
                       </div>
                     </td>
                   </tr>
