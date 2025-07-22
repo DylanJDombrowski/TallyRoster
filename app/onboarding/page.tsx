@@ -3,7 +3,7 @@
 
 import { useToast } from "@/app/components/toast-provider";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 interface Organization {
@@ -14,8 +14,66 @@ interface Organization {
   organization_type: string | null;
 }
 
+function InvitedUserWelcome({ userRole, orgName, onContinue }: { userRole: string; orgName: string; onContinue: () => void }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+        <div className="mb-6">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Welcome to {orgName}!</h1>
+          <p className="text-slate-600">
+            You&apos;ve been invited as a <strong className="capitalize">{userRole}</strong>
+          </p>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold text-blue-900 mb-2">What you can do as a {userRole}:</h3>
+          {userRole === "admin" && (
+            <ul className="text-sm text-blue-800 space-y-1 text-left">
+              <li>• Manage all teams and players</li>
+              <li>• Invite and manage users</li>
+              <li>• Access all organizational features</li>
+              <li>• Customize your organization&apos;s site</li>
+            </ul>
+          )}
+          {userRole === "coach" && (
+            <ul className="text-sm text-blue-800 space-y-1 text-left">
+              <li>• Manage your assigned team&apos;s players</li>
+              <li>• Update game schedules and scores</li>
+              <li>• Communicate with team members</li>
+              <li>• View team analytics and reports</li>
+            </ul>
+          )}
+          {userRole === "parent" && (
+            <ul className="text-sm text-blue-800 space-y-1 text-left">
+              <li>• View your team&apos;s schedule and scores</li>
+              <li>• Access player information and stats</li>
+              <li>• Receive team communications</li>
+              <li>• View team photos and updates</li>
+            </ul>
+          )}
+        </div>
+
+        <button onClick={onContinue} className="w-full p-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
+          Continue to Dashboard
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function OnboardingPage() {
-  const [step, setStep] = useState<"choice" | "create" | "join">("choice");
+  const searchParams = useSearchParams();
+  const isInvited = searchParams.get("type") === "invited";
+  const [step, setStep] = useState<"choice" | "create" | "join" | "invited">(isInvited ? "invited" : "choice");
+  const [invitedUserInfo, setInvitedUserInfo] = useState<{
+    role: string;
+    orgName: string;
+  } | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -30,6 +88,42 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { showToast } = useToast();
   const supabase = createClient();
+
+  const loadOrganizations = useCallback(async () => {
+    // For now, load all organizations (we'll make this more secure later)
+    const { data } = await supabase.from("organizations").select("id, name, subdomain, sport, organization_type").order("name");
+
+    setOrganizations(data || []);
+  }, [supabase]);
+
+  const checkInvitedUserInfo = useCallback(async () => {
+    if (!isInvited) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: userOrgRoles } = await supabase
+      .from("user_organization_roles")
+      .select(
+        `
+        role,
+        organizations (name)
+      `
+      )
+      .eq("user_id", user.id);
+
+    if (userOrgRoles && userOrgRoles.length > 0) {
+      const role = userOrgRoles[0];
+      const orgName = Array.isArray(role.organizations) ? role.organizations[0]?.name : role.organizations?.name;
+
+      setInvitedUserInfo({
+        role: role.role,
+        orgName: orgName || "Unknown Organization",
+      });
+    }
+  }, [isInvited, supabase]);
 
   const checkUserOrganization = useCallback(async () => {
     const {
@@ -48,18 +142,26 @@ export default function OnboardingPage() {
     }
   }, [supabase, router]);
 
-  const loadOrganizations = useCallback(async () => {
-    // For now, load all organizations (we'll make this more secure later)
-    const { data } = await supabase.from("organizations").select("id, name, subdomain, sport, organization_type").order("name");
-
-    setOrganizations(data || []);
-  }, [supabase]);
-
-  // Check if user already has an organization
+  // Update your useEffect to include invited user check
   useEffect(() => {
     checkUserOrganization();
     loadOrganizations();
-  }, [checkUserOrganization, loadOrganizations]);
+    checkInvitedUserInfo();
+  }, [checkUserOrganization, loadOrganizations, checkInvitedUserInfo]);
+
+  // Check if user already has an organization and load organizations and invited user info
+  useEffect(() => {
+    checkUserOrganization();
+    loadOrganizations();
+    checkInvitedUserInfo();
+  }, [checkUserOrganization, loadOrganizations, checkInvitedUserInfo]);
+
+  // Add this condition at the beginning of your render
+  if (step === "invited" && invitedUserInfo) {
+    return (
+      <InvitedUserWelcome userRole={invitedUserInfo.role} orgName={invitedUserInfo.orgName} onContinue={() => router.push("/dashboard")} />
+    );
+  }
 
   const handleCreateOrganization = async () => {
     setLoading(true);

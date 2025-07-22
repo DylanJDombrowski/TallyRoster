@@ -13,32 +13,41 @@ export async function GET(request: Request) {
     const supabase = createClient(cookieStore);
 
     // Exchange the code for a session
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      // Check if user has completed onboarding
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    if (!error && data.user) {
+      // Check if this is a new user from invitation
+      const userCreatedAt = new Date(data.user.created_at!);
+      const now = new Date();
+      const isNewUser = now.getTime() - userCreatedAt.getTime() < 300000; // 5 minutes
 
-      if (user) {
-        // Check if user is associated with any organization
-        const { data: userOrgRoles } = await supabase
-          .from("user_organization_roles")
-          .select("organization_id, role, organizations(name)")
-          .eq("user_id", user.id);
+      // Check if user has organization roles
+      const { data: userOrgRoles } = await supabase
+        .from("user_organization_roles")
+        .select("organization_id, role, organizations(name)")
+        .eq("user_id", data.user.id);
 
-        if (userOrgRoles && userOrgRoles.length > 0) {
-          // User has organization, go to dashboard
-          return NextResponse.redirect(`${origin}/dashboard`);
+      if (userOrgRoles && userOrgRoles.length > 0) {
+        // User has organization access
+        if (isNewUser) {
+          // New user with invitation - check if they need password setup
+          const hasPassword = data.user.user_metadata?.password_set || data.user.app_metadata?.provider === "email";
+
+          if (!hasPassword) {
+            // Need to set password
+            return NextResponse.redirect(`${origin}/auth/setup-password`);
+          } else {
+            // Password set, go to onboarding for role orientation
+            return NextResponse.redirect(`${origin}/onboarding?type=invited`);
+          }
         } else {
-          // New user with no organization, send to onboarding
-          return NextResponse.redirect(`${origin}/onboarding`);
+          // Existing user, go to dashboard
+          return NextResponse.redirect(`${origin}/dashboard`);
         }
+      } else {
+        // No organization - send to onboarding to create/join one
+        return NextResponse.redirect(`${origin}/onboarding`);
       }
-
-      // Fallback to onboarding
-      return NextResponse.redirect(`${origin}/onboarding`);
     } else {
       console.error("Auth callback error:", error);
       return NextResponse.redirect(`${origin}/login?error=confirmation_failed`);

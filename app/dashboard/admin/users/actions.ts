@@ -228,6 +228,154 @@ const UpdateUserRoleSchema = z.object({
   team_id: z.string().uuid().optional().nullable(),
 });
 
+export async function removeUser(prevState: unknown, formData: FormData) {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  // Check if current user is admin
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { error: "Authentication required" };
+  }
+
+  const { data: userOrgRole, error: roleError } = await supabase
+    .from("user_organization_roles")
+    .select("role, organization_id")
+    .eq("user_id", user.id)
+    .eq("role", "admin")
+    .single();
+
+  if (roleError || !userOrgRole) {
+    return { error: "Admin access required" };
+  }
+
+  const userIdToRemove = formData.get("user_id") as string;
+
+  if (!userIdToRemove) {
+    return { error: "User ID is required" };
+  }
+
+  // Prevent self-removal
+  if (userIdToRemove === user.id) {
+    return { error: "Cannot remove yourself" };
+  }
+
+  try {
+    // Remove from user_roles table
+    const { error: userRolesError } = await supabase.from("user_roles").delete().eq("user_id", userIdToRemove);
+
+    if (userRolesError) {
+      console.error("Error removing user roles:", userRolesError);
+    }
+
+    // Remove from user_organization_roles table
+    const { error: orgRolesError } = await supabase
+      .from("user_organization_roles")
+      .delete()
+      .eq("user_id", userIdToRemove)
+      .eq("organization_id", userOrgRole.organization_id);
+
+    if (orgRolesError) {
+      return { error: `Failed to remove user from organization: ${orgRolesError.message}` };
+    }
+
+    // Optionally delete the user from auth (this is destructive!)
+    // Comment this out if you want to keep the user but just remove them from the org
+    const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(userIdToRemove);
+
+    if (deleteUserError) {
+      console.error("Warning: Failed to delete user from auth:", deleteUserError);
+      // Don't fail the whole operation if auth deletion fails
+    }
+
+    revalidatePath("/dashboard/admin/users");
+    return { success: "User removed successfully" };
+  } catch (error) {
+    console.error("Error removing user:", error);
+    return { error: "Failed to remove user" };
+  }
+}
+
+// Resend invitation
+export async function resendInvitation(prevState: unknown, formData: FormData) {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  // Check admin permissions
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { error: "Authentication required" };
+  }
+
+  const { data: userOrgRole, error: roleError } = await supabase
+    .from("user_organization_roles")
+    .select("role, organization_id")
+    .eq("user_id", user.id)
+    .eq("role", "admin")
+    .single();
+
+  if (roleError || !userOrgRole) {
+    return { error: "Admin access required" };
+  }
+
+  const email = formData.get("email") as string;
+
+  if (!email) {
+    return { error: "Email is required" };
+  }
+
+  try {
+    // Resend invitation using admin client
+    const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
+
+    if (inviteError) {
+      if (inviteError.message.includes("rate limit")) {
+        return { error: "Rate limit reached. Please wait before resending." };
+      }
+      return { error: `Failed to resend invitation: ${inviteError.message}` };
+    }
+
+    return { success: `Invitation resent to ${email}` };
+  } catch (error) {
+    console.error("Error resending invitation:", error);
+    return { error: "Failed to resend invitation" };
+  }
+}
+
+// Get user status (active, pending, etc.)
+export async function getUserStatus(userId: string) {
+  try {
+    const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+    if (error || !authUser.user) {
+      return "unknown";
+    }
+
+    const user = authUser.user;
+
+    // Check if email is confirmed
+    if (!user.email_confirmed_at) {
+      return "pending"; // Invitation sent but not accepted
+    }
+
+    // Check if password is set
+    if (!user.user_metadata?.password_set) {
+      return "setup_required"; // Accepted invite but needs password
+    }
+
+    return "active"; // Fully set up
+  } catch (error) {
+    console.error("Error getting user status:", error);
+    return "unknown";
+  }
+}
+
 export async function updateUserRole(prevState: unknown, formData: FormData) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
