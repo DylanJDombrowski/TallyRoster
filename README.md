@@ -1,42 +1,7 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out
-
 ```
 mvx-platform
+├─ ANALYTICS_ARCHITECTURE.md
+├─ ANALYTICS_IMPLEMENTATION.md
 ├─ app
 │  ├─ actions.ts
 │  ├─ api
@@ -78,12 +43,15 @@ mvx-platform
 │  │     └─ route.ts
 │  ├─ auth
 │  │  ├─ actions.ts
-│  │  └─ callback
-│  │     └─ route.ts
+│  │  ├─ callback
+│  │  │  └─ route.ts
+│  │  └─ setup-password
+│  │     └─ page.tsx
 │  ├─ components
 │  │  ├─ auth
 │  │  │  ├─ login-form.tsx
 │  │  │  └─ signup-form.tsx
+│  │  ├─ CloudinaryUpload.tsx
 │  │  ├─ Container.tsx
 │  │  ├─ ImageCarousel.tsx
 │  │  ├─ modal.tsx
@@ -95,6 +63,7 @@ mvx-platform
 │  │  │     └─ VisualCustomizationStep.tsx
 │  │  ├─ PlayerCard.tsx
 │  │  ├─ PushNotificationManager.tsx
+│  │  ├─ RichTextEditor.tsx
 │  │  ├─ TeamCard.tsx
 │  │  ├─ theme-style.tsx
 │  │  ├─ ThemeListener.tsx
@@ -118,6 +87,22 @@ mvx-platform
 │  │  │     │  └─ user-management-client.tsx
 │  │  │     ├─ page.tsx
 │  │  │     └─ README.md
+│  │  ├─ analytics
+│  │  │  ├─ components
+│  │  │  │  └─ analytics-dashboard.tsx
+│  │  │  └─ page.tsx
+│  │  ├─ blog
+│  │  │  ├─ components
+│  │  │  │  ├─ BlogPostForm.tsx
+│  │  │  │  └─ DeleteBlogPostButton.tsx
+│  │  │  ├─ new
+│  │  │  │  └─ page.tsx
+│  │  │  ├─ page.tsx
+│  │  │  └─ [id]
+│  │  │     ├─ edit
+│  │  │     │  └─ page.tsx
+│  │  │     └─ preview
+│  │  │        └─ page.tsx
 │  │  ├─ communications
 │  │  │  ├─ components
 │  │  │  │  ├─ communication-manager.tsx
@@ -169,8 +154,16 @@ mvx-platform
 │  │  └─ page.tsx
 │  ├─ manifest.ts
 │  ├─ marketing
+│  │  ├─ about
+│  │  │  └─ page.tsx
 │  │  ├─ components
 │  │  │  └─ MarketingHeader.tsx
+│  │  ├─ contact
+│  │  │  └─ page.tsx
+│  │  ├─ demo
+│  │  │  └─ page.tsx
+│  │  ├─ features
+│  │  │  └─ page.tsx
 │  │  ├─ layout.tsx
 │  │  ├─ page.tsx
 │  │  └─ pricing
@@ -185,6 +178,10 @@ mvx-platform
 │  │     │  └─ page.tsx
 │  │     ├─ alumni
 │  │     │  └─ page.tsx
+│  │     ├─ blog
+│  │     │  ├─ page.tsx
+│  │     │  └─ [slug]
+│  │     │     └─ page.tsx
 │  │     ├─ extended-team
 │  │     │  └─ page.tsx
 │  │     ├─ forms-and-links
@@ -215,7 +212,9 @@ mvx-platform
 │  │  └─ page.tsx
 │  └─ types
 │     └─ onboarding.ts
+├─ BLOG_FEATURE_README.md
 ├─ components
+│  ├─ analytics-tracker.tsx
 │  ├─ features
 │  │  └─ index.ts
 │  └─ ui
@@ -226,8 +225,12 @@ mvx-platform
 ├─ eslint.config.mjs
 ├─ lib
 │  ├─ actions
+│  │  ├─ blog.ts
 │  │  ├─ index.ts
 │  │  └─ players.ts
+│  ├─ analytics
+│  │  ├─ server.ts
+│  │  └─ tracker.ts
 │  ├─ config
 │  │  ├─ app.ts
 │  │  ├─ domains.ts
@@ -245,6 +248,7 @@ mvx-platform
 │  │  ├─ index.ts
 │  │  └─ validation.ts
 │  ├─ supabase
+│  │  ├─ admin.ts
 │  │  ├─ client.ts
 │  │  └─ server.ts
 │  ├─ types
@@ -338,6 +342,8 @@ mvx-platform
 │  │  ├─ project-ref
 │  │  ├─ rest-version
 │  │  └─ storage-version
+│  ├─ migrations
+│  │  └─ add_analytics_tables.sql
 │  └─ schema.sql
 ├─ tailwind.config.ts
 └─ tsconfig.json

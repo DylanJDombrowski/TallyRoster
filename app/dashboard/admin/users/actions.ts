@@ -59,7 +59,7 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
   // Get user's admin role and organization
   const { data: userOrgRole, error: roleError } = await supabase
     .from("user_organization_roles")
-    .select("role, organization_id")
+    .select("role, organization_id, organizations(name)")
     .eq("user_id", user.id)
     .eq("role", "admin")
     .single();
@@ -78,7 +78,9 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
 
   if (orgUsersError) {
     console.error("❌ Error loading organization users:", orgUsersError);
-    return { error: `Error loading organization users: ${orgUsersError.message}` };
+    return {
+      error: `Error loading organization users: ${orgUsersError.message}`,
+    };
   }
   console.log("✅ Found organization users:", orgUsers?.length || 0);
 
@@ -86,7 +88,8 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
   const userIds = orgUsers?.map((u) => u.user_id) || [];
   console.log("🔍 Fetching auth user details for:", userIds.length, "users");
 
-  const { data: authData, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers();
+  const { data: authData, error: authUsersError } =
+    await supabaseAdmin.auth.admin.listUsers();
 
   if (authUsersError) {
     console.error("❌ Error loading user details:", authUsersError);
@@ -94,11 +97,16 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
   }
 
   // Filter to only users in this organization
-  const orgAuthUsers = authData.users.filter((authUser) => userIds.includes(authUser.id));
+  const orgAuthUsers = authData.users.filter((authUser) =>
+    userIds.includes(authUser.id)
+  );
   console.log("✅ Found auth users:", orgAuthUsers.length);
 
   // Get user roles and teams (from your secondary user_roles table)
-  const { data: userRoles, error: userRolesError } = await supabase.from("user_roles").select("*, teams(name)").in("user_id", userIds);
+  const { data: userRoles, error: userRolesError } = await supabase
+    .from("user_roles")
+    .select("*, teams(name)")
+    .in("user_id", userIds);
 
   if (userRolesError) {
     console.error("❌ Error loading user roles:", userRolesError);
@@ -107,7 +115,10 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
   console.log("✅ Found user roles:", userRoles?.length || 0);
 
   // Get teams for forms
-  const { data: teams, error: teamsError } = await supabase.from("teams").select("*").eq("organization_id", userOrgRole.organization_id);
+  const { data: teams, error: teamsError } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("organization_id", userOrgRole.organization_id);
 
   if (teamsError) {
     console.error("❌ Error loading teams:", teamsError);
@@ -136,11 +147,15 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
   };
 }
 
-// Rest of the existing functions remain the same...
+// Updated invite user schema
 const InviteUserSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
   role: z.enum(["admin", "coach", "parent"]),
-  team_id: z.string().uuid({ message: "Please select a valid team" }).optional().nullable(),
+  team_id: z
+    .string()
+    .uuid({ message: "Please select a valid team" })
+    .optional()
+    .nullable(),
 });
 
 export async function inviteUser(prevState: unknown, formData: FormData) {
@@ -158,7 +173,7 @@ export async function inviteUser(prevState: unknown, formData: FormData) {
 
   const { data: userOrgRole, error: roleError } = await supabase
     .from("user_organization_roles")
-    .select("role, organization_id")
+    .select("role, organization_id, organizations(name)")
     .eq("user_id", user.id)
     .eq("role", "admin")
     .single();
@@ -182,43 +197,51 @@ export async function inviteUser(prevState: unknown, formData: FormData) {
 
   const { email, role, team_id } = validatedFields.data;
 
-  // Use admin client to invite user
-  const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
-
-  if (inviteError) {
-    return { error: `Failed to invite user: ${inviteError.message}` };
+  // Validate team requirement for coach/parent roles
+  if ((role === "coach" || role === "parent") && !team_id) {
+    return {
+      error: `Team selection is required for ${role} role`,
+      fields: { team_id: ["Please select a team"] },
+    };
   }
 
-  if (!inviteData.user) {
-    return { error: "User was not created, cannot assign role." };
+  try {
+    // Get organization name for invitation
+    const orgName = Array.isArray(userOrgRole.organizations)
+      ? userOrgRole.organizations[0]?.name
+      : userOrgRole.organizations?.name || "Unknown Organization";
+
+    // Use admin client to invite user with metadata
+    const { data: inviteData, error: inviteError } =
+      await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: {
+          invited_by: user.id,
+          organization_id: userOrgRole.organization_id,
+          organization_name: orgName,
+          assigned_role: role,
+          team_id: team_id,
+          invitation_type: "organization_invite",
+        },
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      });
+
+    if (inviteError) {
+      console.error("Failed to send invitation:", inviteError);
+      return { error: `Failed to send invitation: ${inviteError.message}` };
+    }
+
+    if (!inviteData.user) {
+      return { error: "Failed to create invitation" };
+    }
+
+    console.log(`✅ Invitation sent to ${email} for role: ${role}`);
+
+    revalidatePath("/dashboard/admin/users");
+    return { success: `Invitation sent successfully to ${email}` };
+  } catch (error) {
+    console.error("Error inviting user:", error);
+    return { error: "Failed to send invitation. Please try again." };
   }
-
-  // Add to user_organization_roles table
-  const { error: orgRoleError } = await supabase.from("user_organization_roles").insert({
-    user_id: inviteData.user.id,
-    organization_id: userOrgRole.organization_id,
-    role: role === "parent" ? "member" : role, // Map parent to member in org roles
-  });
-
-  if (orgRoleError) {
-    console.error("Failed to assign organization role:", orgRoleError);
-    return { error: `User invited, but failed to assign organization role: ${orgRoleError.message}` };
-  }
-
-  // Add to user_roles table (for team assignments and detailed roles)
-  const { error: userRoleError } = await supabase.from("user_roles").insert({
-    user_id: inviteData.user.id,
-    role: role,
-    team_id: team_id,
-  });
-
-  if (userRoleError) {
-    console.error("Failed to assign user role:", userRoleError);
-    return { error: `User invited, but failed to assign user role: ${userRoleError.message}` };
-  }
-
-  revalidatePath("/dashboard/admin/users");
-  return { success: `Invitation sent successfully to ${email}` };
 }
 
 // Updated user role update function
@@ -265,7 +288,10 @@ export async function removeUser(prevState: unknown, formData: FormData) {
 
   try {
     // Remove from user_roles table
-    const { error: userRolesError } = await supabase.from("user_roles").delete().eq("user_id", userIdToRemove);
+    const { error: userRolesError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userIdToRemove);
 
     if (userRolesError) {
       console.error("Error removing user roles:", userRolesError);
@@ -279,15 +305,20 @@ export async function removeUser(prevState: unknown, formData: FormData) {
       .eq("organization_id", userOrgRole.organization_id);
 
     if (orgRolesError) {
-      return { error: `Failed to remove user from organization: ${orgRolesError.message}` };
+      return {
+        error: `Failed to remove user from organization: ${orgRolesError.message}`,
+      };
     }
 
     // Optionally delete the user from auth (this is destructive!)
-    // Comment this out if you want to keep the user but just remove them from the org
-    const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(userIdToRemove);
+    const { error: deleteUserError } =
+      await supabaseAdmin.auth.admin.deleteUser(userIdToRemove);
 
     if (deleteUserError) {
-      console.error("Warning: Failed to delete user from auth:", deleteUserError);
+      console.error(
+        "Warning: Failed to delete user from auth:",
+        deleteUserError
+      );
       // Don't fail the whole operation if auth deletion fails
     }
 
@@ -315,7 +346,7 @@ export async function resendInvitation(prevState: unknown, formData: FormData) {
 
   const { data: userOrgRole, error: roleError } = await supabase
     .from("user_organization_roles")
-    .select("role, organization_id")
+    .select("role, organization_id, organizations(name)")
     .eq("user_id", user.id)
     .eq("role", "admin")
     .single();
@@ -331,8 +362,22 @@ export async function resendInvitation(prevState: unknown, formData: FormData) {
   }
 
   try {
+    // Get organization name
+    const orgName = Array.isArray(userOrgRole.organizations)
+      ? userOrgRole.organizations[0]?.name
+      : userOrgRole.organizations?.name || "Unknown Organization";
+
     // Resend invitation using admin client
-    const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
+    const { error: inviteError } =
+      await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: {
+          invited_by: user.id,
+          organization_id: userOrgRole.organization_id,
+          organization_name: orgName,
+          invitation_type: "organization_reinvite",
+        },
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      });
 
     if (inviteError) {
       if (inviteError.message.includes("rate limit")) {
@@ -345,34 +390,6 @@ export async function resendInvitation(prevState: unknown, formData: FormData) {
   } catch (error) {
     console.error("Error resending invitation:", error);
     return { error: "Failed to resend invitation" };
-  }
-}
-
-// Get user status (active, pending, etc.)
-export async function getUserStatus(userId: string) {
-  try {
-    const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(userId);
-
-    if (error || !authUser.user) {
-      return "unknown";
-    }
-
-    const user = authUser.user;
-
-    // Check if email is confirmed
-    if (!user.email_confirmed_at) {
-      return "pending"; // Invitation sent but not accepted
-    }
-
-    // Check if password is set
-    if (!user.user_metadata?.password_set) {
-      return "setup_required"; // Accepted invite but needs password
-    }
-
-    return "active"; // Fully set up
-  } catch (error) {
-    console.error("Error getting user status:", error);
-    return "unknown";
   }
 }
 
@@ -421,24 +438,35 @@ export async function updateUserRole(prevState: unknown, formData: FormData) {
     .eq("organization_id", userOrgRole.organization_id);
 
   if (orgRoleUpdateError) {
-    return { error: `Failed to update organization role: ${orgRoleUpdateError.message}` };
+    return {
+      error: `Failed to update organization role: ${orgRoleUpdateError.message}`,
+    };
   }
 
   // Update user_roles
   const final_team_id = role === "admin" ? null : team_id;
 
-  const { data: existingRole, error: findError } = await supabase.from("user_roles").select("id").eq("user_id", user_id).single();
+  const { data: existingRole, error: findError } = await supabase
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", user_id)
+    .single();
 
   if (findError || !existingRole) {
     // Create new user_roles entry if it doesn't exist
-    const { error: insertError } = await supabase.from("user_roles").insert({ user_id, role, team_id: final_team_id });
+    const { error: insertError } = await supabase
+      .from("user_roles")
+      .insert({ user_id, role, team_id: final_team_id });
 
     if (insertError) {
       return { error: `Failed to create user role: ${insertError.message}` };
     }
   } else {
     // Update existing user_roles entry
-    const { error: updateError } = await supabase.from("user_roles").update({ role, team_id: final_team_id }).eq("id", existingRole.id);
+    const { error: updateError } = await supabase
+      .from("user_roles")
+      .update({ role, team_id: final_team_id })
+      .eq("id", existingRole.id);
 
     if (updateError) {
       return { error: `Failed to update user role: ${updateError.message}` };

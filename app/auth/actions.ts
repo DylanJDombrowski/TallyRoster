@@ -41,8 +41,9 @@ export async function signup(prevState: unknown, formData: FormData) {
     email,
     password,
     options: {
-      // Make sure we're pointing to the auth callback endpoint
-      emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` : `${origin}/auth/callback`,
+      emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+        : `${origin}/auth/callback`,
     },
   });
 
@@ -100,7 +101,10 @@ export async function login(prevState: unknown, formData: FormData) {
       return { message: "Invalid email or password." };
     }
     if (error.message.includes("Email not confirmed")) {
-      return { message: "Please check your email and confirm your account before signing in." };
+      return {
+        message:
+          "Please check your email and confirm your account before signing in.",
+      };
     }
 
     return { message: "Could not sign in. Please try again." };
