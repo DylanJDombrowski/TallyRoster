@@ -7,22 +7,19 @@ import type { User } from "@supabase/supabase-js";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const access_token = requestUrl.searchParams.get("access_token");
-  const refresh_token = requestUrl.searchParams.get("refresh_token");
   const origin = requestUrl.origin;
 
-  console.log("🔍 Auth callback called with:", {
+  console.log("🔍 Server-side auth callback called with:", {
     hasCode: !!code,
-    hasAccessToken: !!access_token,
-    hasRefreshToken: !!refresh_token,
     url: requestUrl.toString(),
   });
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  // Handle authorization code flow (normal signup/login)
+  // Only handle authorization code flow on server-side
+  // Fragment-based tokens are handled by the client component
   if (code) {
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
     try {
       // Exchange the code for a session
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -41,32 +38,8 @@ export async function GET(request: Request) {
     }
   }
 
-  // Handle implicit flow (invitation links)
-  if (access_token && refresh_token) {
-    try {
-      // Set the session using the tokens
-      const { data, error } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
-      });
-
-      if (error || !data.user) {
-        console.error("Auth session error:", error);
-        return NextResponse.redirect(`${origin}/login?error=session_failed`);
-      }
-
-      return handleAuthenticatedUser(data.user, origin);
-    } catch (error) {
-      console.error("🚨 Error setting session:", error);
-      return NextResponse.redirect(`${origin}/login?error=session_error`);
-    }
-  }
-
-  // No valid authentication parameters found
-  console.error("❌ No valid auth parameters found in callback");
-  return NextResponse.redirect(
-    `${origin}/login?error=invalid_confirmation_link`
-  );
+  // No code parameter - redirect to client-side page to handle fragment tokens
+  return NextResponse.redirect(`${origin}/auth/callback`);
 }
 
 async function handleAuthenticatedUser(user: User, origin: string) {
@@ -107,12 +80,11 @@ async function handleAuthenticatedUser(user: User, origin: string) {
 
       if (orgRoleError) {
         console.error("❌ Failed to assign organization role:", orgRoleError);
-        // Don't fail completely, but log the error
       } else {
         console.log("✅ Organization role assigned:", orgRole);
       }
 
-      // Add user to user_roles table (for detailed role and team assignment)
+      // Add user to user_roles table
       const { error: userRoleError } = await supabase
         .from("user_roles")
         .upsert({
@@ -123,21 +95,15 @@ async function handleAuthenticatedUser(user: User, origin: string) {
 
       if (userRoleError) {
         console.error("❌ Failed to assign user role:", userRoleError);
-        // Don't fail completely, but log the error
       } else {
-        console.log(
-          "✅ User role assigned:",
-          assignedRole,
-          teamId ? `(team: ${teamId})` : ""
-        );
+        console.log("✅ User role assigned:", assignedRole);
       }
 
-      // Check if this is a brand new user who needs to set password
+      // Check if user needs password setup
       const userCreatedAt = new Date(user.created_at!);
       const now = new Date();
-      const isVeryNewUser = now.getTime() - userCreatedAt.getTime() < 600000; // 10 minutes
+      const isVeryNewUser = now.getTime() - userCreatedAt.getTime() < 600000;
 
-      // For invited users, check if they need password setup
       const needsPasswordSetup =
         !user.user_metadata?.password_set &&
         (isVeryNewUser || user.app_metadata?.provider === "email");
@@ -149,12 +115,10 @@ async function handleAuthenticatedUser(user: User, origin: string) {
         );
       }
 
-      // User is fully set up, go directly to dashboard
       console.log("🎉 Redirecting invited user to dashboard");
       return NextResponse.redirect(`${origin}/dashboard`);
     } catch (dbError) {
       console.error("❌ Database error during invitation processing:", dbError);
-      // Still redirect to dashboard, admin can fix roles manually
       return NextResponse.redirect(`${origin}/dashboard`);
     }
   }
@@ -162,18 +126,15 @@ async function handleAuthenticatedUser(user: User, origin: string) {
   // Not an invited user - handle normal authentication flow
   console.log("👤 Processing regular user");
 
-  // Check if user has organization roles
   const { data: userOrgRoles } = await supabase
     .from("user_organization_roles")
     .select("organization_id, role, organizations(name)")
     .eq("user_id", user.id);
 
   if (userOrgRoles && userOrgRoles.length > 0) {
-    // User has organization access, go to dashboard
     console.log("✅ User has organization access, redirecting to dashboard");
     return NextResponse.redirect(`${origin}/dashboard`);
   } else {
-    // No organization - send to onboarding to create/join one
     console.log("🚀 User needs organization, redirecting to onboarding");
     return NextResponse.redirect(`${origin}/onboarding`);
   }
