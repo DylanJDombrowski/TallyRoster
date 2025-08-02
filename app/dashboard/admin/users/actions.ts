@@ -283,7 +283,7 @@ export async function removeUser(prevState: unknown, formData: FormData) {
 
   // Prevent self-removal
   if (userIdToRemove === user.id) {
-    return { error: "Cannot remove yourself" };
+    return { error: "You cannot remove yourself from the organization" };
   }
 
   try {
@@ -323,10 +323,10 @@ export async function removeUser(prevState: unknown, formData: FormData) {
     }
 
     revalidatePath("/dashboard/admin/users");
-    return { success: "User removed successfully" };
+    return { success: "User removed successfully from the organization" };
   } catch (error) {
     console.error("Error removing user:", error);
-    return { error: "Failed to remove user" };
+    return { error: "Failed to remove user. Please try again." };
   }
 }
 
@@ -386,10 +386,10 @@ export async function resendInvitation(prevState: unknown, formData: FormData) {
       return { error: `Failed to resend invitation: ${inviteError.message}` };
     }
 
-    return { success: `Invitation resent to ${email}` };
+    return { success: `Invitation resent successfully to ${email}` };
   } catch (error) {
     console.error("Error resending invitation:", error);
-    return { error: "Failed to resend invitation" };
+    return { error: "Failed to resend invitation. Please try again." };
   }
 }
 
@@ -428,6 +428,11 @@ export async function updateUserRole(prevState: unknown, formData: FormData) {
   }
 
   const { user_id, role, team_id } = validatedFields.data;
+
+  // Prevent self-modification
+  if (user_id === user.id) {
+    return { error: "You cannot modify your own role" };
+  }
 
   // Update user_organization_roles
   const orgRole = role === "parent" ? "member" : role;
