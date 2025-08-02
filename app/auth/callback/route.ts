@@ -29,7 +29,8 @@ export async function GET(request: Request) {
       // Check if this is an invited user by looking at user metadata
       const invitationData = user.user_metadata;
       const isInvitedUser =
-        invitationData?.invitation_type === "organization_invite";
+        invitationData?.invitation_type === "organization_invite" ||
+        invitationData?.invitation_type === "organization_reinvite";
 
       if (isInvitedUser) {
         console.log("🎯 Processing invited user");
@@ -87,18 +88,27 @@ export async function GET(request: Request) {
             );
           }
 
-          // Check if user needs to set password
+          // Check if this is a brand new user who needs to set password
+          // Supabase invited users have a temporary password that expires
           const userCreatedAt = new Date(user.created_at!);
           const now = new Date();
-          const isNewUser = now.getTime() - userCreatedAt.getTime() < 300000; // 5 minutes
+          const isVeryNewUser =
+            now.getTime() - userCreatedAt.getTime() < 600000; // 10 minutes
 
-          // Check if user has confirmed their email but needs password setup
-          if (isNewUser && !user.user_metadata?.password_set) {
-            console.log("🔑 Redirecting to password setup");
-            return NextResponse.redirect(`${origin}/auth/setup-password`);
+          // For invited users, we always want them to set their own password
+          // Check if they haven't set a permanent password yet
+          const needsPasswordSetup =
+            !user.user_metadata?.password_set &&
+            (isVeryNewUser || user.app_metadata?.provider === "email");
+
+          if (needsPasswordSetup) {
+            console.log("🔑 Redirecting invited user to password setup");
+            return NextResponse.redirect(
+              `${origin}/auth/setup-password?invited=true`
+            );
           }
 
-          // User is set up, go directly to dashboard
+          // User is fully set up, go directly to dashboard
           console.log("🎉 Redirecting invited user to dashboard");
           return NextResponse.redirect(`${origin}/dashboard`);
         } catch (dbError) {

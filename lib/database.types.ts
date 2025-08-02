@@ -14,206 +14,6 @@ export type Database = {
   };
   public: {
     Tables: {
-      analytics_events: {
-        Row: {
-          created_at: string;
-          event_type: string;
-          id: string;
-          ip_address: string | null;
-          metadata: Json | null;
-          organization_id: string;
-          page_path: string;
-          page_title: string | null;
-          referrer: string | null;
-          session_id: string | null;
-          user_agent: string | null;
-          user_id: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          event_type: string;
-          id?: string;
-          ip_address?: string | null;
-          metadata?: Json | null;
-          organization_id: string;
-          page_path: string;
-          page_title?: string | null;
-          referrer?: string | null;
-          session_id?: string | null;
-          user_agent?: string | null;
-          user_id?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          event_type?: string;
-          id?: string;
-          ip_address?: string | null;
-          metadata?: Json | null;
-          organization_id?: string;
-          page_path?: string;
-          page_title?: string | null;
-          referrer?: string | null;
-          session_id?: string | null;
-          user_agent?: string | null;
-          user_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "analytics_events_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "analytics_events_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      analytics_page_views: {
-        Row: {
-          id: string;
-          organization_id: string;
-          page_path: string;
-          page_title: string | null;
-          view_date: string;
-          view_count: number;
-          unique_sessions: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          organization_id: string;
-          page_path: string;
-          page_title?: string | null;
-          view_date: string;
-          view_count?: number;
-          unique_sessions?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          organization_id?: string;
-          page_path?: string;
-          page_title?: string | null;
-          view_date?: string;
-          view_count?: number;
-          unique_sessions?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "analytics_page_views_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      analytics_team_views: {
-        Row: {
-          id: string;
-          organization_id: string;
-          team_id: string;
-          view_date: string;
-          view_count: number;
-          unique_sessions: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          organization_id: string;
-          team_id: string;
-          view_date: string;
-          view_count?: number;
-          unique_sessions?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          organization_id?: string;
-          team_id?: string;
-          view_date?: string;
-          view_count?: number;
-          unique_sessions?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "analytics_team_views_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "analytics_team_views_team_id_fkey";
-            columns: ["team_id"];
-            isOneToOne: false;
-            referencedRelation: "teams";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      analytics_player_views: {
-        Row: {
-          id: string;
-          organization_id: string;
-          player_id: string;
-          view_date: string;
-          view_count: number;
-          unique_sessions: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          organization_id: string;
-          player_id: string;
-          view_date: string;
-          view_count?: number;
-          unique_sessions?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          organization_id?: string;
-          player_id?: string;
-          view_date?: string;
-          view_count?: number;
-          unique_sessions?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "analytics_player_views_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "analytics_player_views_player_id_fkey";
-            columns: ["player_id"];
-            isOneToOne: false;
-            referencedRelation: "players";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
       alumni: {
         Row: {
           college: string | null;
@@ -273,6 +73,199 @@ export type Database = {
             columns: ["player_id"];
             isOneToOne: false;
             referencedRelation: "players";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      analytics_events: {
+        Row: {
+          created_at: string;
+          event_type: string;
+          id: string;
+          ip_address: unknown | null;
+          metadata: Json | null;
+          organization_id: string;
+          page_path: string;
+          page_title: string | null;
+          referrer: string | null;
+          session_id: string;
+          user_agent: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          event_type: string;
+          id?: string;
+          ip_address?: unknown | null;
+          metadata?: Json | null;
+          organization_id: string;
+          page_path: string;
+          page_title?: string | null;
+          referrer?: string | null;
+          session_id: string;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          event_type?: string;
+          id?: string;
+          ip_address?: unknown | null;
+          metadata?: Json | null;
+          organization_id?: string;
+          page_path?: string;
+          page_title?: string | null;
+          referrer?: string | null;
+          session_id?: string;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      analytics_page_views: {
+        Row: {
+          created_at: string;
+          id: string;
+          organization_id: string;
+          page_path: string;
+          page_title: string | null;
+          unique_sessions: number;
+          updated_at: string;
+          view_count: number;
+          view_date: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          organization_id: string;
+          page_path: string;
+          page_title?: string | null;
+          unique_sessions?: number;
+          updated_at?: string;
+          view_count?: number;
+          view_date: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          organization_id?: string;
+          page_path?: string;
+          page_title?: string | null;
+          unique_sessions?: number;
+          updated_at?: string;
+          view_count?: number;
+          view_date?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "analytics_page_views_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      analytics_player_views: {
+        Row: {
+          created_at: string;
+          id: string;
+          organization_id: string;
+          player_id: string;
+          unique_sessions: number;
+          updated_at: string;
+          view_count: number;
+          view_date: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          organization_id: string;
+          player_id: string;
+          unique_sessions?: number;
+          updated_at?: string;
+          view_count?: number;
+          view_date: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          organization_id?: string;
+          player_id?: string;
+          unique_sessions?: number;
+          updated_at?: string;
+          view_count?: number;
+          view_date?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "analytics_player_views_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "analytics_player_views_player_id_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      analytics_team_views: {
+        Row: {
+          created_at: string;
+          id: string;
+          organization_id: string;
+          team_id: string;
+          unique_sessions: number;
+          updated_at: string;
+          view_count: number;
+          view_date: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          organization_id: string;
+          team_id: string;
+          unique_sessions?: number;
+          updated_at?: string;
+          view_count?: number;
+          view_date: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          organization_id?: string;
+          team_id?: string;
+          unique_sessions?: number;
+          updated_at?: string;
+          view_count?: number;
+          view_date?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "analytics_team_views_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "analytics_team_views_team_id_fkey";
+            columns: ["team_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
             referencedColumns: ["id"];
           }
         ];
@@ -715,59 +708,6 @@ export type Database = {
             columns: ["player_id"];
             isOneToOne: false;
             referencedRelation: "players";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      organization_invitations: {
-        Row: {
-          code: string;
-          created_at: string;
-          created_by: string;
-          current_uses: number | null;
-          expires_at: string;
-          id: string;
-          max_uses: number | null;
-          organization_id: string;
-          role: string;
-          used: boolean;
-          used_at: string | null;
-          used_by: string | null;
-        };
-        Insert: {
-          code: string;
-          created_at?: string;
-          created_by: string;
-          current_uses?: number | null;
-          expires_at: string;
-          id?: string;
-          max_uses?: number | null;
-          organization_id: string;
-          role: string;
-          used?: boolean;
-          used_at?: string | null;
-          used_by?: string | null;
-        };
-        Update: {
-          code?: string;
-          created_at?: string;
-          created_by?: string;
-          current_uses?: number | null;
-          expires_at?: string;
-          id?: string;
-          max_uses?: number | null;
-          organization_id?: string;
-          role?: string;
-          used?: boolean;
-          used_at?: string | null;
-          used_by?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "organization_invitations_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
             referencedColumns: ["id"];
           }
         ];
@@ -1284,13 +1224,13 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      get_my_role: {
-        Args: Record<PropertyKey, never>;
-        Returns: string;
-      };
       aggregate_analytics_daily: {
         Args: Record<PropertyKey, never>;
         Returns: undefined;
+      };
+      get_my_role: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
       };
     };
     Enums: {
@@ -1427,41 +1367,3 @@ export const Constants = {
     Enums: {},
   },
 } as const;
-
-export type AnalyticsEventType =
-  | "page_view"
-  | "team_view"
-  | "player_view"
-  | "blog_view"
-  | "game_view"
-  | "schedule_view"
-  | "alumni_view"
-  | "coach_view"
-  | "custom";
-
-export interface AnalyticsMetadata {
-  team_id?: string;
-  player_id?: string;
-  blog_id?: string;
-  game_id?: string;
-  coach_id?: string;
-  teamId?: string; // For compatibility with Copilot's code
-  teamName?: string; // For compatibility with Copilot's code
-  playerId?: string; // For compatibility with Copilot's code
-  playerName?: string; // For compatibility with Copilot's code
-  blogId?: string; // For compatibility with Copilot's code
-  blogTitle?: string; // For compatibility with Copilot's code
-  [key: string]: unknown;
-}
-
-export interface AnalyticsEvent {
-  organization_id: string;
-  event_type: AnalyticsEventType;
-  page_path: string;
-  page_title?: string;
-  session_id?: string;
-  user_id?: string;
-  user_agent?: string;
-  referrer?: string;
-  metadata?: AnalyticsMetadata;
-}

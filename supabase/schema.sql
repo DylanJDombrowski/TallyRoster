@@ -51,6 +51,96 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
 
 
+CREATE OR REPLACE FUNCTION "public"."aggregate_analytics_daily"() RETURNS "void"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    -- Aggregate page views
+    INSERT INTO analytics_page_views (
+        organization_id, 
+        page_path, 
+        page_title, 
+        view_date, 
+        view_count, 
+        unique_sessions
+    )
+    SELECT 
+        organization_id,
+        page_path,
+        page_title,
+        DATE(created_at) as view_date,
+        COUNT(*) as view_count,
+        COUNT(DISTINCT session_id) as unique_sessions
+    FROM analytics_events 
+    WHERE DATE(created_at) = CURRENT_DATE - INTERVAL '1 day'
+    AND event_type = 'page_view'
+    GROUP BY organization_id, page_path, page_title, DATE(created_at)
+    ON CONFLICT (organization_id, page_path, view_date) 
+    DO UPDATE SET 
+        view_count = EXCLUDED.view_count,
+        unique_sessions = EXCLUDED.unique_sessions,
+        updated_at = now();
+
+    -- Aggregate team views
+    INSERT INTO analytics_team_views (
+        organization_id, 
+        team_id, 
+        view_date, 
+        view_count, 
+        unique_sessions
+    )
+    SELECT 
+        ae.organization_id,
+        (ae.metadata->>'team_id')::uuid as team_id,
+        DATE(ae.created_at) as view_date,
+        COUNT(*) as view_count,
+        COUNT(DISTINCT ae.session_id) as unique_sessions
+    FROM analytics_events ae
+    WHERE DATE(ae.created_at) = CURRENT_DATE - INTERVAL '1 day'
+    AND ae.event_type = 'team_view'
+    AND ae.metadata->>'team_id' IS NOT NULL
+    GROUP BY ae.organization_id, (ae.metadata->>'team_id')::uuid, DATE(ae.created_at)
+    ON CONFLICT (organization_id, team_id, view_date) 
+    DO UPDATE SET 
+        view_count = EXCLUDED.view_count,
+        unique_sessions = EXCLUDED.unique_sessions,
+        updated_at = now();
+
+    -- Aggregate player views
+    INSERT INTO analytics_player_views (
+        organization_id, 
+        player_id, 
+        view_date, 
+        view_count, 
+        unique_sessions
+    )
+    SELECT 
+        ae.organization_id,
+        (ae.metadata->>'player_id')::uuid as player_id,
+        DATE(ae.created_at) as view_date,
+        COUNT(*) as view_count,
+        COUNT(DISTINCT ae.session_id) as unique_sessions
+    FROM analytics_events ae
+    WHERE DATE(ae.created_at) = CURRENT_DATE - INTERVAL '1 day'
+    AND ae.event_type = 'player_view'
+    AND ae.metadata->>'player_id' IS NOT NULL
+    GROUP BY ae.organization_id, (ae.metadata->>'player_id')::uuid, DATE(ae.created_at)
+    ON CONFLICT (organization_id, player_id, view_date) 
+    DO UPDATE SET 
+        view_count = EXCLUDED.view_count,
+        unique_sessions = EXCLUDED.unique_sessions,
+        updated_at = now();
+END;
+$$;
+
+
+ALTER FUNCTION "public"."aggregate_analytics_daily"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."aggregate_analytics_daily"() IS 'Aggregates raw analytics events into daily summary tables';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."get_my_role"() RETURNS "text"
     LANGUAGE "sql" STABLE SECURITY DEFINER
     AS $$
@@ -97,6 +187,100 @@ CREATE TABLE IF NOT EXISTS "public"."alumni" (
 
 
 ALTER TABLE "public"."alumni" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."analytics_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "event_type" "text" NOT NULL,
+    "page_path" "text" NOT NULL,
+    "page_title" "text",
+    "user_id" "uuid",
+    "session_id" "text" NOT NULL,
+    "user_agent" "text",
+    "referrer" "text",
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    "ip_address" "inet",
+    CONSTRAINT "analytics_events_event_type_check" CHECK (("event_type" = ANY (ARRAY['page_view'::"text", 'team_view'::"text", 'player_view'::"text", 'blog_view'::"text", 'game_view'::"text", 'schedule_view'::"text", 'alumni_view'::"text", 'coach_view'::"text", 'custom'::"text"])))
+);
+
+
+ALTER TABLE "public"."analytics_events" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."analytics_events" IS 'Raw analytics events for tracking page views and interactions';
+
+
+
+COMMENT ON COLUMN "public"."analytics_events"."event_type" IS 'Type of analytics event (page_view, team_view, player_view, etc.)';
+
+
+
+COMMENT ON COLUMN "public"."analytics_events"."session_id" IS 'Browser session ID for tracking unique visitors';
+
+
+
+COMMENT ON COLUMN "public"."analytics_events"."metadata" IS 'Additional event data (team_id, player_id, etc.)';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."analytics_page_views" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "page_path" "text" NOT NULL,
+    "page_title" "text",
+    "view_date" "date" NOT NULL,
+    "view_count" integer DEFAULT 1 NOT NULL,
+    "unique_sessions" integer DEFAULT 1 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."analytics_page_views" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."analytics_page_views" IS 'Daily aggregated page view statistics';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."analytics_player_views" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "view_date" "date" NOT NULL,
+    "view_count" integer DEFAULT 1 NOT NULL,
+    "unique_sessions" integer DEFAULT 1 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."analytics_player_views" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."analytics_player_views" IS 'Daily aggregated player page view statistics';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."analytics_team_views" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "view_date" "date" NOT NULL,
+    "view_count" integer DEFAULT 1 NOT NULL,
+    "unique_sessions" integer DEFAULT 1 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."analytics_team_views" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."analytics_team_views" IS 'Daily aggregated team page view statistics';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."blog_posts" (
@@ -252,26 +436,6 @@ CREATE TABLE IF NOT EXISTS "public"."group_members" (
 
 
 ALTER TABLE "public"."group_members" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."organization_invitations" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "code" "text" NOT NULL,
-    "organization_id" "uuid" NOT NULL,
-    "role" "text" NOT NULL,
-    "created_by" "uuid" NOT NULL,
-    "expires_at" timestamp with time zone NOT NULL,
-    "used" boolean DEFAULT false NOT NULL,
-    "used_by" "uuid",
-    "used_at" timestamp with time zone,
-    "max_uses" integer DEFAULT 1,
-    "current_uses" integer DEFAULT 0,
-    CONSTRAINT "organization_invitations_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'coach'::"text", 'member'::"text"])))
-);
-
-
-ALTER TABLE "public"."organization_invitations" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."organization_links" (
@@ -537,6 +701,41 @@ ALTER TABLE ONLY "public"."alumni"
 
 
 
+ALTER TABLE ONLY "public"."analytics_events"
+    ADD CONSTRAINT "analytics_events_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."analytics_page_views"
+    ADD CONSTRAINT "analytics_page_views_org_path_date_unique" UNIQUE ("organization_id", "page_path", "view_date");
+
+
+
+ALTER TABLE ONLY "public"."analytics_page_views"
+    ADD CONSTRAINT "analytics_page_views_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."analytics_player_views"
+    ADD CONSTRAINT "analytics_player_views_org_player_date_unique" UNIQUE ("organization_id", "player_id", "view_date");
+
+
+
+ALTER TABLE ONLY "public"."analytics_player_views"
+    ADD CONSTRAINT "analytics_player_views_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."analytics_team_views"
+    ADD CONSTRAINT "analytics_team_views_org_team_date_unique" UNIQUE ("organization_id", "team_id", "view_date");
+
+
+
+ALTER TABLE ONLY "public"."analytics_team_views"
+    ADD CONSTRAINT "analytics_team_views_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."blog_posts"
     ADD CONSTRAINT "blog_posts_pkey" PRIMARY KEY ("id");
 
@@ -579,16 +778,6 @@ ALTER TABLE ONLY "public"."games"
 
 ALTER TABLE ONLY "public"."group_members"
     ADD CONSTRAINT "group_members_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."organization_invitations"
-    ADD CONSTRAINT "organization_invitations_code_key" UNIQUE ("code");
-
-
-
-ALTER TABLE ONLY "public"."organization_invitations"
-    ADD CONSTRAINT "organization_invitations_pkey" PRIMARY KEY ("id");
 
 
 
@@ -666,6 +855,42 @@ CREATE INDEX "idx_alumni_grad_year" ON "public"."alumni" USING "btree" ("grad_ye
 
 
 
+CREATE INDEX "idx_analytics_events_org_created" ON "public"."analytics_events" USING "btree" ("organization_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_analytics_events_path" ON "public"."analytics_events" USING "btree" ("page_path");
+
+
+
+CREATE INDEX "idx_analytics_events_session" ON "public"."analytics_events" USING "btree" ("session_id");
+
+
+
+CREATE INDEX "idx_analytics_events_type" ON "public"."analytics_events" USING "btree" ("event_type");
+
+
+
+CREATE INDEX "idx_analytics_page_views_org_date" ON "public"."analytics_page_views" USING "btree" ("organization_id", "view_date" DESC);
+
+
+
+CREATE INDEX "idx_analytics_player_views_org_date" ON "public"."analytics_player_views" USING "btree" ("organization_id", "view_date" DESC);
+
+
+
+CREATE INDEX "idx_analytics_player_views_player_date" ON "public"."analytics_player_views" USING "btree" ("player_id", "view_date" DESC);
+
+
+
+CREATE INDEX "idx_analytics_team_views_org_date" ON "public"."analytics_team_views" USING "btree" ("organization_id", "view_date" DESC);
+
+
+
+CREATE INDEX "idx_analytics_team_views_team_date" ON "public"."analytics_team_views" USING "btree" ("team_id", "view_date" DESC);
+
+
+
 CREATE INDEX "idx_blog_posts_organization_id" ON "public"."blog_posts" USING "btree" ("organization_id");
 
 
@@ -707,18 +932,6 @@ CREATE INDEX "idx_group_members_group" ON "public"."group_members" USING "btree"
 
 
 CREATE INDEX "idx_group_members_player" ON "public"."group_members" USING "btree" ("player_id");
-
-
-
-CREATE INDEX "idx_organization_invitations_code" ON "public"."organization_invitations" USING "btree" ("code");
-
-
-
-CREATE INDEX "idx_organization_invitations_expires_at" ON "public"."organization_invitations" USING "btree" ("expires_at");
-
-
-
-CREATE INDEX "idx_organization_invitations_org_id" ON "public"."organization_invitations" USING "btree" ("organization_id");
 
 
 
@@ -769,6 +982,41 @@ ALTER TABLE ONLY "public"."alumni"
 
 ALTER TABLE ONLY "public"."alumni"
     ADD CONSTRAINT "alumni_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."players"("id");
+
+
+
+ALTER TABLE ONLY "public"."analytics_events"
+    ADD CONSTRAINT "analytics_events_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."analytics_events"
+    ADD CONSTRAINT "analytics_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."analytics_page_views"
+    ADD CONSTRAINT "analytics_page_views_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."analytics_player_views"
+    ADD CONSTRAINT "analytics_player_views_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."analytics_player_views"
+    ADD CONSTRAINT "analytics_player_views_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."players"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."analytics_team_views"
+    ADD CONSTRAINT "analytics_team_views_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."analytics_team_views"
+    ADD CONSTRAINT "analytics_team_views_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE CASCADE;
 
 
 
@@ -844,21 +1092,6 @@ ALTER TABLE ONLY "public"."group_members"
 
 ALTER TABLE ONLY "public"."group_members"
     ADD CONSTRAINT "group_members_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."players"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."organization_invitations"
-    ADD CONSTRAINT "organization_invitations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."organization_invitations"
-    ADD CONSTRAINT "organization_invitations_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."organization_invitations"
-    ADD CONSTRAINT "organization_invitations_used_by_fkey" FOREIGN KEY ("used_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -970,12 +1203,6 @@ CREATE POLICY "Allow admins to manage games in their org" ON "public"."games" US
 
 
 
-CREATE POLICY "Allow admins to manage invitations for their org" ON "public"."organization_invitations" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_organization_roles"
-  WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."organization_id" = "organization_invitations"."organization_id") AND ("user_organization_roles"."role" = 'admin'::"text")))));
-
-
-
 CREATE POLICY "Allow admins to update their organization" ON "public"."organizations" FOR UPDATE USING ((EXISTS ( SELECT 1
    FROM "public"."user_organization_roles"
   WHERE (("user_organization_roles"."organization_id" = "organizations"."id") AND ("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
@@ -997,6 +1224,24 @@ CREATE POLICY "Allow authenticated users to view schedule" ON "public"."schedule
 
 
 CREATE POLICY "Allow authenticated users to view teams" ON "public"."teams" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Allow org admins and coaches to view analytics events" ON "public"."analytics_events" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."organization_id" = "analytics_events"."organization_id") AND ("user_organization_roles"."role" = ANY (ARRAY['admin'::"text", 'coach'::"text"]))))));
+
+
+
+CREATE POLICY "Allow org admins and coaches to view page analytics" ON "public"."analytics_page_views" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."organization_id" = "analytics_page_views"."organization_id") AND ("user_organization_roles"."role" = ANY (ARRAY['admin'::"text", 'coach'::"text"]))))));
+
+
+
+CREATE POLICY "Allow org admins and coaches to view team analytics" ON "public"."analytics_team_views" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."organization_id" = "analytics_team_views"."organization_id") AND ("user_organization_roles"."role" = ANY (ARRAY['admin'::"text", 'coach'::"text"]))))));
 
 
 
@@ -1120,13 +1365,29 @@ CREATE POLICY "Allow public read for published blog posts by org" ON "public"."b
 
 
 
-CREATE POLICY "Allow public read for valid invitations" ON "public"."organization_invitations" FOR SELECT TO "authenticated", "anon" USING ((("used" = false) AND ("expires_at" > "now"())));
+CREATE POLICY "Allow public to insert analytics events for tracking" ON "public"."analytics_events" FOR INSERT TO "anon" WITH CHECK (true);
 
 
 
 CREATE POLICY "Allow read access to own organization's links" ON "public"."organization_links" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."user_organization_roles" "uor"
   WHERE (("uor"."organization_id" = "organization_links"."organization_id") AND ("uor"."user_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "Allow service role to insert analytics events" ON "public"."analytics_events" FOR INSERT WITH CHECK (true);
+
+
+
+CREATE POLICY "Allow service role to manage page views" ON "public"."analytics_page_views" USING (true);
+
+
+
+CREATE POLICY "Allow service role to manage player views" ON "public"."analytics_player_views" USING (true);
+
+
+
+CREATE POLICY "Allow service role to manage team views" ON "public"."analytics_team_views" USING (true);
 
 
 
@@ -1173,6 +1434,18 @@ CREATE POLICY "Users can view their own profile" ON "public"."user_profiles" FOR
 ALTER TABLE "public"."alumni" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."analytics_events" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."analytics_page_views" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."analytics_player_views" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."analytics_team_views" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."blog_posts" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1180,9 +1453,6 @@ ALTER TABLE "public"."coaches" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."games" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."organization_invitations" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."organization_links" ENABLE ROW LEVEL SECURITY;
@@ -1218,6 +1488,10 @@ ALTER TABLE "public"."user_roles" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+
+
+
+
 
 
 GRANT USAGE ON SCHEMA "public" TO "postgres";
@@ -1377,6 +1651,12 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."aggregate_analytics_daily"() TO "anon";
+GRANT ALL ON FUNCTION "public"."aggregate_analytics_daily"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."aggregate_analytics_daily"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_my_role"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_my_role"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_my_role"() TO "service_role";
@@ -1407,6 +1687,30 @@ GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 GRANT ALL ON TABLE "public"."alumni" TO "anon";
 GRANT ALL ON TABLE "public"."alumni" TO "authenticated";
 GRANT ALL ON TABLE "public"."alumni" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."analytics_events" TO "anon";
+GRANT ALL ON TABLE "public"."analytics_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."analytics_events" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."analytics_page_views" TO "anon";
+GRANT ALL ON TABLE "public"."analytics_page_views" TO "authenticated";
+GRANT ALL ON TABLE "public"."analytics_page_views" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."analytics_player_views" TO "anon";
+GRANT ALL ON TABLE "public"."analytics_player_views" TO "authenticated";
+GRANT ALL ON TABLE "public"."analytics_player_views" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."analytics_team_views" TO "anon";
+GRANT ALL ON TABLE "public"."analytics_team_views" TO "authenticated";
+GRANT ALL ON TABLE "public"."analytics_team_views" TO "service_role";
 
 
 
@@ -1455,12 +1759,6 @@ GRANT ALL ON TABLE "public"."games" TO "service_role";
 GRANT ALL ON TABLE "public"."group_members" TO "anon";
 GRANT ALL ON TABLE "public"."group_members" TO "authenticated";
 GRANT ALL ON TABLE "public"."group_members" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."organization_invitations" TO "anon";
-GRANT ALL ON TABLE "public"."organization_invitations" TO "authenticated";
-GRANT ALL ON TABLE "public"."organization_invitations" TO "service_role";
 
 
 
