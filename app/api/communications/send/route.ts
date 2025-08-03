@@ -56,7 +56,10 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
     const { data: userRole } = await supabase
@@ -67,7 +70,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!userRole || !["admin", "coach"].includes(userRole.role)) {
-      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
     }
 
     // Create communication record
@@ -94,30 +100,85 @@ export async function POST(request: NextRequest) {
 
     if (commError) {
       console.error("Communication creation error:", commError);
-      return NextResponse.json({ error: "Failed to create communication" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to create communication" },
+        { status: 500 }
+      );
     }
 
     // If not scheduled, send immediately
     if (!data.scheduledSendAt) {
-      await processCommunication(communication.id, cookieStore);
+      try {
+        await processCommunication(communication.id, cookieStore);
+
+        // Update status to 'sent' after successful processing
+        await supabase
+          .from("communications")
+          .update({ sent_at: new Date().toISOString() })
+          .eq("id", communication.id);
+      } catch (processingError) {
+        console.error(
+          "Critical communication processing failure:",
+          processingError
+        );
+
+        // Update communication status to 'failed' for data integrity
+        try {
+          await supabase
+            .from("communications")
+            .update({
+              sent_at: null,
+              // Note: You may want to add a status field to your communications table
+              // status: 'failed'
+            })
+            .eq("id", communication.id);
+        } catch (updateError) {
+          console.error(
+            "Failed to update communication status after processing error:",
+            updateError
+          );
+        }
+
+        return NextResponse.json(
+          {
+            error: "Failed to process communication",
+            details:
+              processingError instanceof Error
+                ? processingError.message
+                : "Unknown processing error",
+          },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({
       success: true,
       communicationId: communication.id,
-      message: data.scheduledSendAt ? "Communication scheduled" : "Communication sent",
+      message: data.scheduledSendAt
+        ? "Communication scheduled"
+        : "Communication sent",
     });
   } catch (error) {
     console.error("Communication send error:", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid data", details: error.errors }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid data", details: error.errors },
+        { status: 400 }
+      );
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
 // Helper function to process and send communications
-async function processCommunication(communicationId: string, cookieStore: ReadonlyRequestCookies) {
+async function processCommunication(
+  communicationId: string,
+  cookieStore: ReadonlyRequestCookies
+) {
   const supabase = createClient(cookieStore);
 
   // Get communication details with organization info
@@ -136,8 +197,11 @@ async function processCommunication(communicationId: string, cookieStore: Readon
     .single();
 
   if (error || !comm) {
-    console.error("Failed to fetch communication:", error);
-    return;
+    const errorMessage = `Failed to fetch communication with ID ${communicationId}: ${
+      error?.message || "Communication not found"
+    }`;
+    console.error(errorMessage);
+    throw new Error(errorMessage);
   }
 
   // Flatten organization data with proper null handling
@@ -170,30 +234,37 @@ async function processCommunication(communicationId: string, cookieStore: Readon
   }
 }
 
-async function buildRecipientList(communication: Communication, supabase: SupabaseClient): Promise<Recipient[]> {
-  const recipients: Recipient[] = [];
+async function buildRecipientList(
+  communication: Communication,
+  supabase: SupabaseClient
+): Promise<Recipient[]> {
+  const recipientMap = new Map<string, Recipient>(); // Use Map to efficiently handle duplicates
 
   // If targeting all org
   if (communication.target_all_org) {
     const { data: players } = await supabase
       .from("players")
-      .select("id, first_name, last_name, parent_email, parent_phone, parent_name, player_email")
+      .select(
+        "id, first_name, last_name, parent_email, parent_phone, parent_name, player_email"
+      )
       .eq("organization_id", communication.organization_id)
       .eq("status", "active");
 
     for (const player of players || []) {
       if (player.parent_email) {
-        recipients.push({
+        recipientMap.set(player.parent_email, {
           email: player.parent_email,
           phone: player.parent_phone,
-          name: player.parent_name || `${player.first_name} ${player.last_name}'s Parent`,
+          name:
+            player.parent_name ||
+            `${player.first_name} ${player.last_name}'s Parent`,
           type: "parent",
           playerId: player.id,
         });
       }
 
       if (player.player_email) {
-        recipients.push({
+        recipientMap.set(player.player_email, {
           email: player.player_email,
           name: `${player.first_name} ${player.last_name}`,
           type: "player",
@@ -207,23 +278,27 @@ async function buildRecipientList(communication: Communication, supabase: Supaba
   if (communication.target_teams?.length) {
     const { data: players } = await supabase
       .from("players")
-      .select("id, first_name, last_name, parent_email, parent_phone, parent_name, player_email")
+      .select(
+        "id, first_name, last_name, parent_email, parent_phone, parent_name, player_email"
+      )
       .in("team_id", communication.target_teams)
       .eq("status", "active");
 
     for (const player of players || []) {
       if (player.parent_email) {
-        recipients.push({
+        recipientMap.set(player.parent_email, {
           email: player.parent_email,
           phone: player.parent_phone,
-          name: player.parent_name || `${player.first_name} ${player.last_name}'s Parent`,
+          name:
+            player.parent_name ||
+            `${player.first_name} ${player.last_name}'s Parent`,
           type: "parent",
           playerId: player.id,
         });
       }
 
       if (player.player_email) {
-        recipients.push({
+        recipientMap.set(player.player_email, {
           email: player.player_email,
           name: `${player.first_name} ${player.last_name}`,
           type: "player",
@@ -242,12 +317,14 @@ async function buildRecipientList(communication: Communication, supabase: Supaba
       .eq("active", true);
 
     for (const member of groupMembers || []) {
-      recipients.push({
-        email: member.email,
-        phone: member.phone,
-        name: member.member_name ?? "Unknown Member",
-        type: member.member_type,
-      });
+      if (member.email) {
+        recipientMap.set(member.email, {
+          email: member.email,
+          phone: member.phone,
+          name: member.member_name ?? "Unknown Member",
+          type: member.member_type,
+        });
+      }
     }
   }
 
@@ -255,23 +332,27 @@ async function buildRecipientList(communication: Communication, supabase: Supaba
   if (communication.target_individuals?.length) {
     const { data: players } = await supabase
       .from("players")
-      .select("id, first_name, last_name, parent_email, parent_phone, parent_name, player_email")
+      .select(
+        "id, first_name, last_name, parent_email, parent_phone, parent_name, player_email"
+      )
       .in("id", communication.target_individuals)
       .eq("status", "active");
 
     for (const player of players || []) {
       if (player.parent_email) {
-        recipients.push({
+        recipientMap.set(player.parent_email, {
           email: player.parent_email,
           phone: player.parent_phone,
-          name: player.parent_name || `${player.first_name} ${player.last_name}'s Parent`,
+          name:
+            player.parent_name ||
+            `${player.first_name} ${player.last_name}'s Parent`,
           type: "parent",
           playerId: player.id,
         });
       }
 
       if (player.player_email) {
-        recipients.push({
+        recipientMap.set(player.player_email, {
           email: player.player_email,
           name: `${player.first_name} ${player.last_name}`,
           type: "player",
@@ -281,13 +362,15 @@ async function buildRecipientList(communication: Communication, supabase: Supaba
     }
   }
 
-  // Remove duplicates by email
-  const uniqueRecipients = recipients.filter((recipient, index, self) => index === self.findIndex((r) => r.email === recipient.email));
-
-  return uniqueRecipients;
+  // Convert Map values to array - this automatically handles duplicates
+  return Array.from(recipientMap.values());
 }
 
-async function sendEmail(communication: Communication, recipient: Recipient, supabase: SupabaseClient) {
+async function sendEmail(
+  communication: Communication,
+  recipient: Recipient,
+  supabase: SupabaseClient
+) {
   if (!process.env.RESEND_API_KEY) {
     console.warn("RESEND_API_KEY not configured, skipping email send");
     return;
@@ -301,7 +384,9 @@ async function sendEmail(communication: Communication, recipient: Recipient, sup
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: `${communication.organization_name || "TallyRoster"} <noreply@tallyroster.com>`,
+        from: `${
+          communication.organization_name || "TallyRoster"
+        } <noreply@tallyroster.com>`,
         to: [recipient.email],
         subject: communication.subject,
         html: formatEmailContent(communication, recipient),
@@ -324,7 +409,9 @@ async function sendEmail(communication: Communication, recipient: Recipient, sup
       error_message: response.ok ? null : result.message,
     });
 
-    console.log(`📧 Email ${response.ok ? "sent" : "failed"} to ${recipient.email}`);
+    console.log(
+      `📧 Email ${response.ok ? "sent" : "failed"} to ${recipient.email}`
+    );
   } catch (error) {
     console.error("Email send error:", error);
 
@@ -342,14 +429,20 @@ async function sendEmail(communication: Communication, recipient: Recipient, sup
   }
 }
 
-async function sendSMS(communication: Communication, recipient: Recipient, supabase: SupabaseClient) {
+async function sendSMS(
+  communication: Communication,
+  recipient: Recipient,
+  supabase: SupabaseClient
+) {
   if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
     console.warn("AWS credentials not configured, skipping SMS send");
     return;
   }
 
   // TODO: Implement AWS SNS SMS sending
-  console.log(`📱 SMS would be sent to ${recipient.phone} (not implemented yet)`);
+  console.log(
+    `📱 SMS would be sent to ${recipient.phone} (not implemented yet)`
+  );
 
   // Track delivery placeholder
   await supabase.from("communication_deliveries").insert({
@@ -364,20 +457,29 @@ async function sendSMS(communication: Communication, recipient: Recipient, supab
   });
 }
 
-function formatEmailContent(communication: Communication, recipient: Recipient): string {
+function formatEmailContent(
+  communication: Communication,
+  recipient: Recipient
+): string {
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: ${communication.org_primary_color || "#161659"}; color: white; padding: 20px; text-align: center;">
+      <div style="background: ${
+        communication.org_primary_color || "#161659"
+      }; color: white; padding: 20px; text-align: center;">
         <h1>${communication.organization_name || "Team Communication"}</h1>
       </div>
 
       <div style="padding: 30px 20px;">
-        <h2 style="color: #333; margin-bottom: 20px;">${communication.subject}</h2>
+        <h2 style="color: #333; margin-bottom: 20px;">${
+          communication.subject
+        }</h2>
 
         <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid ${
           communication.org_primary_color || "#161659"
         }; margin-bottom: 20px;">
-          <strong>Priority:</strong> ${(communication.priority ?? "").toUpperCase()}<br>
+          <strong>Priority:</strong> ${(
+            communication.priority ?? ""
+          ).toUpperCase()}<br>
           <strong>Type:</strong> ${communication.message_type}
         </div>
 
