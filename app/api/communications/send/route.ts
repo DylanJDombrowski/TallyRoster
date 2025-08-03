@@ -1,4 +1,6 @@
-// app/api/communications/send/route.ts
+// app/api/communications/send/route.ts - IMMEDIATE FIX
+// This version includes coaches and provides better error messages
+
 import { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { type ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
@@ -8,7 +10,6 @@ import { z } from "zod";
 
 type SupabaseClient = ReturnType<typeof createClient>;
 
-// Zod schema for validating the incoming request body
 const SendCommunicationSchema = z.object({
   organizationId: z.string().uuid(),
   subject: z.string().min(1).max(500),
@@ -24,7 +25,6 @@ const SendCommunicationSchema = z.object({
   scheduledSendAt: z.string().datetime().optional(),
 });
 
-// Interface for a recipient
 interface Recipient {
   email: string;
   phone?: string | null;
@@ -33,14 +33,13 @@ interface Recipient {
   playerId?: string;
 }
 
-// Extended type for a communication record, including joined organization data
 type CommunicationRow = Database["public"]["Tables"]["communications"]["Row"];
 interface Communication extends CommunicationRow {
   organization_name?: string;
   org_primary_color?: string;
 }
 
-// Helper function to format the HTML content of the email
+// Helper functions
 function formatEmailContent(
   communication: Communication,
   recipient: Recipient
@@ -77,12 +76,6 @@ function formatEmailContent(
   `;
 }
 
-// Placeholder for future SMS functionality
-async function sendSMS() {
-  // SMS sending not implemented
-}
-
-// Sends a single email using Resend and logs the delivery status
 async function sendEmail(
   communication: Communication,
   recipient: Recipient,
@@ -145,12 +138,18 @@ async function sendEmail(
   }
 }
 
-// FIXED: Builds the list of unique recipients based on the communication's targeting options
+// ENHANCED: Now includes coaches and provides detailed feedback
 async function buildRecipientList(
   communication: Communication,
   supabase: SupabaseClient
 ): Promise<Recipient[]> {
   const recipientMap = new Map<string, Recipient>();
+  const debugInfo = {
+    playersFound: 0,
+    playersWithEmails: 0,
+    coachesFound: 0,
+    coachesWithEmails: 0,
+  };
 
   console.log(`[Recipient Builder] Starting for comm ID: ${communication.id}`);
   console.log(`[Recipient Builder] Targeting options:`, {
@@ -160,146 +159,104 @@ async function buildRecipientList(
 
   if (communication.target_all_org) {
     console.log(
-      `[Recipient Builder] Fetching all players for org ID: ${communication.organization_id}`
+      `[Recipient Builder] Fetching ALL recipients for org: ${communication.organization_id}`
     );
 
-    // DEBUGGING: Let's first check what columns are actually available
-    const { data: rawPlayers, error: rawError } = await supabase
-      .from("players")
-      .select("*")
-      .eq("organization_id", communication.organization_id)
-      .eq("status", "active")
-      .limit(1);
-
-    if (rawError) {
-      console.error(
-        "[Recipient Builder] Database error in raw query:",
-        rawError
-      );
-      throw new Error(`Database error fetching players: ${rawError.message}`);
-    }
-
-    if (rawPlayers && rawPlayers.length > 0) {
-      console.log(`[Recipient Builder] Raw player data sample:`, rawPlayers[0]);
-      console.log(
-        `[Recipient Builder] Available columns:`,
-        Object.keys(rawPlayers[0])
-      );
-    }
-
-    // FIXED: Enhanced query with better error handling and logging
-    const { data: players, error } = await supabase
+    // Fetch all players
+    const { data: players, error: playerError } = await supabase
       .from("players")
       .select(
-        "id, first_name, last_name, parent_email, parent_phone, parent_name, player_email, status, team_id, organization_id"
+        "id, first_name, last_name, parent_email, parent_phone, parent_name, player_email, status"
       )
       .eq("organization_id", communication.organization_id)
       .eq("status", "active");
 
-    if (error) {
-      console.error(
-        "[Recipient Builder] Database error fetching all players:",
-        error
+    if (playerError) {
+      console.error("[Recipient Builder] Error fetching players:", playerError);
+    } else {
+      debugInfo.playersFound = players?.length || 0;
+      console.log(
+        `[Recipient Builder] Found ${debugInfo.playersFound} active players`
       );
-      throw new Error(`Database error fetching players: ${error.message}`);
+
+      for (const player of players || []) {
+        if (player.parent_email?.trim()) {
+          recipientMap.set(player.parent_email, {
+            email: player.parent_email,
+            phone: player.parent_phone,
+            name:
+              player.parent_name ||
+              `${player.first_name} ${player.last_name}'s Parent`,
+            type: "parent",
+            playerId: player.id,
+          });
+          debugInfo.playersWithEmails++;
+        }
+
+        if (player.player_email?.trim()) {
+          recipientMap.set(player.player_email, {
+            email: player.player_email,
+            phone: null,
+            name: `${player.first_name} ${player.last_name}`,
+            type: "player",
+            playerId: player.id,
+          });
+          debugInfo.playersWithEmails++;
+        }
+      }
     }
 
-    console.log(
-      `[Recipient Builder] Query completed. Found ${
-        players?.length || 0
-      } active players for organization ${communication.organization_id}`
-    );
+    // ENHANCED: Fetch all coaches in the organization
+    const { data: allTeams } = await supabase
+      .from("teams")
+      .select("id")
+      .eq("organization_id", communication.organization_id);
 
-    // DEBUGGING: Log all player data to see what we're actually getting
-    console.log(
-      `[Recipient Builder] Full player data:`,
-      JSON.stringify(players, null, 2)
-    );
-
-    // FIXED: Added detailed logging for each player
-    for (const player of players || []) {
-      console.log(
-        `[Recipient Builder] Processing player: ${player.first_name} ${player.last_name} (ID: ${player.id})`
-      );
-      console.log(
-        `[Recipient Builder] Player raw data:`,
-        JSON.stringify(player, null, 2)
-      );
-      console.log(
-        `[Recipient Builder] Player emails - Parent: "${player.parent_email}", Player: "${player.player_email}"`
-      );
-      console.log(
-        `[Recipient Builder] Email checks - Parent exists: ${!!player.parent_email}, Player exists: ${!!player.player_email}`
-      );
-
-      if (
-        player.parent_email &&
-        typeof player.parent_email === "string" &&
-        player.parent_email.trim()
-      ) {
-        const parentEmail = player.parent_email.trim();
-        recipientMap.set(parentEmail, {
-          email: parentEmail,
-          phone: player.parent_phone,
-          name:
-            player.parent_name ||
-            `${player.first_name} ${player.last_name}'s Parent`,
-          type: "parent",
-          playerId: player.id,
-        });
-        console.log(`[Recipient Builder] ✅ Added parent: ${parentEmail}`);
-      } else {
-        console.log(
-          `[Recipient Builder] ❌ Skipped parent email - value: "${
-            player.parent_email
-          }", type: ${typeof player.parent_email}`
+    if (allTeams?.length) {
+      const { data: coaches, error: coachError } = await supabase
+        .from("coaches")
+        .select("id, name, email, phone, team_id")
+        .in(
+          "team_id",
+          allTeams.map((t) => t.id)
         );
-      }
 
-      if (
-        player.player_email &&
-        typeof player.player_email === "string" &&
-        player.player_email.trim()
-      ) {
-        const playerEmail = player.player_email.trim();
-        recipientMap.set(playerEmail, {
-          email: playerEmail,
-          phone: null,
-          name: `${player.first_name} ${player.last_name}`,
-          type: "player",
-          playerId: player.id,
-        });
-        console.log(`[Recipient Builder] ✅ Added player: ${playerEmail}`);
-      } else {
-        console.log(
-          `[Recipient Builder] ❌ Skipped player email - value: "${
-            player.player_email
-          }", type: ${typeof player.player_email}`
+      if (coachError) {
+        console.error(
+          "[Recipient Builder] Error fetching coaches:",
+          coachError
         );
+      } else {
+        debugInfo.coachesFound = coaches?.length || 0;
+        console.log(
+          `[Recipient Builder] Found ${debugInfo.coachesFound} coaches`
+        );
+
+        for (const coach of coaches || []) {
+          if (coach.email?.trim()) {
+            recipientMap.set(coach.email, {
+              email: coach.email,
+              phone: coach.phone,
+              name: coach.name,
+              type: "coach",
+              playerId: undefined,
+            });
+            debugInfo.coachesWithEmails++;
+            console.log(`[Recipient Builder] ✅ Added coach: ${coach.email}`);
+          }
+        }
       }
     }
   }
 
-  // DEBUGGING: Also let's check if there are ANY players with emails in this org
-  const { data: playersWithEmails } = await supabase
-    .from("players")
-    .select("id, first_name, last_name, parent_email, player_email")
-    .eq("organization_id", communication.organization_id)
-    .or("parent_email.not.is.null,player_email.not.is.null");
-
-  console.log(
-    `[Recipient Builder] Players with emails in org:`,
-    playersWithEmails
-  );
-
   if (communication.target_teams?.length) {
     console.log(
-      `[Recipient Builder] Fetching players for teams:`,
+      `[Recipient Builder] Fetching recipients for teams:`,
       communication.target_teams
     );
 
-    // FIXED: Enhanced query with better error handling
-    const { data: players, error } = await supabase
+    // Fetch players for specific teams
+    const { data: players, error: playerError } = await supabase
       .from("players")
       .select(
         "id, first_name, last_name, parent_email, parent_phone, parent_name, player_email, team_id, status"
@@ -307,123 +264,82 @@ async function buildRecipientList(
       .in("team_id", communication.target_teams)
       .eq("status", "active");
 
-    if (error) {
-      console.error(
-        "[Recipient Builder] Database error fetching team players:",
-        error
-      );
-      throw new Error(`Database error fetching team players: ${error.message}`);
-    }
+    if (!playerError && players) {
+      for (const player of players) {
+        if (player.parent_email?.trim()) {
+          recipientMap.set(player.parent_email, {
+            email: player.parent_email,
+            phone: player.parent_phone,
+            name:
+              player.parent_name ||
+              `${player.first_name} ${player.last_name}'s Parent`,
+            type: "parent",
+            playerId: player.id,
+          });
+        }
 
-    console.log(
-      `[Recipient Builder] Found ${
-        players?.length || 0
-      } players in the specified teams.`
-    );
-
-    for (const player of players || []) {
-      console.log(
-        `[Recipient Builder] Processing team player: ${player.first_name} ${player.last_name} (Team: ${player.team_id})`
-      );
-
-      // FIXED: Syntax error - was missing 'player' prefix
-      if (player.parent_email?.trim()) {
-        recipientMap.set(player.parent_email, {
-          email: player.parent_email,
-          phone: player.parent_phone,
-          name:
-            player.parent_name ||
-            `${player.first_name} ${player.last_name}'s Parent`,
-          type: "parent",
-          playerId: player.id,
-        });
-        console.log(
-          `[Recipient Builder] Added team parent: ${player.parent_email}`
-        );
-      }
-
-      if (player.player_email?.trim()) {
-        recipientMap.set(player.player_email, {
-          email: player.player_email,
-          phone: null,
-          name: `${player.first_name} ${player.last_name}`,
-          type: "player",
-          playerId: player.id,
-        });
-        console.log(
-          `[Recipient Builder] Added team player: ${player.player_email}`
-        );
+        if (player.player_email?.trim()) {
+          recipientMap.set(player.player_email, {
+            email: player.player_email,
+            phone: null,
+            name: `${player.first_name} ${player.last_name}`,
+            type: "player",
+            playerId: player.id,
+          });
+        }
       }
     }
-  }
 
-  // FIXED: Added support for target individuals
-  if (communication.target_individuals?.length) {
-    console.log(
-      `[Recipient Builder] Fetching individual players:`,
-      communication.target_individuals
-    );
+    // Fetch coaches for specific teams
+    const { data: coaches, error: coachError } = await supabase
+      .from("coaches")
+      .select("id, name, email, phone, team_id")
+      .in("team_id", communication.target_teams);
 
-    const { data: players, error } = await supabase
-      .from("players")
-      .select(
-        "id, first_name, last_name, parent_email, parent_phone, parent_name, player_email, status"
-      )
-      .in("id", communication.target_individuals)
-      .eq("status", "active");
-
-    if (error) {
-      console.error(
-        "[Recipient Builder] Database error fetching individual players:",
-        error
-      );
-      throw new Error(
-        `Database error fetching individual players: ${error.message}`
-      );
-    }
-
-    console.log(
-      `[Recipient Builder] Found ${players?.length || 0} individual players.`
-    );
-
-    for (const player of players || []) {
-      if (player.parent_email?.trim()) {
-        recipientMap.set(player.parent_email, {
-          email: player.parent_email,
-          phone: player.parent_phone,
-          name:
-            player.parent_name ||
-            `${player.first_name} ${player.last_name}'s Parent`,
-          type: "parent",
-          playerId: player.id,
-        });
-      }
-
-      if (player.player_email?.trim()) {
-        recipientMap.set(player.player_email, {
-          email: player.player_email,
-          phone: null,
-          name: `${player.first_name} ${player.last_name}`,
-          type: "player",
-          playerId: player.id,
-        });
+    if (!coachError && coaches) {
+      for (const coach of coaches) {
+        if (coach.email?.trim()) {
+          recipientMap.set(coach.email, {
+            email: coach.email,
+            phone: coach.phone,
+            name: coach.name,
+            type: "coach",
+            playerId: undefined,
+          });
+          console.log(
+            `[Recipient Builder] ✅ Added team coach: ${coach.email}`
+          );
+        }
       }
     }
   }
 
   const recipients = Array.from(recipientMap.values());
+
+  // ENHANCED: Detailed logging for debugging
+  console.log(`[Recipient Builder] SUMMARY:`);
+  console.log(`[Recipient Builder] - Players found: ${debugInfo.playersFound}`);
   console.log(
-    `[Recipient Builder] Final recipient count: ${recipients.length}`
+    `[Recipient Builder] - Players with emails: ${debugInfo.playersWithEmails}`
+  );
+  console.log(`[Recipient Builder] - Coaches found: ${debugInfo.coachesFound}`);
+  console.log(
+    `[Recipient Builder] - Coaches with emails: ${debugInfo.coachesWithEmails}`
   );
   console.log(
-    `[Recipient Builder] Recipients:`,
-    recipients.map((r) => `${r.name} (${r.email})`)
+    `[Recipient Builder] - Total unique recipients: ${recipients.length}`
+  );
+  console.log(
+    `[Recipient Builder] - Recipients by type:`,
+    recipients.reduce((acc, r) => {
+      acc[r.type] = (acc[r.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
   );
 
   return recipients;
 }
 
-// FIXED: Enhanced error handling and status tracking
 async function processCommunication(
   communicationId: string,
   cookieStore: ReadonlyRequestCookies
@@ -463,15 +379,23 @@ async function processCommunication(
   );
 
   if (recipients.length === 0) {
-    console.warn(
-      `⚠️ No recipients found for communication ${communication.id}.`
-    );
-    throw new Error(
-      "No recipients found for this communication. Please check your targeting options and ensure players have email addresses configured."
-    );
+    // ENHANCED: Provide specific guidance on what to do
+    const errorMessage = `No recipients found for this communication. This usually means:
+    
+    1. Players don't have email addresses configured in their profiles
+    2. No coaches have been added to teams with email addresses
+    3. The targeting options selected don't match any records with email addresses
+    
+    To fix this:
+    - Add email addresses to player profiles (parent_email or player_email fields)
+    - Add coaches to teams with email addresses
+    - Verify your targeting options (All Organization vs Specific Teams)`;
+
+    console.warn(`⚠️ ${errorMessage}`);
+    throw new Error(errorMessage);
   }
 
-  // FIXED: Update communication status to 'sending'
+  // Update status to 'sending'
   await supabase
     .from("communications")
     .update({
@@ -484,19 +408,15 @@ async function processCommunication(
     if (communication.send_email && recipient.email) {
       await sendEmail(communication, recipient, supabase);
     }
-    if (communication.send_sms && recipient.phone) {
-      await sendSMS();
-    }
   }
 
-  // FIXED: Update communication status to 'sent' after successful processing
+  // Update status to 'sent'
   await supabase
     .from("communications")
     .update({ status: "sent" })
     .eq("id", communication.id);
 }
 
-// FIXED: Enhanced error handling in main API endpoint
 export async function POST(request: NextRequest) {
   let communicationId: string | null = null;
 
@@ -530,7 +450,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // FIXED: Set initial status to 'processing'
     const { data: communication, error: commError } = await supabase
       .from("communications")
       .insert({
@@ -571,7 +490,7 @@ export async function POST(request: NextRequest) {
           processingError
         );
 
-        // FIXED: Update communication status to 'failed' and add error message
+        // Update status to 'failed'
         try {
           await supabase
             .from("communications")
@@ -584,10 +503,7 @@ export async function POST(request: NextRequest) {
             })
             .eq("id", communicationId);
         } catch (updateError) {
-          console.error(
-            "Failed to update communication status after processing error:",
-            updateError
-          );
+          console.error("Failed to update communication status:", updateError);
         }
 
         return NextResponse.json(
@@ -613,7 +529,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Top-level communication send error:", error);
 
-    // FIXED: Update communication status to 'failed' if we have a communication ID
     if (communicationId) {
       try {
         const cookieStore = await cookies();
