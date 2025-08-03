@@ -3,6 +3,7 @@
 
 import { Modal } from "@/app/components/modal";
 import { useToast } from "@/app/components/toast-provider";
+import { useSession } from "@/hooks/use-session"; // Import the session hook
 import { Team } from "@/lib/types";
 import { User } from "@supabase/supabase-js";
 import { useState } from "react";
@@ -20,15 +21,17 @@ type UserWithRole = User & {
 interface UserManagementClientProps {
   users: UserWithRole[];
   teams: Team[];
-  currentUserId: string; // Add current user ID to prevent self-modification
+  // Remove currentUserId prop - we'll get it from session context
 }
 
 export function UserManagementClient({
   users,
   teams,
-  currentUserId,
 }: UserManagementClientProps) {
+  // Get current user from session context instead of props
+  const { user: currentUser } = useSession();
   const { showToast } = useToast();
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<EditableUser | null>(null);
@@ -40,7 +43,7 @@ export function UserManagementClient({
 
   const handleEditClick = (user: UserWithRole) => {
     // Prevent editing own account
-    if (user.id === currentUserId) {
+    if (user.id === currentUser?.id) {
       showToast("You cannot edit your own account.", "error");
       return;
     }
@@ -56,7 +59,7 @@ export function UserManagementClient({
 
   const handleDeleteClick = (user: UserWithRole) => {
     // Prevent deleting own account
-    if (user.id === currentUserId) {
+    if (user.id === currentUser?.id) {
       showToast("You cannot remove your own account.", "error");
       return;
     }
@@ -143,7 +146,7 @@ export function UserManagementClient({
     );
   };
 
-  const isCurrentUser = (userId: string) => userId === currentUserId;
+  const isCurrentUser = (userId: string) => userId === currentUser?.id;
 
   return (
     <>
@@ -306,7 +309,9 @@ export function UserManagementClient({
               <ul className="list-disc list-inside mt-1 space-y-1 text-yellow-800 text-sm">
                 <li>Remove the user from your organization</li>
                 <li>Delete their role and team assignments</li>
-                <li>Permanently delete their account</li>
+                <li>
+                  Mark them as inactive if they have no other organizations
+                </li>
               </ul>
             </div>
 
