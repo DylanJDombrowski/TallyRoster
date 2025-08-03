@@ -26,7 +26,10 @@ export async function updatePlayerStatus(formData: FormData) {
 
   const { playerId, status } = validatedFields.data;
 
-  const { error } = await supabase.from("players").update({ status }).eq("id", playerId);
+  const { error } = await supabase
+    .from("players")
+    .update({ status })
+    .eq("id", playerId);
 
   if (error) {
     return { error: `Failed to update player status: ${error.message}` };
@@ -53,12 +56,16 @@ export async function deletePlayer(playerId: string) {
 }
 
 // New action for bulk operations (useful for the enhanced CSV functionality)
-export async function bulkUpdatePlayers(players: Array<{ id: string; [key: string]: unknown }>) {
+export async function bulkUpdatePlayers(
+  players: Array<{ id: string; [key: string]: unknown }>
+) {
   const cookieStore = cookies();
   const supabase = createClient(await cookieStore);
 
   try {
-    const updatePromises = players.map((player) => supabase.from("players").update(player).eq("id", player.id));
+    const updatePromises = players.map((player) =>
+      supabase.from("players").update(player).eq("id", player.id)
+    );
 
     const results = await Promise.all(updatePromises);
     const errors = results.filter((result) => result.error);
@@ -75,7 +82,10 @@ export async function bulkUpdatePlayers(players: Array<{ id: string; [key: strin
 }
 
 // Enhanced CSV export functionality
-export async function exportPlayersCSV(organizationId: string, teamId?: string) {
+export async function exportPlayersCSV(
+  organizationId: string,
+  teamId?: string
+) {
   const cookieStore = cookies();
   const supabase = createClient(await cookieStore);
 
@@ -95,6 +105,7 @@ export async function exportPlayersCSV(organizationId: string, teamId?: string) 
       bats,
       throws,
       twitter_handle,
+      parent_email,
       teams!inner(name)
     `
     )
@@ -125,6 +136,7 @@ export async function exportPlayersCSV(organizationId: string, teamId?: string) 
     "bats",
     "throws",
     "twitter_handle",
+    "parent_email",
     "team_name",
   ];
 
@@ -144,6 +156,7 @@ export async function exportPlayersCSV(organizationId: string, teamId?: string) 
         player.bats || "",
         player.throws || "",
         player.twitter_handle || "",
+        player.parent_email || "",
         player.teams?.name || "",
       ]
         .map((field) => `"${field}"`)

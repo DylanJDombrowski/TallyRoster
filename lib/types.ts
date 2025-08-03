@@ -7,7 +7,11 @@ export const PlayerFormSchema = z.object({
   id: z.string().uuid().optional(),
   first_name: z.string().min(2, "First name must be at least 2 characters."),
   last_name: z.string().min(2, "Last name must be at least 2 characters."),
-  jersey_number: z.coerce.number().int().positive("Jersey must be a positive number.").nullable(),
+  jersey_number: z.coerce
+    .number()
+    .int()
+    .positive("Jersey must be a positive number.")
+    .nullable(),
   position: z.string().nullable(),
   team_id: z.string().uuid("You must select a team."),
   headshot_url: z.string().url().nullable(),
@@ -19,6 +23,7 @@ export const PlayerFormSchema = z.object({
   grad_year: z.coerce.number().int().min(2020).max(2035).nullable(),
   gpa: z.coerce.number().min(0).max(4.0).nullable(),
   twitter_handle: z.string().nullable(),
+  parent_email: z.string().email("Invalid email address.").nullable(),
 });
 
 // Coach schema
@@ -70,7 +75,8 @@ export type TeamFormData = z.infer<typeof TeamFormSchema>;
 export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type Team = Database["public"]["Tables"]["teams"]["Row"];
 export type Coach = Database["public"]["Tables"]["coaches"]["Row"];
-export type ScheduleEvent = Database["public"]["Tables"]["schedule_events"]["Row"];
+export type ScheduleEvent =
+  Database["public"]["Tables"]["schedule_events"]["Row"];
 export type PlayerStats = Database["public"]["Tables"]["player_stats"]["Row"];
 
 // Extended types for UI components
@@ -89,9 +95,24 @@ export type CoachWithTeam = Coach & {
 };
 
 // Utility types for different views
-export type TeamListItem = Pick<Team, "id" | "name" | "season" | "year" | "team_image_url">;
-export type PlayerCardData = Pick<Player, "id" | "first_name" | "last_name" | "jersey_number" | "position" | "headshot_url" | "grad_year">;
-export type CoachCardData = Pick<Coach, "id" | "name" | "position" | "image_url" | "email" | "phone">;
+export type TeamListItem = Pick<
+  Team,
+  "id" | "name" | "season" | "year" | "team_image_url"
+>;
+export type PlayerCardData = Pick<
+  Player,
+  | "id"
+  | "first_name"
+  | "last_name"
+  | "jersey_number"
+  | "position"
+  | "headshot_url"
+  | "grad_year"
+>;
+export type CoachCardData = Pick<
+  Coach,
+  "id" | "name" | "position" | "image_url" | "email" | "phone"
+>;
 
 // Image handling utilities
 export const getPlayerImageUrl = (path: string | null | undefined) => {
