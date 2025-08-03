@@ -39,13 +39,15 @@ type GetUsersResult =
     };
 
 // Get organization users function
-export async function getOrganizationUsers(): Promise<GetUsersResult> {
+export async function getOrganizationUsers(
+  organizationId?: string
+): Promise<GetUsersResult> {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  console.log("🔍 Getting organization users...");
+  console.log("🔍 Getting organization users for org:", organizationId);
 
-  // Check if current user is authenticated
+  // Get current user for admin verification
   const {
     data: { user },
     error: authError,
@@ -54,27 +56,44 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
     console.error("❌ Auth error:", authError);
     return { error: "Authentication required" };
   }
-  console.log("✅ User authenticated:", user.email);
 
-  // Get user's admin role and organization
-  const { data: userOrgRole, error: roleError } = await supabase
-    .from("user_organization_roles")
-    .select("role, organization_id, organizations(name)")
-    .eq("user_id", user.id)
-    .eq("role", "admin")
-    .single();
+  let targetOrgId = organizationId;
 
-  if (roleError || !userOrgRole) {
-    console.error("❌ User is not an admin:", roleError);
-    return { error: "Admin access required" };
+  // If no organizationId provided, fall back to fetching user's org (backwards compatibility)
+  if (!targetOrgId) {
+    const { data: userOrgRole, error: roleError } = await supabase
+      .from("user_organization_roles")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    if (roleError || !userOrgRole) {
+      console.error("❌ User is not an admin:", roleError);
+      return { error: "Admin access required" };
+    }
+    targetOrgId = userOrgRole.organization_id;
+  } else {
+    // Verify user is admin of the specified organization
+    const { data: userOrgRole, error: roleError } = await supabase
+      .from("user_organization_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("organization_id", targetOrgId)
+      .eq("role", "admin")
+      .single();
+
+    if (roleError || !userOrgRole) {
+      console.error("❌ User is not an admin of specified org:", roleError);
+      return { error: "Admin access required for this organization" };
+    }
   }
-  console.log("✅ User is admin for org:", userOrgRole.organization_id);
 
-  // Get all users in the organization
+  // Rest of the function remains the same, but uses targetOrgId
   const { data: orgUsers, error: orgUsersError } = await supabase
     .from("user_organization_roles")
     .select("user_id, role")
-    .eq("organization_id", userOrgRole.organization_id);
+    .eq("organization_id", targetOrgId);
 
   if (orgUsersError) {
     console.error("❌ Error loading organization users:", orgUsersError);
@@ -82,12 +101,8 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
       error: `Error loading organization users: ${orgUsersError.message}`,
     };
   }
-  console.log("✅ Found organization users:", orgUsers?.length || 0);
 
-  // Get auth user details using admin client
   const userIds = orgUsers?.map((u) => u.user_id) || [];
-  console.log("🔍 Fetching auth user details for:", userIds.length, "users");
-
   const { data: authData, error: authUsersError } =
     await supabaseAdmin.auth.admin.listUsers();
 
@@ -96,13 +111,10 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
     return { error: `Error loading user details: ${authUsersError.message}` };
   }
 
-  // Filter to only users in this organization
   const orgAuthUsers = authData.users.filter((authUser) =>
     userIds.includes(authUser.id)
   );
-  console.log("✅ Found auth users:", orgAuthUsers.length);
 
-  // Get user roles and teams (from your secondary user_roles table)
   const { data: userRoles, error: userRolesError } = await supabase
     .from("user_roles")
     .select("*, teams(name)")
@@ -112,21 +124,17 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
     console.error("❌ Error loading user roles:", userRolesError);
     return { error: `Error loading user roles: ${userRolesError.message}` };
   }
-  console.log("✅ Found user roles:", userRoles?.length || 0);
 
-  // Get teams for forms
   const { data: teams, error: teamsError } = await supabase
     .from("teams")
     .select("*")
-    .eq("organization_id", userOrgRole.organization_id);
+    .eq("organization_id", targetOrgId);
 
   if (teamsError) {
     console.error("❌ Error loading teams:", teamsError);
     return { error: `Error loading teams: ${teamsError.message}` };
   }
-  console.log("✅ Found teams:", teams?.length || 0);
 
-  // Combine the data
   const combinedUsers: UserWithRole[] = orgAuthUsers.map((authUser) => {
     const orgRole = orgUsers?.find((ou) => ou.user_id === authUser.id);
     const roleInfo = userRoles?.find((r) => r.user_id === authUser.id);
@@ -139,42 +147,28 @@ export async function getOrganizationUsers(): Promise<GetUsersResult> {
     };
   });
 
-  console.log("✅ Combined users ready:", combinedUsers.length);
-
   return {
     users: combinedUsers,
     teams: teams || [],
   };
 }
 
-// Updated invite user schema
-const InviteUserSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  role: z.enum(["admin", "coach", "parent"]),
-  team_id: z
-    .string()
-    .uuid({ message: "Please select a valid team" })
-    .optional()
-    .nullable(),
-});
-
-export async function inviteUser(prevState: unknown, formData: FormData) {
+export async function inviteUser(
+  organizationId: string,
+  currentUserId: string,
+  email: string,
+  role: "admin" | "coach" | "parent",
+  teamId?: string | null
+) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // Check if current user is admin
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return { error: "Authentication required" };
-  }
-
+  // Verify the current user is admin of the organization
   const { data: userOrgRole, error: roleError } = await supabase
     .from("user_organization_roles")
-    .select("role, organization_id, organizations(name)")
-    .eq("user_id", user.id)
+    .select("role, organizations(name)")
+    .eq("user_id", currentUserId)
+    .eq("organization_id", organizationId)
     .eq("role", "admin")
     .single();
 
@@ -182,23 +176,8 @@ export async function inviteUser(prevState: unknown, formData: FormData) {
     return { error: "Admin access required" };
   }
 
-  const validatedFields = InviteUserSchema.safeParse({
-    email: formData.get("email"),
-    role: formData.get("role"),
-    team_id: formData.get("team_id") || null,
-  });
-
-  if (!validatedFields.success) {
-    return {
-      error: "Invalid form data. Please check your inputs.",
-      fields: validatedFields.error.flatten().fieldErrors,
-    };
-  }
-
-  const { email, role, team_id } = validatedFields.data;
-
   // Validate team requirement for coach/parent roles
-  if ((role === "coach" || role === "parent") && !team_id) {
+  if ((role === "coach" || role === "parent") && !teamId) {
     return {
       error: `Team selection is required for ${role} role`,
       fields: { team_id: ["Please select a team"] },
@@ -206,20 +185,18 @@ export async function inviteUser(prevState: unknown, formData: FormData) {
   }
 
   try {
-    // Get organization name for invitation
     const orgName = Array.isArray(userOrgRole.organizations)
       ? userOrgRole.organizations[0]?.name
       : userOrgRole.organizations?.name || "Unknown Organization";
 
-    // Use admin client to invite user with metadata
     const { data: inviteData, error: inviteError } =
       await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         data: {
-          invited_by: user.id,
-          organization_id: userOrgRole.organization_id,
+          invited_by: currentUserId,
+          organization_id: organizationId,
           organization_name: orgName,
           assigned_role: role,
-          team_id: team_id,
+          team_id: teamId,
           invitation_type: "organization_invite",
         },
         redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
@@ -251,23 +228,20 @@ const UpdateUserRoleSchema = z.object({
   team_id: z.string().uuid().optional().nullable(),
 });
 
-export async function removeUser(prevState: unknown, formData: FormData) {
+export async function removeUser(
+  organizationId: string,
+  currentUserId: string,
+  userIdToRemove: string
+) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // Check if current user is admin
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return { error: "Authentication required" };
-  }
-
+  // Verify the current user is admin of the organization
   const { data: userOrgRole, error: roleError } = await supabase
     .from("user_organization_roles")
-    .select("role, organization_id")
-    .eq("user_id", user.id)
+    .select("role")
+    .eq("user_id", currentUserId)
+    .eq("organization_id", organizationId)
     .eq("role", "admin")
     .single();
 
@@ -275,19 +249,13 @@ export async function removeUser(prevState: unknown, formData: FormData) {
     return { error: "Admin access required" };
   }
 
-  const userIdToRemove = formData.get("user_id") as string;
-
-  if (!userIdToRemove) {
-    return { error: "User ID is required" };
-  }
-
   // Prevent self-removal
-  if (userIdToRemove === user.id) {
+  if (userIdToRemove === currentUserId) {
     return { error: "You cannot remove yourself from the organization" };
   }
 
   try {
-    // Step 1: Remove from user_roles table (team assignments)
+    // Remove from user_roles table
     const { error: userRolesError } = await supabase
       .from("user_roles")
       .delete()
@@ -295,15 +263,14 @@ export async function removeUser(prevState: unknown, formData: FormData) {
 
     if (userRolesError) {
       console.error("Error removing user roles:", userRolesError);
-      // Don't fail the whole operation if this fails
     }
 
-    // Step 2: Remove from user_organization_roles table (primary action)
+    // Remove from user_organization_roles table
     const { error: orgRolesError } = await supabase
       .from("user_organization_roles")
       .delete()
       .eq("user_id", userIdToRemove)
-      .eq("organization_id", userOrgRole.organization_id);
+      .eq("organization_id", organizationId);
 
     if (orgRolesError) {
       return {
@@ -311,7 +278,7 @@ export async function removeUser(prevState: unknown, formData: FormData) {
       };
     }
 
-    // Step 3: Check if user has any other organization memberships
+    // Check if user has any other organization memberships
     const { data: otherOrgRoles, error: otherOrgError } = await supabase
       .from("user_organization_roles")
       .select("organization_id")
@@ -319,10 +286,9 @@ export async function removeUser(prevState: unknown, formData: FormData) {
 
     if (otherOrgError) {
       console.error("Error checking other org roles:", otherOrgError);
-      // Don't fail the operation, just log the error
     }
 
-    // Step 4: If user has no other organization memberships, mark as inactive
+    // If user has no other organization memberships, mark as inactive
     if (!otherOrgRoles || otherOrgRoles.length === 0) {
       const { error: profileUpdateError } = await supabase
         .from("user_profiles")
@@ -334,13 +300,8 @@ export async function removeUser(prevState: unknown, formData: FormData) {
           "Error updating user profile status:",
           profileUpdateError
         );
-        // Don't fail the operation, just log the error
       }
     }
-
-    // Step 5: DO NOT delete the user from auth
-    // We're keeping the user account intact but removing organization access
-    // The user can still potentially be invited to other organizations
 
     revalidatePath("/dashboard/admin/users");
     return { success: "User removed successfully from the organization" };
@@ -351,23 +312,20 @@ export async function removeUser(prevState: unknown, formData: FormData) {
 }
 
 // Resend invitation
-export async function resendInvitation(prevState: unknown, formData: FormData) {
+export async function resendInvitation(
+  organizationId: string,
+  currentUserId: string,
+  email: string
+) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // Check admin permissions
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return { error: "Authentication required" };
-  }
-
+  // Verify admin permissions
   const { data: userOrgRole, error: roleError } = await supabase
     .from("user_organization_roles")
-    .select("role, organization_id, organizations(name)")
-    .eq("user_id", user.id)
+    .select("role, organizations(name)")
+    .eq("user_id", currentUserId)
+    .eq("organization_id", organizationId)
     .eq("role", "admin")
     .single();
 
@@ -375,24 +333,16 @@ export async function resendInvitation(prevState: unknown, formData: FormData) {
     return { error: "Admin access required" };
   }
 
-  const email = formData.get("email") as string;
-
-  if (!email) {
-    return { error: "Email is required" };
-  }
-
   try {
-    // Get organization name
     const orgName = Array.isArray(userOrgRole.organizations)
       ? userOrgRole.organizations[0]?.name
       : userOrgRole.organizations?.name || "Unknown Organization";
 
-    // Resend invitation using admin client
     const { error: inviteError } =
       await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         data: {
-          invited_by: user.id,
-          organization_id: userOrgRole.organization_id,
+          invited_by: currentUserId,
+          organization_id: organizationId,
           organization_name: orgName,
           invitation_type: "organization_reinvite",
         },

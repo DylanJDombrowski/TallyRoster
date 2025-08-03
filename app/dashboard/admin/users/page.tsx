@@ -1,10 +1,29 @@
 // app/dashboard/admin/users/page.tsx
+import { getSessionData } from "@/lib/actions/session";
+import { redirect } from "next/navigation";
 import { getOrganizationUsers } from "./actions";
 import { UserManagementClient } from "./components/user-management-client";
 
 export default async function UserManagementPage() {
-  // No need to fetch user again - it's available in the session context
-  const result = await getOrganizationUsers();
+  // Get session data from the cached function
+  const sessionData = await getSessionData();
+
+  // Handle authentication and authorization
+  if (!sessionData.user) {
+    redirect("/login");
+  }
+
+  if (!sessionData.currentOrg || sessionData.currentRole !== "admin") {
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
+        <p className="text-red-500">Admin access required to manage users.</p>
+      </div>
+    );
+  }
+
+  // Now fetch page-specific data, passing the organization ID to avoid re-fetching
+  const result = await getOrganizationUsers(sessionData.currentOrg.id);
 
   // Check if result has an error
   if ("error" in result) {

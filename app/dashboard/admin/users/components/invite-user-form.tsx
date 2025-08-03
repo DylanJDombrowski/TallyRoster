@@ -2,50 +2,66 @@
 "use client";
 
 import { useToast } from "@/app/components/toast-provider";
+import { useSession } from "@/hooks/use-session";
 import { Team } from "@/lib/types";
-import { useEffect, useRef, useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useRef, useState } from "react";
 import { inviteUser } from "../actions";
 
 interface InviteUserFormProps {
   teams: Team[];
 }
 
-// Separate button component to use the useFormStatus hook
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="w-full px-4 py-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed"
-    >
-      {pending ? "Sending Invite..." : "Send Invite"}
-    </button>
-  );
-}
-
 export function InviteUserForm({ teams }: InviteUserFormProps) {
   const { showToast } = useToast();
-  const [state, formAction] = useFormState(inviteUser, null);
+  const { currentOrg, user } = useSession(); // Get org and user from session context
   const [selectedRole, setSelectedRole] = useState("coach");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    if (state?.success) {
-      showToast(state.success, "success");
-      formRef.current?.reset();
-      setSelectedRole("coach");
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!currentOrg || !user) {
+      showToast("Session error. Please refresh the page.", "error");
+      return;
     }
-    if (state?.error) {
-      showToast(state.error, "error");
+
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const email = formData.get("email") as string;
+      const role = formData.get("role") as "admin" | "coach" | "parent";
+      const teamId = (formData.get("team_id") as string) || null;
+
+      // Call optimized server action with session data
+      const result = await inviteUser(
+        currentOrg.id,
+        user.id,
+        email,
+        role,
+        teamId
+      );
+
+      if (result.success) {
+        showToast(result.success, "success");
+        formRef.current?.reset();
+        setSelectedRole("coach");
+      } else {
+        showToast(result.error || "Failed to send invitation", "error");
+      }
+    } catch (error) {
+      console.error("Error inviting user:", error);
+      showToast("Something went wrong. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [state, showToast]);
+  };
 
   return (
     <form
       ref={formRef}
-      action={formAction}
+      onSubmit={handleSubmit}
       className="p-4 space-y-4 border rounded-md shadow-sm"
     >
       <div className="space-y-1">
@@ -60,12 +76,10 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
           id="email"
           name="email"
           required
-          className="w-full p-2 border text-slate-800 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isSubmitting}
+          className="w-full p-2 border text-slate-800 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
           placeholder="user@example.com"
         />
-        {state?.fields?.email && (
-          <p className="text-sm text-red-600">{state.fields.email[0]}</p>
-        )}
       </div>
 
       <div className="space-y-1">
@@ -79,17 +93,15 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
           id="role"
           name="role"
           required
+          disabled={isSubmitting}
           value={selectedRole}
-          className="w-full p-2 border text-slate-800 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full p-2 border text-slate-800 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
           onChange={(e) => setSelectedRole(e.target.value)}
         >
           <option value="coach">Coach</option>
           <option value="admin">Admin</option>
           <option value="parent">Parent</option>
         </select>
-        {state?.fields?.role && (
-          <p className="text-sm text-red-600">{state.fields.role[0]}</p>
-        )}
       </div>
 
       {/* Only show the team selector if the role is 'coach' or 'parent' */}
@@ -105,7 +117,8 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
             id="team_id"
             name="team_id"
             required
-            className="w-full p-2 border text-slate-800 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            disabled={isSubmitting}
+            className="w-full p-2 border text-slate-800 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
           >
             <option value="">Select a team</option>
             {teams.map((team) => (
@@ -114,9 +127,6 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
               </option>
             ))}
           </select>
-          {state?.fields?.team_id && (
-            <p className="text-sm text-red-600">{state.fields.team_id[0]}</p>
-          )}
         </div>
       )}
 
@@ -151,7 +161,13 @@ export function InviteUserForm({ teams }: InviteUserFormProps) {
         )}
       </div>
 
-      <SubmitButton />
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="w-full px-4 py-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed"
+      >
+        {isSubmitting ? "Sending Invite..." : "Send Invite"}
+      </button>
     </form>
   );
 }
