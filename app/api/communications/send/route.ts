@@ -121,7 +121,9 @@ async function sendEmail(
     });
 
     console.log(
-      `📧 Email ${response.ok ? "sent" : "failed"} to ${recipient.email}`
+      `📧 Email ${response.ok ? "sent" : "failed"} to ${recipient.email} (${
+        recipient.type
+      })`
     );
   } catch (error) {
     console.error("Email send error:", error);
@@ -149,6 +151,8 @@ async function buildRecipientList(
     playersWithEmails: 0,
     coachesFound: 0,
     coachesWithEmails: 0,
+    parentEmails: 0,
+    playerEmails: 0,
   };
 
   console.log(`[Recipient Builder] Starting for comm ID: ${communication.id}`);
@@ -162,7 +166,7 @@ async function buildRecipientList(
       `[Recipient Builder] Fetching ALL recipients for org: ${communication.organization_id}`
     );
 
-    // Fetch all players
+    // Fetch all players in the organization
     const { data: players, error: playerError } = await supabase
       .from("players")
       .select(
@@ -180,6 +184,7 @@ async function buildRecipientList(
       );
 
       for (const player of players || []) {
+        // Add parent email if available
         if (player.parent_email?.trim()) {
           recipientMap.set(player.parent_email, {
             email: player.parent_email,
@@ -190,9 +195,13 @@ async function buildRecipientList(
             type: "parent",
             playerId: player.id,
           });
-          debugInfo.playersWithEmails++;
+          debugInfo.parentEmails++;
+          console.log(
+            `[Recipient Builder] ✅ Added parent: ${player.parent_email}`
+          );
         }
 
+        // Add player email if available
         if (player.player_email?.trim()) {
           recipientMap.set(player.player_email, {
             email: player.player_email,
@@ -201,18 +210,31 @@ async function buildRecipientList(
             type: "player",
             playerId: player.id,
           });
-          debugInfo.playersWithEmails++;
+          debugInfo.playerEmails++;
+          console.log(
+            `[Recipient Builder] ✅ Added player: ${player.player_email}`
+          );
         }
       }
     }
 
-    // ENHANCED: Fetch all coaches in the organization
-    const { data: allTeams } = await supabase
+    // NEW: Fetch all coaches in the organization
+    console.log(`[Recipient Builder] Fetching coaches for entire organization`);
+
+    // First get all teams in the organization
+    const { data: allTeams, error: teamsError } = await supabase
       .from("teams")
       .select("id")
       .eq("organization_id", communication.organization_id);
 
-    if (allTeams?.length) {
+    if (teamsError) {
+      console.error("[Recipient Builder] Error fetching teams:", teamsError);
+    } else if (allTeams?.length) {
+      console.log(
+        `[Recipient Builder] Found ${allTeams.length} teams in organization`
+      );
+
+      // Fetch all coaches for these teams
       const { data: coaches, error: coachError } = await supabase
         .from("coaches")
         .select("id, name, email, phone, team_id")
@@ -242,7 +264,13 @@ async function buildRecipientList(
               playerId: undefined,
             });
             debugInfo.coachesWithEmails++;
-            console.log(`[Recipient Builder] ✅ Added coach: ${coach.email}`);
+            console.log(
+              `[Recipient Builder] ✅ Added coach: ${coach.email} (${coach.name})`
+            );
+          } else {
+            console.log(
+              `[Recipient Builder] ⚠️ Coach ${coach.name} has no email address`
+            );
           }
         }
       }
@@ -251,7 +279,7 @@ async function buildRecipientList(
 
   if (communication.target_teams?.length) {
     console.log(
-      `[Recipient Builder] Fetching recipients for teams:`,
+      `[Recipient Builder] Fetching recipients for specific teams:`,
       communication.target_teams
     );
 
@@ -264,8 +292,21 @@ async function buildRecipientList(
       .in("team_id", communication.target_teams)
       .eq("status", "active");
 
-    if (!playerError && players) {
-      for (const player of players) {
+    if (playerError) {
+      console.error(
+        "[Recipient Builder] Error fetching team players:",
+        playerError
+      );
+    } else {
+      debugInfo.playersFound += players?.length || 0;
+      console.log(
+        `[Recipient Builder] Found ${
+          players?.length || 0
+        } players in selected teams`
+      );
+
+      for (const player of players || []) {
+        // Add parent email if available
         if (player.parent_email?.trim()) {
           recipientMap.set(player.parent_email, {
             email: player.parent_email,
@@ -276,8 +317,13 @@ async function buildRecipientList(
             type: "parent",
             playerId: player.id,
           });
+          debugInfo.parentEmails++;
+          console.log(
+            `[Recipient Builder] ✅ Added team parent: ${player.parent_email}`
+          );
         }
 
+        // Add player email if available
         if (player.player_email?.trim()) {
           recipientMap.set(player.player_email, {
             email: player.player_email,
@@ -286,18 +332,36 @@ async function buildRecipientList(
             type: "player",
             playerId: player.id,
           });
+          debugInfo.playerEmails++;
+          console.log(
+            `[Recipient Builder] ✅ Added team player: ${player.player_email}`
+          );
         }
       }
     }
 
-    // Fetch coaches for specific teams
+    // NEW: Fetch coaches for specific teams
+    console.log(`[Recipient Builder] Fetching coaches for selected teams`);
+
     const { data: coaches, error: coachError } = await supabase
       .from("coaches")
       .select("id, name, email, phone, team_id")
       .in("team_id", communication.target_teams);
 
-    if (!coachError && coaches) {
-      for (const coach of coaches) {
+    if (coachError) {
+      console.error(
+        "[Recipient Builder] Error fetching team coaches:",
+        coachError
+      );
+    } else {
+      debugInfo.coachesFound += coaches?.length || 0;
+      console.log(
+        `[Recipient Builder] Found ${
+          coaches?.length || 0
+        } coaches in selected teams`
+      );
+
+      for (const coach of coaches || []) {
         if (coach.email?.trim()) {
           recipientMap.set(coach.email, {
             email: coach.email,
@@ -306,8 +370,13 @@ async function buildRecipientList(
             type: "coach",
             playerId: undefined,
           });
+          debugInfo.coachesWithEmails++;
           console.log(
-            `[Recipient Builder] ✅ Added team coach: ${coach.email}`
+            `[Recipient Builder] ✅ Added team coach: ${coach.email} (${coach.name})`
+          );
+        } else {
+          console.log(
+            `[Recipient Builder] ⚠️ Team coach ${coach.name} has no email address`
           );
         }
       }
@@ -317,25 +386,39 @@ async function buildRecipientList(
   const recipients = Array.from(recipientMap.values());
 
   // ENHANCED: Detailed logging for debugging
-  console.log(`[Recipient Builder] SUMMARY:`);
+  console.log(`[Recipient Builder] ======= SUMMARY =======`);
   console.log(`[Recipient Builder] - Players found: ${debugInfo.playersFound}`);
   console.log(
-    `[Recipient Builder] - Players with emails: ${debugInfo.playersWithEmails}`
+    `[Recipient Builder] - Parent emails added: ${debugInfo.parentEmails}`
+  );
+  console.log(
+    `[Recipient Builder] - Player emails added: ${debugInfo.playerEmails}`
   );
   console.log(`[Recipient Builder] - Coaches found: ${debugInfo.coachesFound}`);
   console.log(
-    `[Recipient Builder] - Coaches with emails: ${debugInfo.coachesWithEmails}`
+    `[Recipient Builder] - Coach emails added: ${debugInfo.coachesWithEmails}`
   );
   console.log(
     `[Recipient Builder] - Total unique recipients: ${recipients.length}`
   );
-  console.log(
-    `[Recipient Builder] - Recipients by type:`,
-    recipients.reduce((acc, r) => {
-      acc[r.type] = (acc[r.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
-  );
+
+  const recipientsByType = recipients.reduce((acc, r) => {
+    acc[r.type] = (acc[r.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  console.log(`[Recipient Builder] - Recipients by type:`, recipientsByType);
+  console.log(`[Recipient Builder] ========================`);
+
+  // Log individual recipients for detailed debugging
+  console.log(`[Recipient Builder] Individual recipients:`);
+  recipients.forEach((recipient, index) => {
+    console.log(
+      `[Recipient Builder] ${index + 1}. ${recipient.type}: ${
+        recipient.name
+      } (${recipient.email})`
+    );
+  });
 
   return recipients;
 }
@@ -382,14 +465,16 @@ async function processCommunication(
     // ENHANCED: Provide specific guidance on what to do
     const errorMessage = `No recipients found for this communication. This usually means:
     
-    1. Players don't have email addresses configured in their profiles
+    1. Players don't have email addresses configured in their profiles (parent_email or player_email fields)
     2. No coaches have been added to teams with email addresses
     3. The targeting options selected don't match any records with email addresses
     
     To fix this:
     - Add email addresses to player profiles (parent_email or player_email fields)
-    - Add coaches to teams with email addresses
-    - Verify your targeting options (All Organization vs Specific Teams)`;
+    - Add coaches to teams with email addresses in the coaches table
+    - Verify your targeting options (All Organization vs Specific Teams)
+    
+    Debug info: Check the server logs above for detailed recipient building information.`;
 
     console.warn(`⚠️ ${errorMessage}`);
     throw new Error(errorMessage);
@@ -404,11 +489,25 @@ async function processCommunication(
     })
     .eq("id", communication.id);
 
+  // Send emails to all recipients
+  let sentCount = 0;
+  let failedCount = 0;
+
   for (const recipient of recipients) {
     if (communication.send_email && recipient.email) {
-      await sendEmail(communication, recipient, supabase);
+      try {
+        await sendEmail(communication, recipient, supabase);
+        sentCount++;
+      } catch (error) {
+        console.error(`Failed to send email to ${recipient.email}:`, error);
+        failedCount++;
+      }
     }
   }
+
+  console.log(
+    `[Email Summary] Successfully sent: ${sentCount}, Failed: ${failedCount}`
+  );
 
   // Update status to 'sent'
   await supabase

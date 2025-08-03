@@ -48,7 +48,11 @@ export default function TestEmailPage() {
           className="w-full p-2 border rounded"
         />
 
-        <button onClick={testEmail} disabled={loading || !email} className="w-full bg-blue-500 text-white p-2 rounded disabled:opacity-50">
+        <button
+          onClick={testEmail}
+          disabled={loading || !email}
+          className="w-full bg-blue-500 text-white p-2 rounded disabled:opacity-50"
+        >
           {loading ? "Sending..." : "Send Test Email"}
         </button>
 
