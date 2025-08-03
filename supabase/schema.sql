@@ -396,7 +396,9 @@ CREATE TABLE IF NOT EXISTS "public"."communications" (
     "target_all_org" boolean DEFAULT false,
     "target_teams" "uuid"[],
     "target_groups" "uuid"[],
-    "target_individuals" "uuid"[]
+    "target_individuals" "uuid"[],
+    "status" "text" DEFAULT 'draft'::"text",
+    "error_message" "text"
 );
 
 
