@@ -163,11 +163,35 @@ async function buildRecipientList(
       `[Recipient Builder] Fetching all players for org ID: ${communication.organization_id}`
     );
 
+    // DEBUGGING: Let's first check what columns are actually available
+    const { data: rawPlayers, error: rawError } = await supabase
+      .from("players")
+      .select("*")
+      .eq("organization_id", communication.organization_id)
+      .eq("status", "active")
+      .limit(1);
+
+    if (rawError) {
+      console.error(
+        "[Recipient Builder] Database error in raw query:",
+        rawError
+      );
+      throw new Error(`Database error fetching players: ${rawError.message}`);
+    }
+
+    if (rawPlayers && rawPlayers.length > 0) {
+      console.log(`[Recipient Builder] Raw player data sample:`, rawPlayers[0]);
+      console.log(
+        `[Recipient Builder] Available columns:`,
+        Object.keys(rawPlayers[0])
+      );
+    }
+
     // FIXED: Enhanced query with better error handling and logging
     const { data: players, error } = await supabase
       .from("players")
       .select(
-        "id, first_name, last_name, parent_email, parent_phone, parent_name, player_email, status"
+        "id, first_name, last_name, parent_email, parent_phone, parent_name, player_email, status, team_id, organization_id"
       )
       .eq("organization_id", communication.organization_id)
       .eq("status", "active");
@@ -186,18 +210,36 @@ async function buildRecipientList(
       } active players for organization ${communication.organization_id}`
     );
 
+    // DEBUGGING: Log all player data to see what we're actually getting
+    console.log(
+      `[Recipient Builder] Full player data:`,
+      JSON.stringify(players, null, 2)
+    );
+
     // FIXED: Added detailed logging for each player
     for (const player of players || []) {
       console.log(
         `[Recipient Builder] Processing player: ${player.first_name} ${player.last_name} (ID: ${player.id})`
       );
       console.log(
-        `[Recipient Builder] Player emails - Parent: ${player.parent_email}, Player: ${player.player_email}`
+        `[Recipient Builder] Player raw data:`,
+        JSON.stringify(player, null, 2)
+      );
+      console.log(
+        `[Recipient Builder] Player emails - Parent: "${player.parent_email}", Player: "${player.player_email}"`
+      );
+      console.log(
+        `[Recipient Builder] Email checks - Parent exists: ${!!player.parent_email}, Player exists: ${!!player.player_email}`
       );
 
-      if (player.parent_email?.trim()) {
-        recipientMap.set(player.parent_email, {
-          email: player.parent_email,
+      if (
+        player.parent_email &&
+        typeof player.parent_email === "string" &&
+        player.parent_email.trim()
+      ) {
+        const parentEmail = player.parent_email.trim();
+        recipientMap.set(parentEmail, {
+          email: parentEmail,
           phone: player.parent_phone,
           name:
             player.parent_name ||
@@ -205,21 +247,50 @@ async function buildRecipientList(
           type: "parent",
           playerId: player.id,
         });
-        console.log(`[Recipient Builder] Added parent: ${player.parent_email}`);
+        console.log(`[Recipient Builder] ✅ Added parent: ${parentEmail}`);
+      } else {
+        console.log(
+          `[Recipient Builder] ❌ Skipped parent email - value: "${
+            player.parent_email
+          }", type: ${typeof player.parent_email}`
+        );
       }
 
-      if (player.player_email?.trim()) {
-        recipientMap.set(player.player_email, {
-          email: player.player_email,
+      if (
+        player.player_email &&
+        typeof player.player_email === "string" &&
+        player.player_email.trim()
+      ) {
+        const playerEmail = player.player_email.trim();
+        recipientMap.set(playerEmail, {
+          email: playerEmail,
           phone: null,
           name: `${player.first_name} ${player.last_name}`,
           type: "player",
           playerId: player.id,
         });
-        console.log(`[Recipient Builder] Added player: ${player.player_email}`);
+        console.log(`[Recipient Builder] ✅ Added player: ${playerEmail}`);
+      } else {
+        console.log(
+          `[Recipient Builder] ❌ Skipped player email - value: "${
+            player.player_email
+          }", type: ${typeof player.player_email}`
+        );
       }
     }
   }
+
+  // DEBUGGING: Also let's check if there are ANY players with emails in this org
+  const { data: playersWithEmails } = await supabase
+    .from("players")
+    .select("id, first_name, last_name, parent_email, player_email")
+    .eq("organization_id", communication.organization_id)
+    .or("parent_email.not.is.null,player_email.not.is.null");
+
+  console.log(
+    `[Recipient Builder] Players with emails in org:`,
+    playersWithEmails
+  );
 
   if (communication.target_teams?.length) {
     console.log(
