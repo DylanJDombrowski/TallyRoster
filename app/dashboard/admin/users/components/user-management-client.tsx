@@ -21,15 +21,15 @@ type UserWithRole = User & {
 interface UserManagementClientProps {
   users: UserWithRole[];
   teams: Team[];
-  // Remove currentUserId prop - we'll get it from session context
+  // No longer need currentUserId prop - using session context
 }
 
 export function UserManagementClient({
   users,
   teams,
 }: UserManagementClientProps) {
-  // Get current user from session context instead of props
-  const { user: currentUser } = useSession();
+  // Get current user and organization from session context
+  const { user: currentUser, currentOrg } = useSession();
   const { showToast } = useToast();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -69,15 +69,20 @@ export function UserManagementClient({
   };
 
   const handleConfirmDelete = async () => {
-    if (!userToDelete) return;
+    if (!userToDelete || !currentOrg || !currentUser) {
+      showToast("Session error. Please refresh the page.", "error");
+      return;
+    }
 
     setIsRemovingUser(userToDelete.id);
 
     try {
-      const formData = new FormData();
-      formData.append("user_id", userToDelete.id);
-
-      const result = await removeUser(null, formData);
+      // Call optimized server action with session data
+      const result = await removeUser(
+        currentOrg.id,
+        currentUser.id,
+        userToDelete.id
+      );
 
       if (result.success) {
         showToast("User has been removed from the organization.", "success");
@@ -97,13 +102,20 @@ export function UserManagementClient({
   };
 
   const handleResendInvitation = async (email: string, userId: string) => {
+    if (!currentOrg || !currentUser) {
+      showToast("Session error. Please refresh the page.", "error");
+      return;
+    }
+
     setIsResendingInvitation(userId);
 
     try {
-      const formData = new FormData();
-      formData.append("email", email);
-
-      const result = await resendInvitation(null, formData);
+      // Call optimized server action with session data
+      const result = await resendInvitation(
+        currentOrg.id,
+        currentUser.id,
+        email
+      );
 
       if (result.success) {
         showToast("Invitation has been resent.", "success");
@@ -147,6 +159,27 @@ export function UserManagementClient({
   };
 
   const isCurrentUser = (userId: string) => userId === currentUser?.id;
+
+  // Show loading state if session data isn't available
+  if (!currentUser || !currentOrg) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-64 mb-8"></div>
+          <div className="grid gap-8 mt-8 md:grid-cols-3">
+            <div className="md:col-span-1">
+              <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+            </div>
+            <div className="md:col-span-2">
+              <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
+              <div className="h-96 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
