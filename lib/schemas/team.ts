@@ -21,17 +21,4 @@ export const TeamFormSchema = z.object({
   coach_phone: z.string().optional(),
 });
 
-export const CoachFormSchema = z.object({
-  id: z.string().uuid().optional(),
-  team_id: z.string().uuid(),
-  name: z.string().min(2, "Coach name must be at least 2 characters."),
-  email: z.string().email("Please enter a valid email address.").optional(),
-  phone: z.string().optional(),
-  position: z.string().optional(),
-  bio: z.string().optional(),
-  image_url: z.string().url().optional(),
-  order_index: z.number().int().default(0),
-});
-
 export type TeamFormData = z.infer<typeof TeamFormSchema>;
-export type CoachFormData = z.infer<typeof CoachFormSchema>;
