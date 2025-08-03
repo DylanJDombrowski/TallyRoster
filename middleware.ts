@@ -86,7 +86,8 @@ export async function middleware(request: NextRequest) {
       url.pathname.startsWith("/auth") ||
       url.pathname.startsWith("/dashboard") ||
       url.pathname.startsWith("/onboarding") ||
-      url.pathname.startsWith("/invite")
+      url.pathname.startsWith("/invite") ||
+      url.pathname.startsWith("/test-email")
     ) {
       console.log("✅ Auth/Dashboard route, no rewrite needed");
       return response;
