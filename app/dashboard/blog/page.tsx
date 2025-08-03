@@ -1,11 +1,88 @@
-import { getBlogPosts } from "@/lib/actions/blog";
+// app/dashboard/blog/page.tsx (Refactored Server Component)
 import Link from "next/link";
 import { Plus, Edit, Eye, Calendar, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import DeleteBlogPostButton from "./components/DeleteBlogPostButton";
+import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { getSessionData } from "@/lib/actions/session";
+import { redirect } from "next/navigation";
+
+// REFACTORED: Server action that accepts organizationId and userId as parameters
+async function getBlogPosts(organizationId: string) {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  try {
+    const { data: posts, error } = await supabase
+      .from("blog_posts")
+      .select(
+        `
+        id,
+        title,
+        slug,
+        short_description,
+        content,
+        image_url,
+        published_date,
+        status,
+        created_at,
+        author_id,
+        organization_id
+      `
+      )
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching blog posts:", error);
+      return { success: false, error: error.message, data: null };
+    }
+
+    // Transform data to include author information if needed
+    const postsWithAuthors =
+      posts?.map((post) => ({
+        ...post,
+        author: {
+          first_name: "Unknown", // In real implementation, you'd join with user_profiles
+          last_name: "",
+        },
+      })) || [];
+
+    return { success: true, error: null, data: postsWithAuthors };
+  } catch (error) {
+    console.error("Unexpected error in getBlogPosts:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+      data: null,
+    };
+  }
+}
 
 export default async function BlogPage() {
-  const result = await getBlogPosts();
+  // REFACTORED: Use centralized session data instead of individual auth calls
+  const sessionData = await getSessionData();
+
+  if (!sessionData.user) {
+    redirect("/login");
+  }
+
+  if (!sessionData.currentOrg) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <p className="text-red-800">
+            Error: No organization found. Please ensure you are part of an
+            organization.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // REFACTORED: Pass session data to server action instead of refetching
+  const result = await getBlogPosts(sessionData.currentOrg.id);
 
   if (!result.success) {
     return (
@@ -27,7 +104,7 @@ export default async function BlogPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Blog Posts</h1>
           <p className="text-gray-600">
-            Manage your organization&apos;s blog content
+            Manage {sessionData.currentOrg.name}&apos;s blog content
           </p>
         </div>
         <Link

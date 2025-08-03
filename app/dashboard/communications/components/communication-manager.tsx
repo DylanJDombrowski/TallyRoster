@@ -7,6 +7,7 @@ import { MessageComposer } from "./message-composer";
 import { MessageHistory } from "./message-history";
 import { MessageTemplates } from "./message-templates";
 import { DeliveryAnalytics } from "./delivery-analytics";
+import { useSession } from "@/hooks/use-session"; // Using the new session hook
 
 interface Team {
   id: string;
@@ -54,6 +55,9 @@ export function CommunicationManager({
   groups,
   recentCommunications,
 }: CommunicationManagerProps) {
+  // Access session data via the new hook
+  const { currentOrg } = useSession();
+
   const [activeTab, setActiveTab] = useState<
     "compose" | "history" | "templates" | "analytics"
   >("compose");
@@ -134,12 +138,12 @@ export function CommunicationManager({
       {/* Desktop Layout */}
       <div className="hidden md:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Desktop Header */}
+          {/* Desktop Header - Now uses session data for organization name */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Team Communications
+                  {currentOrg?.name} Communications
                 </h1>
                 <p className="text-gray-600 mt-1">
                   Send messages and track delivery to players and parents

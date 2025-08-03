@@ -13,6 +13,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useToast } from "@/app/components/toast-provider";
+import { useSession } from "@/hooks/use-session"; // Using the new session hook
 
 interface Team {
   id: string;
@@ -91,6 +92,9 @@ export function MessageComposer({
   onMessageSent,
   isMobile = false,
 }: MessageComposerProps) {
+  // Access session data via the new hook instead of direct Supabase calls
+  const { user, currentOrg } = useSession();
+
   const [formData, setFormData] = useState({
     subject: "",
     content: "",
@@ -126,6 +130,12 @@ export function MessageComposer({
       return;
     }
 
+    // REFACTORED: No longer need to fetch user data here - use session data
+    if (!user || !currentOrg) {
+      showToast("Authentication error. Please refresh and try again.", "error");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -135,6 +145,7 @@ export function MessageComposer({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          // REFACTORED: Use organizationId from props (derived from session)
           organizationId,
           subject: formData.subject,
           content: formData.content,

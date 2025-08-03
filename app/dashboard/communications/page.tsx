@@ -1,32 +1,21 @@
 // app/dashboard/communications/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { CommunicationManager } from "./components/communication-manager";
+import { getSessionData } from "@/lib/actions/session";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function CommunicationsPage() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  // Use centralized session data instead of refetching
+  const sessionData = await getSessionData();
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
+  if (!sessionData.user) {
     redirect("/login");
   }
 
-  // Get user's organization and role
-  const { data: orgRole, error: roleError } = await supabase
-    .from("user_organization_roles")
-    .select("organization_id, role")
-    .eq("user_id", session.user.id)
-    .single();
-
-  if (roleError || !orgRole) {
-    console.error("Error fetching user organization:", roleError);
+  if (!sessionData.currentOrg || !sessionData.currentRole) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -43,7 +32,7 @@ export default async function CommunicationsPage() {
   }
 
   // Check if user has permission to send communications (admin or coach)
-  if (!["admin", "coach"].includes(orgRole.role)) {
+  if (!["admin", "coach"].includes(sessionData.currentRole)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -58,7 +47,11 @@ export default async function CommunicationsPage() {
     );
   }
 
-  const organizationId = orgRole.organization_id;
+  const organizationId = sessionData.currentOrg.id;
+
+  // Initialize Supabase client for remaining data fetching
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
 
   // Fetch teams for targeting options
   const { data: teams } = await supabase
@@ -101,7 +94,7 @@ export default async function CommunicationsPage() {
   return (
     <CommunicationManager
       organizationId={organizationId}
-      userRole={orgRole.role}
+      userRole={sessionData.currentRole}
       teams={teams || []}
       groups={groups || []}
       recentCommunications={safeRecentCommunications}
