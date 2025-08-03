@@ -677,7 +677,8 @@ CREATE TABLE IF NOT EXISTS "public"."user_profiles" (
     "first_name" character varying(255),
     "last_name" character varying(255),
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "status" "text" DEFAULT 'active'::"text"
 );
 
 

@@ -287,7 +287,7 @@ export async function removeUser(prevState: unknown, formData: FormData) {
   }
 
   try {
-    // Remove from user_roles table
+    // Step 1: Remove from user_roles table (team assignments)
     const { error: userRolesError } = await supabase
       .from("user_roles")
       .delete()
@@ -295,9 +295,10 @@ export async function removeUser(prevState: unknown, formData: FormData) {
 
     if (userRolesError) {
       console.error("Error removing user roles:", userRolesError);
+      // Don't fail the whole operation if this fails
     }
 
-    // Remove from user_organization_roles table
+    // Step 2: Remove from user_organization_roles table (primary action)
     const { error: orgRolesError } = await supabase
       .from("user_organization_roles")
       .delete()
@@ -310,17 +311,36 @@ export async function removeUser(prevState: unknown, formData: FormData) {
       };
     }
 
-    // Optionally delete the user from auth (this is destructive!)
-    const { error: deleteUserError } =
-      await supabaseAdmin.auth.admin.deleteUser(userIdToRemove);
+    // Step 3: Check if user has any other organization memberships
+    const { data: otherOrgRoles, error: otherOrgError } = await supabase
+      .from("user_organization_roles")
+      .select("organization_id")
+      .eq("user_id", userIdToRemove);
 
-    if (deleteUserError) {
-      console.error(
-        "Warning: Failed to delete user from auth:",
-        deleteUserError
-      );
-      // Don't fail the whole operation if auth deletion fails
+    if (otherOrgError) {
+      console.error("Error checking other org roles:", otherOrgError);
+      // Don't fail the operation, just log the error
     }
+
+    // Step 4: If user has no other organization memberships, mark as inactive
+    if (!otherOrgRoles || otherOrgRoles.length === 0) {
+      const { error: profileUpdateError } = await supabase
+        .from("user_profiles")
+        .update({ status: "inactive" })
+        .eq("user_id", userIdToRemove);
+
+      if (profileUpdateError) {
+        console.error(
+          "Error updating user profile status:",
+          profileUpdateError
+        );
+        // Don't fail the operation, just log the error
+      }
+    }
+
+    // Step 5: DO NOT delete the user from auth
+    // We're keeping the user account intact but removing organization access
+    // The user can still potentially be invited to other organizations
 
     revalidatePath("/dashboard/admin/users");
     return { success: "User removed successfully from the organization" };
