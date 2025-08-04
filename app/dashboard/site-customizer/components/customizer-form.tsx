@@ -92,6 +92,21 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
   const [socialNavLabel, setSocialNavLabel] = useState(
     organization.social_nav_label || "Social"
   );
+  const [facebookUrl, setFacebookUrl] = useState(
+    organization.facebook_url || ""
+  );
+  const [twitterUrl, setTwitterUrl] = useState(organization.twitter_url || "");
+  const [instagramUrl, setInstagramUrl] = useState(
+    organization.instagram_url || ""
+  );
+  const [youtubeUrl, setYoutubeUrl] = useState(organization.youtube_url || "");
+  const [linkedinUrl, setLinkedinUrl] = useState(
+    organization.linkedin_url || ""
+  );
+  const [tiktokUrl, setTiktokUrl] = useState(organization.tiktok_url || "");
+  const [socialEmbedCode, setSocialEmbedCode] = useState(
+    organization.social_embed_code || ""
+  );
 
   useEffect(() => {
     if (
@@ -126,6 +141,21 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
             value={organization.subdomain || ""}
           />
           <input type="hidden" name="logo_url" value={logoUrl || ""} />
+          <input type="hidden" name="facebook_url" value={facebookUrl || ""} />
+          <input type="hidden" name="twitter_url" value={twitterUrl || ""} />
+          <input
+            type="hidden"
+            name="instagram_url"
+            value={instagramUrl || ""}
+          />
+          <input type="hidden" name="youtube_url" value={youtubeUrl || ""} />
+          <input type="hidden" name="linkedin_url" value={linkedinUrl || ""} />
+          <input type="hidden" name="tiktok_url" value={tiktokUrl || ""} />
+          <input
+            type="hidden"
+            name="social_embed_code"
+            value={socialEmbedCode || ""}
+          />
 
           {/* Branding Section */}
           <div>
@@ -461,6 +491,154 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                     Navigation label (e.g., &quot;Xpress Social&quot;)
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Social Media Integration Section */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-slate-700 mb-4">
+              Social Media Integration
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Add your social media links to display in the footer and
+              optionally embed a social media feed on your social page.
+            </p>
+
+            <div className="space-y-4">
+              {/* Social Media Links */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="facebook_url"
+                    className="block text-sm font-medium text-slate-700 mb-1"
+                  >
+                    Facebook Page URL
+                  </label>
+                  <input
+                    id="facebook_url"
+                    name="facebook_url"
+                    type="url"
+                    value={facebookUrl}
+                    onChange={(e) => setFacebookUrl(e.target.value)}
+                    className="w-full p-3 border border-slate-300 rounded-md"
+                    placeholder="https://facebook.com/yourpage"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="twitter_url"
+                    className="block text-sm font-medium text-slate-700 mb-1"
+                  >
+                    Twitter/X Profile URL
+                  </label>
+                  <input
+                    id="twitter_url"
+                    name="twitter_url"
+                    type="url"
+                    value={twitterUrl}
+                    onChange={(e) => setTwitterUrl(e.target.value)}
+                    className="w-full p-3 border border-slate-300 rounded-md"
+                    placeholder="https://twitter.com/yourusername"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="instagram_url"
+                    className="block text-sm font-medium text-slate-700 mb-1"
+                  >
+                    Instagram Profile URL
+                  </label>
+                  <input
+                    id="instagram_url"
+                    name="instagram_url"
+                    type="url"
+                    value={instagramUrl}
+                    onChange={(e) => setInstagramUrl(e.target.value)}
+                    className="w-full p-3 border border-slate-300 rounded-md"
+                    placeholder="https://instagram.com/yourusername"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="youtube_url"
+                    className="block text-sm font-medium text-slate-700 mb-1"
+                  >
+                    YouTube Channel URL
+                  </label>
+                  <input
+                    id="youtube_url"
+                    name="youtube_url"
+                    type="url"
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    className="w-full p-3 border border-slate-300 rounded-md"
+                    placeholder="https://youtube.com/c/yourchannel"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="linkedin_url"
+                    className="block text-sm font-medium text-slate-700 mb-1"
+                  >
+                    LinkedIn Profile URL
+                  </label>
+                  <input
+                    id="linkedin_url"
+                    name="linkedin_url"
+                    type="url"
+                    value={linkedinUrl}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    className="w-full p-3 border border-slate-300 rounded-md"
+                    placeholder="https://linkedin.com/company/yourcompany"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="tiktok_url"
+                    className="block text-sm font-medium text-slate-700 mb-1"
+                  >
+                    TikTok Profile URL
+                  </label>
+                  <input
+                    id="tiktok_url"
+                    name="tiktok_url"
+                    type="url"
+                    value={tiktokUrl}
+                    onChange={(e) => setTiktokUrl(e.target.value)}
+                    className="w-full p-3 border border-slate-300 rounded-md"
+                    placeholder="https://tiktok.com/@yourusername"
+                  />
+                </div>
+              </div>
+
+              {/* Social Media Embed Code */}
+              <div className="mt-6">
+                <label
+                  htmlFor="social_embed_code"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
+                  Social Media Feed Embed Code (Optional)
+                </label>
+                <textarea
+                  id="social_embed_code"
+                  name="social_embed_code"
+                  rows={6}
+                  value={socialEmbedCode}
+                  onChange={(e) => setSocialEmbedCode(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-md font-mono text-sm"
+                  placeholder="Paste your social media embed code here (e.g., Twitter timeline widget, Facebook page plugin, etc.)"
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  Get embed codes from your social media platforms to display
+                  live feeds on your social page. Common examples: Twitter
+                  timeline widget, Facebook page plugin, Instagram feed widget.
+                </p>
               </div>
             </div>
           </div>
