@@ -9,6 +9,7 @@ import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { Footer } from "./components/Footer";
 
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 type Team = Database["public"]["Tables"]["teams"]["Row"];
@@ -154,30 +155,7 @@ export default async function SiteLayout({
             <Navigation teams={teams} organization={organization} />
             <main className="flex-grow">{children}</main>
 
-            <footer
-              className="font-oswald text-white py-10 px-5"
-              style={{ backgroundColor: secondaryColor }}
-            >
-              <div className="max-w-screen-xl mx-auto text-center">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold mb-2">
-                    {organization.name}
-                  </h2>
-                  <p className="opacity-90">{slogan}</p>
-                </div>
-                <div className="border-t border-white/20 pt-6">
-                  <p className="text-sm">
-                    © {new Date().getFullYear()} {organization.name}. All Rights
-                    Reserved.
-                  </p>
-                  {organization.subdomain && (
-                    <p className="text-xs opacity-75 mt-1">
-                      Powered by TallyRoster
-                    </p>
-                  )}
-                </div>
-              </div>
-            </footer>
+            <Footer organization={organization} />
           </div>
         </OrganizationProvider>
       </body>

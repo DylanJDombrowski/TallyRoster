@@ -58,59 +58,56 @@ export default function Navigation({
     return pathname === path;
   };
 
-  // Generate dynamic navigation links based on organization settings
-  const getDynamicNavLinks = (): NavLink[] => {
-    const dynamicLinks: NavLink[] = [];
+  const getNavigationItems = () => {
+    const navItems = [
+      { href: "/", label: "Home" },
+      { href: "/teams", label: "Teams" },
+    ];
 
-    // Always include Home
-    dynamicLinks.push({ href: "/", label: "Home" });
-
-    // Always include Teams
-    dynamicLinks.push({ href: "/teams", label: "Teams" });
-
-    // Add conditional pages based on organization settings
+    // Add conditional navigation items based on organization settings
     if (organization.show_blog) {
-      dynamicLinks.push({
+      navItems.push({
         href: "/blog",
         label: organization.blog_nav_label || "News",
       });
     }
 
     if (organization.show_alumni) {
-      dynamicLinks.push({
+      navItems.push({
         href: "/alumni",
         label: organization.alumni_nav_label || "Alumni",
       });
     }
 
     if (organization.show_forms_links) {
-      dynamicLinks.push({
+      navItems.push({
         href: "/forms-and-links",
         label: organization.forms_links_nav_label || "Forms & Links",
       });
     }
 
     if (organization.show_sponsors) {
-      dynamicLinks.push({
+      navItems.push({
         href: "/sponsors",
         label: organization.sponsors_nav_label || "Sponsors",
       });
     }
 
+    // UPDATED: Changed from /xpress-social to /social
     if (organization.show_social) {
-      dynamicLinks.push({
-        href: "/xpress-social",
+      navItems.push({
+        href: "/social",
         label: organization.social_nav_label || "Social",
       });
     }
 
-    return dynamicLinks;
+    return navItems;
   };
 
   // Use dynamic links if organization is provided, otherwise use passed navLinks
   const activeNavLinks =
     organization && Object.keys(organization).length > 0
-      ? getDynamicNavLinks()
+      ? getNavigationItems()
       : navLinks;
 
   return (

@@ -52,6 +52,42 @@ const OrgSettingsSchema = z.object({
     .string()
     .max(50, "Navigation label must be 50 characters or less.")
     .default("Social"),
+  // Social media URL fields
+  facebook_url: z
+    .string()
+    .url("Invalid Facebook URL.")
+    .nullable()
+    .or(z.literal("")),
+  twitter_url: z
+    .string()
+    .url("Invalid Twitter URL.")
+    .nullable()
+    .or(z.literal("")),
+  instagram_url: z
+    .string()
+    .url("Invalid Instagram URL.")
+    .nullable()
+    .or(z.literal("")),
+  youtube_url: z
+    .string()
+    .url("Invalid YouTube URL.")
+    .nullable()
+    .or(z.literal("")),
+  linkedin_url: z
+    .string()
+    .url("Invalid LinkedIn URL.")
+    .nullable()
+    .or(z.literal("")),
+  tiktok_url: z
+    .string()
+    .url("Invalid TikTok URL.")
+    .nullable()
+    .or(z.literal("")),
+  social_embed_code: z
+    .string()
+    .max(10000, "Embed code must be 10,000 characters or less.")
+    .nullable()
+    .or(z.literal("")),
 });
 
 const OrganizationLinkSchema = z.object({
@@ -125,6 +161,14 @@ export async function updateOrganizationSettings(
         formData.get("forms_links_nav_label") || "Forms & Links",
       sponsors_nav_label: formData.get("sponsors_nav_label") || "Sponsors",
       social_nav_label: formData.get("social_nav_label") || "Social",
+      // Social media URL data
+      facebook_url: formData.get("facebook_url"),
+      twitter_url: formData.get("twitter_url"),
+      instagram_url: formData.get("instagram_url"),
+      youtube_url: formData.get("youtube_url"),
+      linkedin_url: formData.get("linkedin_url"),
+      tiktok_url: formData.get("tiktok_url"),
+      social_embed_code: formData.get("social_embed_code"),
     };
 
     const validation = OrgSettingsSchema.safeParse(rawData);
@@ -151,6 +195,21 @@ export async function updateOrganizationSettings(
     const cleanedUpdateData = {
       ...updateData,
       logo_url: updateData.logo_url === "" ? null : updateData.logo_url,
+      facebook_url:
+        updateData.facebook_url === "" ? null : updateData.facebook_url,
+      twitter_url:
+        updateData.twitter_url === "" ? null : updateData.twitter_url,
+      instagram_url:
+        updateData.instagram_url === "" ? null : updateData.instagram_url,
+      youtube_url:
+        updateData.youtube_url === "" ? null : updateData.youtube_url,
+      linkedin_url:
+        updateData.linkedin_url === "" ? null : updateData.linkedin_url,
+      tiktok_url: updateData.tiktok_url === "" ? null : updateData.tiktok_url,
+      social_embed_code:
+        updateData.social_embed_code === ""
+          ? null
+          : updateData.social_embed_code,
     };
 
     const cookieStore = await cookies();
@@ -184,7 +243,7 @@ export async function updateOrganizationSettings(
       revalidatePath(`/sites/${subdomain}/forms-and-links`, "page");
       revalidatePath(`/sites/${subdomain}/alumni`, "page");
       revalidatePath(`/sites/${subdomain}/sponsors`, "page");
-      revalidatePath(`/sites/${subdomain}/xpress-social`, "page");
+      revalidatePath(`/sites/${subdomain}/social`, "page"); // Updated route
       revalidatePath(`/sites/${subdomain}/blog`, "page");
 
       // Use tags for more efficient cache invalidation
