@@ -1,8 +1,9 @@
-// app/dashboard/site-customizer/page.tsx
+// app/dashboard/site-customizer/page.tsx - UPDATED WITH LINKS MANAGER
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CustomizerForm } from "./components/customizer-form";
+import { LinksManager } from "./components/links-manager";
 
 export default async function SiteCustomizerPage() {
   const cookieStore = await cookies();
@@ -43,9 +44,7 @@ export default async function SiteCustomizerPage() {
     return <p>Error loading your organization data.</p>;
   }
 
-  // THE FIX: Supabase's type helper can sometimes infer a nested object as an array.
-  // We handle this by checking if it's an array and taking the first element,
-  // or using it directly if it's an object.
+  // Handle the potential array/object structure from Supabase
   const organizationData = Array.isArray(orgRole.organizations)
     ? orgRole.organizations[0]
     : orgRole.organizations;
@@ -71,11 +70,20 @@ export default async function SiteCustomizerPage() {
           Website Customizer
         </h1>
         <p className="text-slate-600 mt-1">
-          Change your site&apos;s logo, colors, and content. Changes will be
-          reflected in the live preview.
+          Customize your site&apos;s branding, navigation, and content. Changes
+          will be reflected immediately on your live website.
         </p>
       </div>
-      <CustomizerForm organization={organizationData} />
+
+      {/* Main Customizer Form */}
+      <div className="mb-12">
+        <CustomizerForm organization={organizationData} />
+      </div>
+
+      {/* Forms & Links Manager Section */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <LinksManager />
+      </div>
     </div>
   );
 }

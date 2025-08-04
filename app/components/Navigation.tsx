@@ -13,16 +13,16 @@ interface NavLink {
 }
 
 interface Organization {
-  show_alumni?: boolean;
-  show_blog?: boolean;
-  show_forms_links?: boolean;
-  show_sponsors?: boolean;
-  show_social?: boolean;
-  alumni_nav_label?: string;
-  blog_nav_label?: string;
-  forms_links_nav_label?: string;
-  sponsors_nav_label?: string;
-  social_nav_label?: string;
+  show_alumni?: boolean | null;
+  show_blog?: boolean | null;
+  show_forms_links?: boolean | null;
+  show_sponsors?: boolean | null;
+  show_social?: boolean | null;
+  alumni_nav_label?: string | null;
+  blog_nav_label?: string | null;
+  forms_links_nav_label?: string | null;
+  sponsors_nav_label?: string | null;
+  social_nav_label?: string | null;
 }
 
 interface NavigationProps {

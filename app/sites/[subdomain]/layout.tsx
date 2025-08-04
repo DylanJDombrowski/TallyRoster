@@ -1,4 +1,4 @@
-// app/sites/[subdomain]/layout.tsx - FIXED VERSION
+// app/sites/[subdomain]/layout.tsx - FIXED WITH DYNAMIC NAVIGATION
 import Navigation from "@/app/components/Navigation";
 import { ThemeStyle } from "@/app/components/theme-style";
 import { ThemeListener } from "@/app/components/ThemeListener";
@@ -13,22 +13,16 @@ import { notFound } from "next/navigation";
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 
-interface NavLink {
-  href: string;
-  label: string;
-  subLinks?: { href: string; label: string }[];
-}
-
 async function getOrganizationData(subdomain: string) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  console.log(`🎨 Loading theme data for subdomain: ${subdomain}`);
+  console.log(`🎨 Loading organization data for subdomain: ${subdomain}`);
 
-  // Fetch ALL organization fields including theme data
+  // Fetch ALL organization fields including navigation settings
   const { data: organization, error } = await supabase
     .from("organizations")
-    .select("*") // This ensures we get ALL fields including theme, slogan, etc.
+    .select("*") // This ensures we get ALL fields including navigation settings
     .eq("subdomain", subdomain)
     .single();
 
@@ -40,12 +34,17 @@ async function getOrganizationData(subdomain: string) {
     return { organization: null, teams: [] };
   }
 
-  console.log(`✅ Loaded organization theme data:`, {
+  console.log(`✅ Loaded organization data:`, {
     name: organization.name,
     theme: organization.theme,
     primaryColor: organization.primary_color,
     secondaryColor: organization.secondary_color,
     slogan: organization.slogan,
+    showAlumni: organization.show_alumni,
+    showBlog: organization.show_blog,
+    showFormsLinks: organization.show_forms_links,
+    showSponsors: organization.show_sponsors,
+    showSocial: organization.show_social,
   });
 
   const { data: teams, error: teamsError } = await supabase
@@ -77,23 +76,6 @@ export default async function SiteLayout({
   if (!organization) {
     notFound();
   }
-
-  const navLinks: NavLink[] = [
-    { href: "/", label: "Home" },
-    {
-      href: "/teams",
-      label: "Teams",
-      subLinks: teams.map((team) => ({
-        href: `/teams/${team.id}`,
-        label: team.name,
-      })),
-    },
-    { href: "/live-scores", label: "Live Scores" },
-    { href: "/blog", label: "Blog" },
-    { href: "/alumni", label: "Alumni" },
-    { href: "/on-the-field", label: "On The Field" },
-    { href: "/forms-and-links", label: "Forms & Resources" },
-  ];
 
   // Ensure we have fallback values for theme properties
   const primaryColor = organization.primary_color || "#161659";
@@ -168,7 +150,8 @@ export default async function SiteLayout({
               </div>
             </header>
 
-            <Navigation teams={teams} navLinks={navLinks} />
+            {/* FIXED: Pass organization data to Navigation for dynamic behavior */}
+            <Navigation teams={teams} organization={organization} />
             <main className="flex-grow">{children}</main>
 
             <footer

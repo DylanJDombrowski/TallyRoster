@@ -1,13 +1,10 @@
-// app/sites/[subdomain]/forms-and-links/page.tsx
+// app/sites/[subdomain]/forms-and-links/page.tsx - ACCORDION VERSION
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { Database } from "@/lib/database.types";
 import { Container } from "@/app/components/Container";
-
-type OrganizationLink =
-  Database["public"]["Tables"]["organization_links"]["Row"];
+import { AccordionContainer } from "./components/accordion-container";
 
 // Generate metadata for SEO
 export async function generateMetadata({
@@ -21,82 +18,42 @@ export async function generateMetadata({
 
   const { data: organization } = await supabase
     .from("organizations")
-    .select("name")
+    .select("name, forms_links_nav_label")
     .eq("subdomain", subdomain)
     .single();
 
   const orgName = organization?.name || "Organization";
+  const pageTitle = organization?.forms_links_nav_label || "Forms & Links";
 
   return {
-    title: `Forms & Resources | ${orgName}`,
+    title: `${pageTitle} | ${orgName}`,
     description: `Important forms, registration links, and resources for ${orgName}. Find all the information you need in one place.`,
     openGraph: {
-      title: `Forms & Resources | ${orgName}`,
+      title: `${pageTitle} | ${orgName}`,
       description: `Important forms and resources for ${orgName}`,
     },
   };
 }
 
-// Enhanced link card component with better design
-function LinkCard({ link, index }: { link: OrganizationLink; index: number }) {
-  return (
-    <a
-      href={link.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block p-6 bg-white border border-slate-200 rounded-lg shadow-md hover:shadow-xl hover:border-blue-400 transition-all duration-300 group transform hover:-translate-y-1"
-      // Add some staggered animation delay
-      style={{ animationDelay: `${index * 100}ms` }}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-600 mb-2">
-            {link.title}
-          </h3>
-          {link.description && (
-            <p className="text-slate-600 mb-4 line-clamp-3">
-              {link.description}
-            </p>
-          )}
-        </div>
-
-        {/* External link icon */}
-        <div className="ml-4 text-slate-400 group-hover:text-blue-600 transition-colors">
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            />
-          </svg>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold text-blue-600 group-hover:underline">
-          Access Link
-        </div>
-        <div className="text-xs text-slate-400 truncate max-w-[200px]">
-          {new URL(link.url).hostname}
-        </div>
-      </div>
-    </a>
-  );
-}
-
 // Empty state component
-function EmptyState({ organizationName }: { organizationName: string }) {
+function EmptyState({
+  organizationName,
+  pageTitle,
+  primaryColor,
+}: {
+  organizationName: string;
+  pageTitle: string;
+  primaryColor: string;
+}) {
   return (
     <div className="text-center py-16">
-      <div className="mx-auto w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+      <div
+        className="mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-6"
+        style={{ backgroundColor: `${primaryColor}20` }}
+      >
         <svg
-          className="w-12 h-12 text-slate-400"
+          className="w-12 h-12"
+          style={{ color: primaryColor }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -110,7 +67,7 @@ function EmptyState({ organizationName }: { organizationName: string }) {
         </svg>
       </div>
       <h3 className="text-xl font-semibold text-slate-800 mb-2">
-        No Resources Available Yet
+        No {pageTitle} Available Yet
       </h3>
       <p className="text-slate-600 max-w-md mx-auto">
         {organizationName} hasn&apos;t added any forms or resource links yet.
@@ -132,7 +89,7 @@ export default async function FormsAndLinksPage({
   // 1. Get the organization by subdomain
   const { data: organization } = await supabase
     .from("organizations")
-    .select("id, name, primary_color, secondary_color")
+    .select("*")
     .eq("subdomain", subdomain)
     .single();
 
@@ -140,17 +97,26 @@ export default async function FormsAndLinksPage({
     notFound();
   }
 
-  // 2. Get the links for that organization, ordered by creation date for now
-  // TODO: Order by position once we add the position column
+  // Check if forms & links page is enabled
+  if (!organization.show_forms_links) {
+    notFound();
+  }
+
+  // 2. Get the links for that organization, ordered by position
   const { data: links, error } = await supabase
     .from("organization_links")
     .select("*")
     .eq("organization_id", organization.id)
+    .order("position", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (error) {
     console.error("Error fetching organization links:", error);
   }
+
+  const primaryColor = organization.primary_color || "#161659";
+  const secondaryColor = organization.secondary_color || "#BD1515";
+  const pageTitle = organization.forms_links_nav_label || "Forms & Links";
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -158,19 +124,15 @@ export default async function FormsAndLinksPage({
       <div
         className="py-16 text-white"
         style={{
-          backgroundColor: organization.primary_color || "#161659",
-          background: `linear-gradient(135deg, ${
-            organization.primary_color || "#161659"
-          } 0%, ${organization.secondary_color || "#BD1515"} 100%)`,
+          backgroundColor: secondaryColor,
+          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
         }}
       >
         <Container>
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Forms & Resources
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">{pageTitle}</h1>
             <p className="text-xl opacity-90 max-w-2xl mx-auto">
-              Important links and resources for {organization.name}
+              Important information and resources for {organization.name}
             </p>
           </div>
         </Container>
@@ -183,19 +145,44 @@ export default async function FormsAndLinksPage({
             <>
               <div className="text-center mb-12">
                 <p className="text-lg text-slate-600">
-                  Click on any link below to access forms, registration, and
-                  other important resources.
+                  Click on any section below to expand and access forms,
+                  registration, and other important resources.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {links.map((link, index) => (
-                  <LinkCard key={link.id} link={link} index={index} />
-                ))}
+              <AccordionContainer links={links} primaryColor={primaryColor} />
+
+              {/* Side image like Angular version */}
+              <div className="mt-16 flex justify-center">
+                <div className="w-full max-w-md">
+                  <div
+                    className="aspect-square rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${primaryColor}10` }}
+                  >
+                    <div
+                      className="w-32 h-32 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: primaryColor }}
+                    >
+                      <svg
+                        className="w-16 h-16 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Footer note */}
-              <div className="mt-16 text-center">
+              <div className="mt-12 text-center">
                 <p className="text-sm text-slate-500">
                   Links open in a new tab. If you have trouble accessing any
                   resource, please contact {organization.name} directly.
@@ -203,7 +190,11 @@ export default async function FormsAndLinksPage({
               </div>
             </>
           ) : (
-            <EmptyState organizationName={organization.name} />
+            <EmptyState
+              organizationName={organization.name}
+              pageTitle={pageTitle}
+              primaryColor={primaryColor}
+            />
           )}
         </div>
       </Container>
