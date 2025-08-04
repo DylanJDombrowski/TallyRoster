@@ -1,4 +1,4 @@
-// app/dashboard/site-customizer/components/customizer-form.tsx - FIXED
+// app/dashboard/site-customizer/components/customizer-form.tsx - UPDATED WITH PAGE VISIBILITY
 "use client";
 
 import { useToast } from "@/app/components/toast-provider";
@@ -40,46 +40,69 @@ function SubmitButton() {
 }
 
 export function CustomizerForm({ organization }: CustomizerFormProps) {
-  // FIXED: Use useActionState instead of useFormState
-  const [state, formAction] = useActionState(updateOrganizationSettings, initialState);
+  const [state, formAction] = useActionState(
+    updateOrganizationSettings,
+    initialState
+  );
   const { showToast } = useToast();
 
-  // FIXED: Track if we've already shown the toast for this state
   const lastMessageRef = useRef<string>("");
   const lastSuccessRef = useRef<boolean>(false);
 
-  // State for all customizable fields with better defaults
+  // State for all customizable fields
   const [name, setName] = useState(organization.name || "");
   const [slogan, setSlogan] = useState(organization.slogan || "");
   const [logoUrl, setLogoUrl] = useState(organization.logo_url || "");
-  const [primaryColor, setPrimaryColor] = useState(organization.primary_color || "#161659");
-  const [secondaryColor, setSecondaryColor] = useState(organization.secondary_color || "#BD1515");
+  const [primaryColor, setPrimaryColor] = useState(
+    organization.primary_color || "#161659"
+  );
+  const [secondaryColor, setSecondaryColor] = useState(
+    organization.secondary_color || "#BD1515"
+  );
   const [theme, setTheme] = useState(organization.theme || "light");
 
-  // Debug: Log the organization data when component mounts
-  useEffect(() => {
-    console.log("🎨 CustomizerForm - Organization data:", {
-      id: organization.id,
-      name: organization.name,
-      slogan: organization.slogan,
-      theme: organization.theme,
-      primary_color: organization.primary_color,
-      secondary_color: organization.secondary_color,
-      logo_url: organization.logo_url,
-    });
-  }, [organization]);
+  // Page visibility states
+  const [showAlumni, setShowAlumni] = useState(
+    organization.show_alumni || false
+  );
+  const [showBlog, setShowBlog] = useState(organization.show_blog !== false); // Default true
+  const [showFormsLinks, setShowFormsLinks] = useState(
+    organization.show_forms_links !== false
+  ); // Default true
+  const [showSponsors, setShowSponsors] = useState(
+    organization.show_sponsors || false
+  );
+  const [showSocial, setShowSocial] = useState(
+    organization.show_social !== false
+  ); // Default true
 
-  // FIXED: Prevent infinite loop by checking if message has changed
+  // Navigation label states
+  const [alumniNavLabel, setAlumniNavLabel] = useState(
+    organization.alumni_nav_label || "Alumni"
+  );
+  const [blogNavLabel, setBlogNavLabel] = useState(
+    organization.blog_nav_label || "News"
+  );
+  const [formsLinksNavLabel, setFormsLinksNavLabel] = useState(
+    organization.forms_links_nav_label || "Forms & Links"
+  );
+  const [sponsorsNavLabel, setSponsorsNavLabel] = useState(
+    organization.sponsors_nav_label || "Sponsors"
+  );
+  const [socialNavLabel, setSocialNavLabel] = useState(
+    organization.social_nav_label || "Social"
+  );
+
   useEffect(() => {
-    if (state.message && (state.message !== lastMessageRef.current || state.success !== lastSuccessRef.current)) {
-      console.log("🎨 Form submission result:", state);
+    if (
+      state.message &&
+      (state.message !== lastMessageRef.current ||
+        state.success !== lastSuccessRef.current)
+    ) {
       showToast(state.message, state.success ? "success" : "error");
-
-      // Update the refs to prevent showing the same message again
       lastMessageRef.current = state.message;
       lastSuccessRef.current = state.success;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.message, state.success, showToast]);
 
   const handlePresetSelect = (preset: (typeof COLOR_PRESETS)[0]) => {
@@ -91,37 +114,40 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
       {/* Left Panel: Controls */}
       <div className="space-y-8">
-        <form action={formAction} className="space-y-8 p-6 border rounded-lg bg-white shadow-sm">
-          {/* Hidden fields - CRITICAL: These must be present */}
+        <form
+          action={formAction}
+          className="space-y-8 p-6 border rounded-lg bg-white shadow-sm"
+        >
+          {/* Hidden fields */}
           <input type="hidden" name="organizationId" value={organization.id} />
-          <input type="hidden" name="subdomain" value={organization.subdomain || ""} />
+          <input
+            type="hidden"
+            name="subdomain"
+            value={organization.subdomain || ""}
+          />
           <input type="hidden" name="logo_url" value={logoUrl || ""} />
-
-          {/* Debug section - Remove this after testing */}
-          <div className="bg-gray-100 p-4 rounded text-xs">
-            <strong>Debug Info:</strong>
-            <br />
-            Org ID: {organization.id}
-            <br />
-            Subdomain: {organization.subdomain}
-            <br />
-            Current Theme: {organization.theme}
-            <br />
-            Current Colors: {organization.primary_color} / {organization.secondary_color}
-            <br />
-            State: {JSON.stringify(state)}
-          </div>
 
           {/* Branding Section */}
           <div>
-            <h3 className="text-lg font-semibold text-slate-700 mb-4">Branding</h3>
+            <h3 className="text-lg font-semibold text-slate-700 mb-4">
+              Branding
+            </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Organization Logo</label>
-                <ImageUploader initialImageUrl={logoUrl} onUploadSuccess={setLogoUrl} uploadPreset="organization_logos" />
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Organization Logo
+                </label>
+                <ImageUploader
+                  initialImageUrl={logoUrl}
+                  onUploadSuccess={setLogoUrl}
+                  uploadPreset="organization_logos"
+                />
               </div>
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-slate-700 mb-1"
+                >
                   Organization Name
                 </label>
                 <input
@@ -135,7 +161,10 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                 />
               </div>
               <div>
-                <label htmlFor="slogan" className="block text-sm font-medium text-slate-700 mb-1">
+                <label
+                  htmlFor="slogan"
+                  className="block text-sm font-medium text-slate-700 mb-1"
+                >
                   Slogan / Tagline
                 </label>
                 <input
@@ -153,11 +182,15 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
 
           {/* Color & Theme Section */}
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-slate-700 mb-4">Color & Theme</h3>
+            <h3 className="text-lg font-semibold text-slate-700 mb-4">
+              Color & Theme
+            </h3>
 
-            {/* Dark Mode Toggle */}
             <div className="flex items-center justify-between p-3 rounded-md bg-slate-50 mb-6">
-              <label htmlFor="theme_toggle" className="font-medium text-slate-700">
+              <label
+                htmlFor="theme_toggle"
+                className="font-medium text-slate-700"
+              >
                 Dark Mode
               </label>
               <input
@@ -170,7 +203,6 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
               <input type="hidden" name="theme" value={theme} />
             </div>
 
-            {/* Color Presets */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
               {COLOR_PRESETS.map((preset) => (
                 <button
@@ -180,18 +212,28 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                   className="p-3 rounded-lg border-2 hover:border-blue-500 transition-colors"
                 >
                   <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-6 h-6 rounded-full" style={{ backgroundColor: preset.primary }} />
-                    <div className="w-6 h-6 rounded-full" style={{ backgroundColor: preset.secondary }} />
+                    <div
+                      className="w-6 h-6 rounded-full"
+                      style={{ backgroundColor: preset.primary }}
+                    />
+                    <div
+                      className="w-6 h-6 rounded-full"
+                      style={{ backgroundColor: preset.secondary }}
+                    />
                   </div>
-                  <span className="text-xs font-medium text-slate-700">{preset.name}</span>
+                  <span className="text-xs font-medium text-slate-700">
+                    {preset.name}
+                  </span>
                 </button>
               ))}
             </div>
 
-            {/* Custom Color Inputs */}
             <div className="space-y-4">
               <div>
-                <label htmlFor="primary_color" className="block text-sm font-medium text-slate-700 mb-2">
+                <label
+                  htmlFor="primary_color"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
                   Primary Color
                 </label>
                 <div className="flex items-center space-x-3">
@@ -213,7 +255,10 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                 </div>
               </div>
               <div>
-                <label htmlFor="secondary_color" className="block text-sm font-medium text-slate-700 mb-2">
+                <label
+                  htmlFor="secondary_color"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
                   Secondary Color
                 </label>
                 <div className="flex items-center space-x-3">
@@ -237,9 +282,194 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
             </div>
           </div>
 
+          {/* Page Visibility Section */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-slate-700 mb-4">
+              Page Visibility & Navigation
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Control which pages appear in your public website navigation and
+              customize their labels.
+            </p>
+
+            <div className="space-y-6">
+              {/* Alumni */}
+              <div className="flex items-start space-x-4 p-4 border rounded-lg bg-slate-50">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="show_alumni"
+                    name="show_alumni"
+                    checked={showAlumni}
+                    onChange={(e) => setShowAlumni(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="show_alumni"
+                    className="ml-2 text-sm font-medium text-slate-700"
+                  >
+                    Alumni Page
+                  </label>
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    name="alumni_nav_label"
+                    value={alumniNavLabel}
+                    onChange={(e) => setAlumniNavLabel(e.target.value)}
+                    disabled={!showAlumni}
+                    className="w-full p-2 text-sm border border-slate-300 rounded-md disabled:bg-gray-100 disabled:text-gray-500"
+                    placeholder="Alumni"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Navigation label (e.g., &quot;Hall of Fame&quot;)
+                  </p>
+                </div>
+              </div>
+
+              {/* Blog */}
+              <div className="flex items-start space-x-4 p-4 border rounded-lg bg-slate-50">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="show_blog"
+                    name="show_blog"
+                    checked={showBlog}
+                    onChange={(e) => setShowBlog(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="show_blog"
+                    className="ml-2 text-sm font-medium text-slate-700"
+                  >
+                    Blog/News Page
+                  </label>
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    name="blog_nav_label"
+                    value={blogNavLabel}
+                    onChange={(e) => setBlogNavLabel(e.target.value)}
+                    disabled={!showBlog}
+                    className="w-full p-2 text-sm border border-slate-300 rounded-md disabled:bg-gray-100 disabled:text-gray-500"
+                    placeholder="News"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Navigation label (e.g., &quot;On The Field&quot;)
+                  </p>
+                </div>
+              </div>
+
+              {/* Forms & Links */}
+              <div className="flex items-start space-x-4 p-4 border rounded-lg bg-slate-50">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="show_forms_links"
+                    name="show_forms_links"
+                    checked={showFormsLinks}
+                    onChange={(e) => setShowFormsLinks(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="show_forms_links"
+                    className="ml-2 text-sm font-medium text-slate-700"
+                  >
+                    Forms & Links Page
+                  </label>
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    name="forms_links_nav_label"
+                    value={formsLinksNavLabel}
+                    onChange={(e) => setFormsLinksNavLabel(e.target.value)}
+                    disabled={!showFormsLinks}
+                    className="w-full p-2 text-sm border border-slate-300 rounded-md disabled:bg-gray-100 disabled:text-gray-500"
+                    placeholder="Forms & Links"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Navigation label (e.g., &quot;All Aboard&quot;)
+                  </p>
+                </div>
+              </div>
+
+              {/* Sponsors */}
+              <div className="flex items-start space-x-4 p-4 border rounded-lg bg-slate-50">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="show_sponsors"
+                    name="show_sponsors"
+                    checked={showSponsors}
+                    onChange={(e) => setShowSponsors(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="show_sponsors"
+                    className="ml-2 text-sm font-medium text-slate-700"
+                  >
+                    Sponsors/Partners Page
+                  </label>
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    name="sponsors_nav_label"
+                    value={sponsorsNavLabel}
+                    onChange={(e) => setSponsorsNavLabel(e.target.value)}
+                    disabled={!showSponsors}
+                    className="w-full p-2 text-sm border border-slate-300 rounded-md disabled:bg-gray-100 disabled:text-gray-500"
+                    placeholder="Sponsors"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Navigation label (e.g., &quot;Our Partners&quot;)
+                  </p>
+                </div>
+              </div>
+
+              {/* Social */}
+              <div className="flex items-start space-x-4 p-4 border rounded-lg bg-slate-50">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="show_social"
+                    name="show_social"
+                    checked={showSocial}
+                    onChange={(e) => setShowSocial(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="show_social"
+                    className="ml-2 text-sm font-medium text-slate-700"
+                  >
+                    Social Media Page
+                  </label>
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    name="social_nav_label"
+                    value={socialNavLabel}
+                    onChange={(e) => setSocialNavLabel(e.target.value)}
+                    disabled={!showSocial}
+                    className="w-full p-2 text-sm border border-slate-300 rounded-md disabled:bg-gray-100 disabled:text-gray-500"
+                    placeholder="Social"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Navigation label (e.g., &quot;Xpress Social&quot;)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="border-t pt-6">
             <SubmitButton />
-            <p className="text-xs text-slate-500 mt-2 text-center">Changes will be visible on your live website immediately.</p>
+            <p className="text-xs text-slate-500 mt-2 text-center">
+              Changes will be visible on your live website immediately.
+            </p>
           </div>
         </form>
       </div>
@@ -254,6 +484,18 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
           secondaryColor={secondaryColor}
           theme={theme}
           organization={organization}
+          navigationConfig={{
+            showAlumni,
+            showBlog,
+            showFormsLinks,
+            showSponsors,
+            showSocial,
+            alumniNavLabel,
+            blogNavLabel,
+            formsLinksNavLabel,
+            sponsorsNavLabel,
+            socialNavLabel,
+          }}
         />
       </div>
     </div>

@@ -1,4 +1,4 @@
-// app/dashboard/site-customizer/actions.ts - COMPLETE VERSION
+// app/dashboard/site-customizer/actions.ts - UPDATED WITH PAGE VISIBILITY
 "use server";
 
 import { createServerClient } from "@supabase/ssr";
@@ -9,7 +9,11 @@ import { z } from "zod";
 const OrgSettingsSchema = z.object({
   organizationId: z.string().uuid(),
   name: z.string().min(3, "Organization name must be at least 3 characters."),
-  slogan: z.string().max(100, "Slogan must be 100 characters or less.").optional().nullable(),
+  slogan: z
+    .string()
+    .max(100, "Slogan must be 100 characters or less.")
+    .optional()
+    .nullable(),
   logo_url: z.string().url("Invalid logo URL.").nullable().or(z.literal("")),
   primary_color: z
     .string()
@@ -21,21 +25,58 @@ const OrgSettingsSchema = z.object({
     .default("#BD1515"),
   theme: z.enum(["light", "dark"]).default("light"),
   subdomain: z.string().nullable(),
+  // Page visibility fields
+  show_alumni: z.boolean().default(false),
+  show_blog: z.boolean().default(true),
+  show_forms_links: z.boolean().default(true),
+  show_sponsors: z.boolean().default(false),
+  show_social: z.boolean().default(true),
+  // Navigation label fields
+  alumni_nav_label: z
+    .string()
+    .max(50, "Navigation label must be 50 characters or less.")
+    .default("Alumni"),
+  blog_nav_label: z
+    .string()
+    .max(50, "Navigation label must be 50 characters or less.")
+    .default("News"),
+  forms_links_nav_label: z
+    .string()
+    .max(50, "Navigation label must be 50 characters or less.")
+    .default("Forms & Links"),
+  sponsors_nav_label: z
+    .string()
+    .max(50, "Navigation label must be 50 characters or less.")
+    .default("Sponsors"),
+  social_nav_label: z
+    .string()
+    .max(50, "Navigation label must be 50 characters or less.")
+    .default("Social"),
 });
 
 const OrganizationLinkSchema = z.object({
   id: z.string().uuid().optional(),
-  title: z.string().min(1, "Title is required.").max(100, "Title must be 100 characters or less."),
-  description: z.string().max(500, "Description must be 500 characters or less.").nullable(),
+  title: z
+    .string()
+    .min(1, "Title is required.")
+    .max(100, "Title must be 100 characters or less."),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less.")
+    .nullable(),
   url: z.string().url("Invalid URL format."),
 });
 
 // Helper function to get user's organization ID with enhanced security
 async function getUserOrganizationId() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: { get: (name: string) => cookieStore.get(name)?.value },
-  });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: { get: (name: string) => cookieStore.get(name)?.value },
+    }
+  );
 
   const {
     data: { user },
@@ -49,12 +90,16 @@ async function getUserOrganizationId() {
     .single();
 
   if (error || !orgRole) throw new Error("Could not find user's organization");
-  if (orgRole.role !== "admin") throw new Error("Only administrators can update organization settings");
+  if (orgRole.role !== "admin")
+    throw new Error("Only administrators can update organization settings");
 
   return orgRole.organization_id;
 }
 
-export async function updateOrganizationSettings(prevState: unknown, formData: FormData) {
+export async function updateOrganizationSettings(
+  prevState: unknown,
+  formData: FormData
+) {
   try {
     const authenticatedOrgId = await getUserOrganizationId();
 
@@ -67,6 +112,19 @@ export async function updateOrganizationSettings(prevState: unknown, formData: F
       secondary_color: formData.get("secondary_color"),
       theme: formData.get("theme"),
       subdomain: formData.get("subdomain"),
+      // Page visibility data
+      show_alumni: formData.get("show_alumni") === "on",
+      show_blog: formData.get("show_blog") === "on",
+      show_forms_links: formData.get("show_forms_links") === "on",
+      show_sponsors: formData.get("show_sponsors") === "on",
+      show_social: formData.get("show_social") === "on",
+      // Navigation label data
+      alumni_nav_label: formData.get("alumni_nav_label") || "Alumni",
+      blog_nav_label: formData.get("blog_nav_label") || "News",
+      forms_links_nav_label:
+        formData.get("forms_links_nav_label") || "Forms & Links",
+      sponsors_nav_label: formData.get("sponsors_nav_label") || "Sponsors",
+      social_nav_label: formData.get("social_nav_label") || "Social",
     };
 
     const validation = OrgSettingsSchema.safeParse(rawData);
@@ -83,7 +141,8 @@ export async function updateOrganizationSettings(prevState: unknown, formData: F
     if (validation.data.organizationId !== authenticatedOrgId) {
       return {
         success: false,
-        message: "Authorization Error: You can only update your own organization.",
+        message:
+          "Authorization Error: You can only update your own organization.",
       };
     }
 
@@ -95,11 +154,18 @@ export async function updateOrganizationSettings(prevState: unknown, formData: F
     };
 
     const cookieStore = await cookies();
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      cookies: { get: (name: string) => cookieStore.get(name)?.value },
-    });
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: { get: (name: string) => cookieStore.get(name)?.value },
+      }
+    );
 
-    const { error } = await supabase.from("organizations").update(cleanedUpdateData).eq("id", organizationId);
+    const { error } = await supabase
+      .from("organizations")
+      .update(cleanedUpdateData)
+      .eq("id", organizationId);
 
     if (error) {
       throw error;
@@ -107,13 +173,19 @@ export async function updateOrganizationSettings(prevState: unknown, formData: F
 
     // CRITICAL: Revalidate both the dashboard AND the subdomain site
     if (subdomain) {
-      console.log(`Revalidating theme for subdomain: ${subdomain}`);
+      console.log(
+        `Revalidating theme and navigation for subdomain: ${subdomain}`
+      );
 
       // Revalidate the entire subdomain site layout and pages
       revalidatePath(`/sites/${subdomain}`, "layout");
       revalidatePath(`/sites/${subdomain}`, "page");
       revalidatePath(`/sites/${subdomain}/teams`, "page");
       revalidatePath(`/sites/${subdomain}/forms-and-links`, "page");
+      revalidatePath(`/sites/${subdomain}/alumni`, "page");
+      revalidatePath(`/sites/${subdomain}/sponsors`, "page");
+      revalidatePath(`/sites/${subdomain}/xpress-social`, "page");
+      revalidatePath(`/sites/${subdomain}/blog`, "page");
 
       // Use tags for more efficient cache invalidation
       revalidateTag(`org-${organizationId}`);
@@ -125,17 +197,19 @@ export async function updateOrganizationSettings(prevState: unknown, formData: F
 
     return {
       success: true,
-      message: "Settings updated successfully! Changes will appear on your live site within moments.",
+      message:
+        "Settings updated successfully! Changes will appear on your live site within moments.",
     };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-    console.error("Theme update error:", errorMessage);
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred.";
+    console.error("Settings update error:", errorMessage);
     return { success: false, message: `Error: ${errorMessage}` };
   }
 }
 
 // ============================================================================
-// ORGANIZATION LINKS ACTIONS
+// ORGANIZATION LINKS ACTIONS (unchanged)
 // ============================================================================
 
 export async function createOrganizationLink(
@@ -166,13 +240,17 @@ export async function createOrganizationLink(
     }
 
     const cookieStore = await cookies();
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
         },
-      },
-    });
+      }
+    );
 
     const { error } = await supabase.from("organization_links").insert({
       organization_id: organizationId,
@@ -184,7 +262,11 @@ export async function createOrganizationLink(
     }
 
     // Get the organization's subdomain for revalidation
-    const { data: org } = await supabase.from("organizations").select("subdomain").eq("id", organizationId).single();
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("subdomain")
+      .eq("id", organizationId)
+      .single();
 
     // Revalidate the public-facing site
     if (org?.subdomain) {
@@ -214,20 +296,24 @@ export async function getOrganizationLinks() {
     const organizationId = await getUserOrganizationId();
 
     const cookieStore = await cookies();
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
         },
-      },
-    });
+      }
+    );
 
     const { data, error } = await supabase
       .from("organization_links")
       .select("*")
       .eq("organization_id", organizationId)
-      .order("position", { ascending: true }) // Order by position first
-      .order("created_at", { ascending: true }); // Then by creation date as fallback
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: true });
 
     if (error) {
       throw error;
@@ -276,24 +362,36 @@ export async function updateOrganizationLink(
     }
 
     const cookieStore = await cookies();
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
         },
-      },
-    });
+      }
+    );
 
     const { id, ...updateData } = validation.data;
 
-    const { error } = await supabase.from("organization_links").update(updateData).eq("id", id!).eq("organization_id", organizationId); // Security: only update links owned by this org
+    const { error } = await supabase
+      .from("organization_links")
+      .update(updateData)
+      .eq("id", id!)
+      .eq("organization_id", organizationId);
 
     if (error) {
       throw error;
     }
 
     // Get the organization's subdomain for revalidation
-    const { data: org } = await supabase.from("organizations").select("subdomain").eq("id", organizationId).single();
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("subdomain")
+      .eq("id", organizationId)
+      .single();
 
     // Revalidate the public-facing site
     if (org?.subdomain) {
@@ -323,22 +421,34 @@ export async function deleteOrganizationLink(id: string) {
     const organizationId = await getUserOrganizationId();
 
     const cookieStore = await cookies();
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
         },
-      },
-    });
+      }
+    );
 
-    const { error } = await supabase.from("organization_links").delete().eq("id", id).eq("organization_id", organizationId); // Security: only delete links owned by this org
+    const { error } = await supabase
+      .from("organization_links")
+      .delete()
+      .eq("id", id)
+      .eq("organization_id", organizationId);
 
     if (error) {
       throw error;
     }
 
     // Get the organization's subdomain for revalidation
-    const { data: org } = await supabase.from("organizations").select("subdomain").eq("id", organizationId).single();
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("subdomain")
+      .eq("id", organizationId)
+      .single();
 
     // Revalidate the public-facing site
     if (org?.subdomain) {
@@ -368,13 +478,17 @@ export async function updateLinksOrder(linkIds: string[]) {
     const organizationId = await getUserOrganizationId();
 
     const cookieStore = await cookies();
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
         },
-      },
-    });
+      }
+    );
 
     // Verify all links belong to this organization before updating
     const { data: existingLinks, error: verifyError } = await supabase
@@ -389,14 +503,18 @@ export async function updateLinksOrder(linkIds: string[]) {
 
     // Check that all provided link IDs exist and belong to this org
     if (!existingLinks || existingLinks.length !== linkIds.length) {
-      throw new Error("Some links don't exist or don't belong to your organization");
+      throw new Error(
+        "Some links don't exist or don't belong to your organization"
+      );
     }
 
     // Update each link with its new position
-    // We use a Promise.all to update all records efficiently
-    const updatePromises = linkIds.map(
-      (linkId, index) =>
-        supabase.from("organization_links").update({ position: index }).eq("id", linkId).eq("organization_id", organizationId) // Double security check
+    const updatePromises = linkIds.map((linkId, index) =>
+      supabase
+        .from("organization_links")
+        .update({ position: index })
+        .eq("id", linkId)
+        .eq("organization_id", organizationId)
     );
 
     const results = await Promise.all(updatePromises);
@@ -409,7 +527,11 @@ export async function updateLinksOrder(linkIds: string[]) {
     }
 
     // Get the organization's subdomain for revalidation
-    const { data: org } = await supabase.from("organizations").select("subdomain").eq("id", organizationId).single();
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("subdomain")
+      .eq("id", organizationId)
+      .single();
 
     // Revalidate both the dashboard and public pages
     revalidatePath("/dashboard/site-customizer");

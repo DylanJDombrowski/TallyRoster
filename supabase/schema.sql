@@ -475,7 +475,17 @@ CREATE TABLE IF NOT EXISTS "public"."organizations" (
     "domain_verified" boolean DEFAULT false,
     "domain_verification_method" character varying(50),
     "domain_ssl_status" character varying(50) DEFAULT 'pending'::character varying,
-    "domain_added_at" timestamp with time zone
+    "domain_added_at" timestamp with time zone,
+    "show_alumni" boolean DEFAULT false,
+    "show_blog" boolean DEFAULT true,
+    "show_forms_links" boolean DEFAULT true,
+    "show_sponsors" boolean DEFAULT false,
+    "show_social" boolean DEFAULT true,
+    "alumni_nav_label" "text" DEFAULT 'Alumni'::"text",
+    "blog_nav_label" "text" DEFAULT 'News'::"text",
+    "forms_links_nav_label" "text" DEFAULT 'Forms & Links'::"text",
+    "sponsors_nav_label" "text" DEFAULT 'Sponsors'::"text",
+    "social_nav_label" "text" DEFAULT 'Social'::"text"
 );
 
 

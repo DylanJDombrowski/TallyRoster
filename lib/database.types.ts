@@ -758,6 +758,8 @@ export type Database = {
       }
       organizations: {
         Row: {
+          alumni_nav_label: string | null
+          blog_nav_label: string | null
           created_at: string | null
           custom_domain: string | null
           domain_added: boolean | null
@@ -766,6 +768,7 @@ export type Database = {
           domain_verification_method: string | null
           domain_verification_token: string | null
           domain_verified: boolean | null
+          forms_links_nav_label: string | null
           id: string
           logo_url: string | null
           name: string
@@ -773,7 +776,14 @@ export type Database = {
           owner_id: string | null
           primary_color: string | null
           secondary_color: string | null
+          show_alumni: boolean | null
+          show_blog: boolean | null
+          show_forms_links: boolean | null
+          show_social: boolean | null
+          show_sponsors: boolean | null
           slogan: string | null
+          social_nav_label: string | null
+          sponsors_nav_label: string | null
           sport: string | null
           subdomain: string | null
           subscription_plan: string | null
@@ -781,6 +791,8 @@ export type Database = {
           trial_ends_at: string | null
         }
         Insert: {
+          alumni_nav_label?: string | null
+          blog_nav_label?: string | null
           created_at?: string | null
           custom_domain?: string | null
           domain_added?: boolean | null
@@ -789,6 +801,7 @@ export type Database = {
           domain_verification_method?: string | null
           domain_verification_token?: string | null
           domain_verified?: boolean | null
+          forms_links_nav_label?: string | null
           id?: string
           logo_url?: string | null
           name: string
@@ -796,7 +809,14 @@ export type Database = {
           owner_id?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          show_alumni?: boolean | null
+          show_blog?: boolean | null
+          show_forms_links?: boolean | null
+          show_social?: boolean | null
+          show_sponsors?: boolean | null
           slogan?: string | null
+          social_nav_label?: string | null
+          sponsors_nav_label?: string | null
           sport?: string | null
           subdomain?: string | null
           subscription_plan?: string | null
@@ -804,6 +824,8 @@ export type Database = {
           trial_ends_at?: string | null
         }
         Update: {
+          alumni_nav_label?: string | null
+          blog_nav_label?: string | null
           created_at?: string | null
           custom_domain?: string | null
           domain_added?: boolean | null
@@ -812,6 +834,7 @@ export type Database = {
           domain_verification_method?: string | null
           domain_verification_token?: string | null
           domain_verified?: boolean | null
+          forms_links_nav_label?: string | null
           id?: string
           logo_url?: string | null
           name?: string
@@ -819,7 +842,14 @@ export type Database = {
           owner_id?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          show_alumni?: boolean | null
+          show_blog?: boolean | null
+          show_forms_links?: boolean | null
+          show_social?: boolean | null
+          show_sponsors?: boolean | null
           slogan?: string | null
+          social_nav_label?: string | null
+          sponsors_nav_label?: string | null
           sport?: string | null
           subdomain?: string | null
           subscription_plan?: string | null

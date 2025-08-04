@@ -1,4 +1,4 @@
-// app/components/Navigation.tsx
+// app/components/Navigation.tsx - UPDATED WITH DYNAMIC PAGE VISIBILITY
 "use client";
 
 import Link from "next/link";
@@ -12,14 +12,29 @@ interface NavLink {
   subLinks?: { href: string; label: string }[];
 }
 
+interface Organization {
+  show_alumni?: boolean;
+  show_blog?: boolean;
+  show_forms_links?: boolean;
+  show_sponsors?: boolean;
+  show_social?: boolean;
+  alumni_nav_label?: string;
+  blog_nav_label?: string;
+  forms_links_nav_label?: string;
+  sponsors_nav_label?: string;
+  social_nav_label?: string;
+}
+
 interface NavigationProps {
   teams?: Team[];
-  navLinks: NavLink[];
+  navLinks?: NavLink[];
+  organization?: Organization;
 }
 
 export default function Navigation({
   teams = [],
   navLinks = [],
+  organization = {},
 }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
@@ -43,7 +58,60 @@ export default function Navigation({
     return pathname === path;
   };
 
-  // Find the teams link to handle special dropdown logic
+  // Generate dynamic navigation links based on organization settings
+  const getDynamicNavLinks = (): NavLink[] => {
+    const dynamicLinks: NavLink[] = [];
+
+    // Always include Home
+    dynamicLinks.push({ href: "/", label: "Home" });
+
+    // Always include Teams
+    dynamicLinks.push({ href: "/teams", label: "Teams" });
+
+    // Add conditional pages based on organization settings
+    if (organization.show_blog) {
+      dynamicLinks.push({
+        href: "/blog",
+        label: organization.blog_nav_label || "News",
+      });
+    }
+
+    if (organization.show_alumni) {
+      dynamicLinks.push({
+        href: "/alumni",
+        label: organization.alumni_nav_label || "Alumni",
+      });
+    }
+
+    if (organization.show_forms_links) {
+      dynamicLinks.push({
+        href: "/forms-and-links",
+        label: organization.forms_links_nav_label || "Forms & Links",
+      });
+    }
+
+    if (organization.show_sponsors) {
+      dynamicLinks.push({
+        href: "/sponsors",
+        label: organization.sponsors_nav_label || "Sponsors",
+      });
+    }
+
+    if (organization.show_social) {
+      dynamicLinks.push({
+        href: "/xpress-social",
+        label: organization.social_nav_label || "Social",
+      });
+    }
+
+    return dynamicLinks;
+  };
+
+  // Use dynamic links if organization is provided, otherwise use passed navLinks
+  const activeNavLinks =
+    organization && Object.keys(organization).length > 0
+      ? getDynamicNavLinks()
+      : navLinks;
 
   return (
     <>
@@ -75,7 +143,7 @@ export default function Navigation({
 
           {/* Desktop Navigation */}
           <ul className="hidden md:flex justify-center space-x-8">
-            {navLinks.map((link) => {
+            {activeNavLinks.map((link) => {
               // Special handling for Teams dropdown
               if (link.label === "Teams" && teams.length > 0) {
                 return (
@@ -165,7 +233,7 @@ export default function Navigation({
           </button>
 
           <ul className="space-y-4">
-            {navLinks.map((link) => {
+            {activeNavLinks.map((link) => {
               // Special handling for Teams in mobile menu
               if (link.label === "Teams" && teams.length > 0) {
                 return (
