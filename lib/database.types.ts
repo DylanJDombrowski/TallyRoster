@@ -768,8 +768,11 @@ export type Database = {
           domain_verification_method: string | null
           domain_verification_token: string | null
           domain_verified: boolean | null
+          facebook_url: string | null
           forms_links_nav_label: string | null
           id: string
+          instagram_url: string | null
+          linkedin_url: string | null
           logo_url: string | null
           name: string
           organization_type: string | null
@@ -782,13 +785,17 @@ export type Database = {
           show_social: boolean | null
           show_sponsors: boolean | null
           slogan: string | null
+          social_embed_code: string | null
           social_nav_label: string | null
           sponsors_nav_label: string | null
           sport: string | null
           subdomain: string | null
           subscription_plan: string | null
           theme: string | null
+          tiktok_url: string | null
           trial_ends_at: string | null
+          twitter_url: string | null
+          youtube_url: string | null
         }
         Insert: {
           alumni_nav_label?: string | null
@@ -801,8 +808,11 @@ export type Database = {
           domain_verification_method?: string | null
           domain_verification_token?: string | null
           domain_verified?: boolean | null
+          facebook_url?: string | null
           forms_links_nav_label?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           logo_url?: string | null
           name: string
           organization_type?: string | null
@@ -815,13 +825,17 @@ export type Database = {
           show_social?: boolean | null
           show_sponsors?: boolean | null
           slogan?: string | null
+          social_embed_code?: string | null
           social_nav_label?: string | null
           sponsors_nav_label?: string | null
           sport?: string | null
           subdomain?: string | null
           subscription_plan?: string | null
           theme?: string | null
+          tiktok_url?: string | null
           trial_ends_at?: string | null
+          twitter_url?: string | null
+          youtube_url?: string | null
         }
         Update: {
           alumni_nav_label?: string | null
@@ -834,8 +848,11 @@ export type Database = {
           domain_verification_method?: string | null
           domain_verification_token?: string | null
           domain_verified?: boolean | null
+          facebook_url?: string | null
           forms_links_nav_label?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           logo_url?: string | null
           name?: string
           organization_type?: string | null
@@ -848,13 +865,17 @@ export type Database = {
           show_social?: boolean | null
           show_sponsors?: boolean | null
           slogan?: string | null
+          social_embed_code?: string | null
           social_nav_label?: string | null
           sponsors_nav_label?: string | null
           sport?: string | null
           subdomain?: string | null
           subscription_plan?: string | null
           theme?: string | null
+          tiktok_url?: string | null
           trial_ends_at?: string | null
+          twitter_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }

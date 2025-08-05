@@ -485,11 +485,46 @@ CREATE TABLE IF NOT EXISTS "public"."organizations" (
     "blog_nav_label" "text" DEFAULT 'News'::"text",
     "forms_links_nav_label" "text" DEFAULT 'Forms & Links'::"text",
     "sponsors_nav_label" "text" DEFAULT 'Sponsors'::"text",
-    "social_nav_label" "text" DEFAULT 'Social'::"text"
+    "social_nav_label" "text" DEFAULT 'Social'::"text",
+    "facebook_url" "text",
+    "twitter_url" "text",
+    "instagram_url" "text",
+    "social_embed_code" "text",
+    "youtube_url" "text",
+    "linkedin_url" "text",
+    "tiktok_url" "text"
 );
 
 
 ALTER TABLE "public"."organizations" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."organizations"."facebook_url" IS 'Facebook page URL for footer social links';
+
+
+
+COMMENT ON COLUMN "public"."organizations"."twitter_url" IS 'Twitter/X profile URL for footer social links';
+
+
+
+COMMENT ON COLUMN "public"."organizations"."instagram_url" IS 'Instagram profile URL for footer social links';
+
+
+
+COMMENT ON COLUMN "public"."organizations"."social_embed_code" IS 'HTML/JavaScript embed code for social media feed on social page';
+
+
+
+COMMENT ON COLUMN "public"."organizations"."youtube_url" IS 'YouTube channel URL for footer social links';
+
+
+
+COMMENT ON COLUMN "public"."organizations"."linkedin_url" IS 'LinkedIn profile URL for footer social links';
+
+
+
+COMMENT ON COLUMN "public"."organizations"."tiktok_url" IS 'TikTok profile URL for footer social links';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."partners" (
