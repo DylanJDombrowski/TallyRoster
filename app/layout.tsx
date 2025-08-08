@@ -14,9 +14,6 @@ import {
 } from "next/font/google";
 import "./globals.css";
 
-// Import default theme to ensure CSS variables are available
-import "./styles/themes/default.css";
-
 // Font configurations
 const inter = Inter({
   subsets: ["latin"],
