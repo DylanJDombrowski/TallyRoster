@@ -1,5 +1,6 @@
-// app/layout.tsx - Updated with all font options
+// app/layout.tsx
 import { ToastProvider } from "@/app/components/toast-provider";
+import { ThemeProvider } from "@/app/components/theme-provider";
 import type { Metadata } from "next";
 import {
   Inter,
@@ -12,6 +13,9 @@ import {
   Raleway,
 } from "next/font/google";
 import "./globals.css";
+
+// Import default theme to ensure CSS variables are available
+import "./styles/themes/default.css";
 
 // Font configurations
 const inter = Inter({
@@ -79,7 +83,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="theme-default">
       <head>
         <meta name="application-name" content="TallyRoster" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -101,9 +105,13 @@ export default function RootLayout({
         ${poppins.variable}
         ${raleway.variable}
         font-sans
+        bg-background
+        text-foreground
       `}
       >
-        <ToastProvider>{children}</ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

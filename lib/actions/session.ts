@@ -11,6 +11,8 @@ interface Organization {
   primary_color: string | null;
   secondary_color: string | null;
   logo_url: string | null;
+  font_family: string | null;
+  theme_name: string | null;
 }
 
 interface UserOrganizationRole {
@@ -37,7 +39,9 @@ export const getUserOrganizations = cache(
         subdomain,
         primary_color,
         secondary_color,
-        logo_url
+        logo_url,
+        font_family,
+        theme_name
       )
     `
       )
@@ -48,7 +52,21 @@ export const getUserOrganizations = cache(
       return [];
     }
 
-    return userOrgRoles || [];
+    return (
+      userOrgRoles?.map((role: UserOrganizationRole) => ({
+        ...role,
+        organizations: {
+          id: role.organizations.id,
+          name: role.organizations.name,
+          subdomain: role.organizations.subdomain ?? null,
+          primary_color: role.organizations.primary_color ?? null,
+          secondary_color: role.organizations.secondary_color ?? null,
+          logo_url: role.organizations.logo_url ?? null,
+          font_family: role.organizations.font_family ?? null,
+          theme_name: role.organizations.theme_name ?? null,
+        },
+      })) || []
+    );
   }
 );
 
