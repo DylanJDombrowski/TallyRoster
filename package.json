@@ -45,6 +45,7 @@
     "@types/react-dom": "^19",
     "@types/stripe": "^8.0.416",
     "@types/web-push": "^3.6.4",
+    "autoprefixer": "^10.4.21",
     "dotenv": "^17.0.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
