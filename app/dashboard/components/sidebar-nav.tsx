@@ -67,13 +67,13 @@ const navLinks: NavLink[] = [
     roles: ["admin"],
   },
   {
-    href: "/dashboard/admin/sponsors",
+    href: "/dashboard/sponsors",
     label: "Sponsors",
     icon: ExternalLink,
     roles: ["admin"],
   },
   {
-    href: "/dashboard/admin/domains",
+    href: "/dashboard/domains",
     label: "Domains",
     icon: ExternalLink,
     roles: ["admin"],
