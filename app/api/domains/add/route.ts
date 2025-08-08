@@ -159,6 +159,23 @@ async function addDomainToVercel(domain: string): Promise<boolean> {
   }
 
   try {
+    // First, check if domain already exists
+    const checkResponse = await fetch(
+      `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${domain}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+        },
+      }
+    );
+
+    if (checkResponse.ok) {
+      console.log(`Domain ${domain} already exists in Vercel`);
+      return true;
+    }
+
+    // Add the domain
     const response = await fetch(
       `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains`,
       {
@@ -167,21 +184,44 @@ async function addDomainToVercel(domain: string): Promise<boolean> {
           Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: domain }),
+        body: JSON.stringify({
+          name: domain,
+          // Optionally add redirect configuration
+          redirect: null,
+          redirectStatusCode: null,
+        }),
       }
     );
 
     if (response.ok) {
       console.log(`✅ Domain ${domain} added to Vercel`);
+
+      // Trigger verification immediately
+      await fetch(
+        `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${domain}/verify`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+          },
+        }
+      );
+
       return true;
     } else {
-      const error = await response.text();
+      const error = await response.json();
       console.error(`❌ Failed to add domain to Vercel:`, error);
+
+      // Check for specific error codes
+      if (error.error?.code === "domain_already_in_use") {
+        throw new Error("Domain is already in use on another Vercel project");
+      }
+
       return false;
     }
   } catch (error) {
     console.error("Vercel domain addition error:", error);
-    return false;
+    throw error;
   }
 }
 

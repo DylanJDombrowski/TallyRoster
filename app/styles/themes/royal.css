@@ -1,0 +1,50 @@
+/* Royal Theme - Purple */
+.theme-royal {
+  /* Light mode */
+  --background: 0 0% 100%;
+  --foreground: 224 71.4% 4.1%;
+
+  --primary: 262.1 83.3% 57.8%; /* Purple */
+  --primary-foreground: 210 20% 98%;
+
+  --secondary: 269 83% 70%; /* Light Purple */
+  --secondary-foreground: 224 71.4% 4.1%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 224 71.4% 4.1%;
+
+  --muted: 262 20% 95%;
+  --muted-foreground: 262 10% 40%;
+
+  --accent: 262 83% 95%;
+  --accent-foreground: 262 83% 20%;
+
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 262.1 83.3% 57.8%;
+}
+
+.dark .theme-royal {
+  /* Dark mode */
+  --background: 224 71.4% 4.1%;
+  --foreground: 210 20% 98%;
+
+  --primary: 263.4 70% 50.4%;
+  --primary-foreground: 263 70% 95%;
+
+  --secondary: 269 70% 60%;
+  --secondary-foreground: 269 70% 10%;
+
+  --card: 224 71.4% 7%;
+  --card-foreground: 210 20% 98%;
+
+  --muted: 262 10% 15%;
+  --muted-foreground: 262 10% 60%;
+
+  --accent: 262 10% 15%;
+  --accent-foreground: 262 83% 80%;
+
+  --border: 262 10% 18%;
+  --input: 262 10% 18%;
+  --ring: 263.4 70% 50.4%;
+}

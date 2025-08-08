@@ -1,0 +1,50 @@
+/* Sunset Theme - Warm Orange */
+.theme-sunset {
+  /* Light mode */
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+
+  --primary: 24.6 95% 53.1%; /* Orange */
+  --primary-foreground: 60 9.1% 97.8%;
+
+  --secondary: 20.5 90.2% 48.2%; /* Red-Orange */
+  --secondary-foreground: 60 4.8% 95.9%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+
+  --muted: 24 20% 95%;
+  --muted-foreground: 24 10% 40%;
+
+  --accent: 24 95% 95%;
+  --accent-foreground: 24 95% 20%;
+
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --ring: 24.6 95% 53.1%;
+}
+
+.dark .theme-sunset {
+  /* Dark mode */
+  --background: 20 14.3% 4.1%;
+  --foreground: 60 9.1% 97.8%;
+
+  --primary: 20.5 90.2% 48.2%;
+  --primary-foreground: 20 90% 10%;
+
+  --secondary: 24.6 95% 43%;
+  --secondary-foreground: 24 95% 90%;
+
+  --card: 20 14.3% 7%;
+  --card-foreground: 60 9.1% 97.8%;
+
+  --muted: 24 10% 15%;
+  --muted-foreground: 24 10% 60%;
+
+  --accent: 24 10% 15%;
+  --accent-foreground: 24 95% 80%;
+
+  --border: 24 10% 18%;
+  --input: 24 10% 18%;
+  --ring: 20.5 90.2% 48.2%;
+}

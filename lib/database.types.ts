@@ -769,6 +769,7 @@ export type Database = {
           domain_verification_token: string | null
           domain_verified: boolean | null
           facebook_url: string | null
+          font_family: string | null
           forms_links_nav_label: string | null
           id: string
           instagram_url: string | null
@@ -792,6 +793,7 @@ export type Database = {
           subdomain: string | null
           subscription_plan: string | null
           theme: string | null
+          theme_name: string | null
           tiktok_url: string | null
           trial_ends_at: string | null
           twitter_url: string | null
@@ -809,6 +811,7 @@ export type Database = {
           domain_verification_token?: string | null
           domain_verified?: boolean | null
           facebook_url?: string | null
+          font_family?: string | null
           forms_links_nav_label?: string | null
           id?: string
           instagram_url?: string | null
@@ -832,6 +835,7 @@ export type Database = {
           subdomain?: string | null
           subscription_plan?: string | null
           theme?: string | null
+          theme_name?: string | null
           tiktok_url?: string | null
           trial_ends_at?: string | null
           twitter_url?: string | null
@@ -849,6 +853,7 @@ export type Database = {
           domain_verification_token?: string | null
           domain_verified?: boolean | null
           facebook_url?: string | null
+          font_family?: string | null
           forms_links_nav_label?: string | null
           id?: string
           instagram_url?: string | null
@@ -872,6 +877,7 @@ export type Database = {
           subdomain?: string | null
           subscription_plan?: string | null
           theme?: string | null
+          theme_name?: string | null
           tiktok_url?: string | null
           trial_ends_at?: string | null
           twitter_url?: string | null
@@ -1113,6 +1119,50 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsors: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          organization_id: string
+          position: number | null
+          website_url: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          organization_id: string
+          position?: number | null
+          website_url?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          organization_id?: string
+          position?: number | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

@@ -492,7 +492,9 @@ CREATE TABLE IF NOT EXISTS "public"."organizations" (
     "social_embed_code" "text",
     "youtube_url" "text",
     "linkedin_url" "text",
-    "tiktok_url" "text"
+    "tiktok_url" "text",
+    "font_family" "text" DEFAULT 'Inter'::"text",
+    "theme_name" "text" DEFAULT 'default'::"text"
 );
 
 
@@ -654,6 +656,22 @@ ALTER TABLE "public"."schedule_events" OWNER TO "postgres";
 
 COMMENT ON TABLE "public"."schedule_events" IS 'Stores tournament/game schedule for teams';
 
+
+
+CREATE TABLE IF NOT EXISTS "public"."sponsors" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text",
+    "website_url" "text",
+    "logo_url" "text",
+    "position" integer DEFAULT 0,
+    "active" boolean DEFAULT true
+);
+
+
+ALTER TABLE "public"."sponsors" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."static_pages" (
@@ -864,6 +882,11 @@ ALTER TABLE ONLY "public"."schedule_events"
 
 
 
+ALTER TABLE ONLY "public"."sponsors"
+    ADD CONSTRAINT "sponsors_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."static_pages"
     ADD CONSTRAINT "static_pages_pkey" PRIMARY KEY ("id");
 
@@ -1016,6 +1039,10 @@ CREATE INDEX "idx_schedule_events_date" ON "public"."schedule_events" USING "btr
 
 
 CREATE INDEX "idx_schedule_events_team_id" ON "public"."schedule_events" USING "btree" ("team_id");
+
+
+
+CREATE INDEX "idx_sponsors_org_position" ON "public"."sponsors" USING "btree" ("organization_id", "position");
 
 
 
@@ -1173,6 +1200,11 @@ ALTER TABLE ONLY "public"."schedule_events"
 
 
 
+ALTER TABLE ONLY "public"."sponsors"
+    ADD CONSTRAINT "sponsors_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."teams"
     ADD CONSTRAINT "teams_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
 
@@ -1320,6 +1352,12 @@ CREATE POLICY "Allow org admins to manage schedule in their org" ON "public"."sc
 
 
 
+CREATE POLICY "Allow org admins to manage sponsors" ON "public"."sponsors" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_organization_roles"
+  WHERE (("user_organization_roles"."organization_id" = "sponsors"."organization_id") AND ("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text")))));
+
+
+
 CREATE POLICY "Allow org admins to manage teams in their org" ON "public"."teams" USING (("organization_id" IN ( SELECT "user_organization_roles"."organization_id"
    FROM "public"."user_organization_roles"
   WHERE (("user_organization_roles"."user_id" = "auth"."uid"()) AND ("user_organization_roles"."role" = 'admin'::"text")))));
@@ -1370,6 +1408,10 @@ CREATE POLICY "Allow public read access to active partners" ON "public"."partner
 
 
 CREATE POLICY "Allow public read access to active players" ON "public"."players" FOR SELECT TO "anon" USING (("status" = 'active'::"text"));
+
+
+
+CREATE POLICY "Allow public read access to active sponsors" ON "public"."sponsors" FOR SELECT TO "anon" USING (("active" = true));
 
 
 
@@ -1519,6 +1561,9 @@ ALTER TABLE "public"."players" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."schedule_events" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."sponsors" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."static_pages" ENABLE ROW LEVEL SECURITY;
@@ -1843,6 +1888,12 @@ GRANT ALL ON TABLE "public"."players" TO "service_role";
 GRANT ALL ON TABLE "public"."schedule_events" TO "anon";
 GRANT ALL ON TABLE "public"."schedule_events" TO "authenticated";
 GRANT ALL ON TABLE "public"."schedule_events" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."sponsors" TO "anon";
+GRANT ALL ON TABLE "public"."sponsors" TO "authenticated";
+GRANT ALL ON TABLE "public"."sponsors" TO "service_role";
 
 
 

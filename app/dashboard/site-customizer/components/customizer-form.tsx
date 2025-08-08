@@ -8,6 +8,7 @@ import { useFormStatus } from "react-dom";
 import { ImageUploader } from "../../players/components/image-uploader";
 import { updateOrganizationSettings } from "../actions";
 import { MiniPreview } from "./mini-preview";
+import { Type } from "lucide-react";
 
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
@@ -17,13 +18,37 @@ interface CustomizerFormProps {
 
 const initialState = { success: false, message: "" };
 
-const COLOR_PRESETS = [
-  { name: "Classic Blue & Red", primary: "#161659", secondary: "#BD1515" },
-  { name: "Forest Green", primary: "#166534", secondary: "#22C55E" },
-  { name: "Royal Purple", primary: "#7C3AED", secondary: "#A855F7" },
-  { name: "Ocean Blue", primary: "#0EA5E9", secondary: "#38BDF8" },
-  { name: "Sunset Orange", primary: "#EA580C", secondary: "#F97316" },
-  { name: "Crimson Red", primary: "#DC2626", secondary: "#EF4444" },
+const THEME_PRESETS = [
+  {
+    name: "default",
+    label: "Classic",
+    colors: { primary: "#161659", secondary: "#BD1515" },
+    description: "Traditional sports colors",
+  },
+  {
+    name: "forest",
+    label: "Forest",
+    colors: { primary: "#22C55E", secondary: "#FDE047" },
+    description: "Natural green tones",
+  },
+  {
+    name: "ocean",
+    label: "Ocean",
+    colors: { primary: "#0EA5E9", secondary: "#38BDF8" },
+    description: "Cool blue palette",
+  },
+  {
+    name: "sunset",
+    label: "Sunset",
+    colors: { primary: "#EA580C", secondary: "#F97316" },
+    description: "Warm orange hues",
+  },
+  {
+    name: "royal",
+    label: "Royal",
+    colors: { primary: "#7C3AED", secondary: "#A855F7" },
+    description: "Regal purple theme",
+  },
 ];
 
 function SubmitButton() {
@@ -48,6 +73,12 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
 
   const lastMessageRef = useRef<string>("");
   const lastSuccessRef = useRef<boolean>(false);
+  const [fontFamily, setFontFamily] = useState(
+    organization.font_family || "Inter"
+  );
+  const [themeName, setThemeName] = useState(
+    organization.theme_name || "default"
+  );
 
   // State for all customizable fields
   const [name, setName] = useState(organization.name || "");
@@ -108,6 +139,20 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
     organization.social_embed_code || ""
   );
 
+  const FONT_OPTIONS = [
+    { value: "Inter", label: "Inter", description: "Clean & Modern" },
+    { value: "Roboto", label: "Roboto", description: "Google's Choice" },
+    { value: "Poppins", label: "Poppins", description: "Friendly & Round" },
+    { value: "Montserrat", label: "Montserrat", description: "Professional" },
+    {
+      value: "Playfair Display",
+      label: "Playfair Display",
+      description: "Elegant Serif",
+    },
+    { value: "Lora", label: "Lora", description: "Classic Serif" },
+    { value: "Raleway", label: "Raleway", description: "Thin & Stylish" },
+  ];
+
   useEffect(() => {
     if (
       state.message &&
@@ -119,11 +164,6 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
       lastSuccessRef.current = state.success;
     }
   }, [state.message, state.success, showToast]);
-
-  const handlePresetSelect = (preset: (typeof COLOR_PRESETS)[0]) => {
-    setPrimaryColor(preset.primary);
-    setSecondaryColor(preset.secondary);
-  };
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -233,29 +273,46 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
               <input type="hidden" name="theme" value={theme} />
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-              {COLOR_PRESETS.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => handlePresetSelect(preset)}
-                  className="p-3 rounded-lg border-2 hover:border-blue-500 transition-colors"
-                >
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div
-                      className="w-6 h-6 rounded-full"
-                      style={{ backgroundColor: preset.primary }}
-                    />
-                    <div
-                      className="w-6 h-6 rounded-full"
-                      style={{ backgroundColor: preset.secondary }}
-                    />
-                  </div>
-                  <span className="text-xs font-medium text-slate-700">
-                    {preset.name}
-                  </span>
-                </button>
-              ))}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4">
+                Theme Selection
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {THEME_PRESETS.map((theme) => (
+                  <button
+                    key={theme.name}
+                    type="button"
+                    onClick={() => setThemeName(theme.name)}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      themeName === theme.name
+                        ? "border-blue-500 shadow-lg"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div
+                        className="w-8 h-8 rounded-full"
+                        style={{ backgroundColor: theme.colors.primary }}
+                      />
+                      <div
+                        className="w-8 h-8 rounded-full"
+                        style={{ backgroundColor: theme.colors.secondary }}
+                      />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">
+                        {theme.label}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {theme.description}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <input type="hidden" name="theme_name" value={themeName} />
             </div>
 
             <div className="space-y-4">
@@ -310,6 +367,74 @@ export function CustomizerForm({ organization }: CustomizerFormProps) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Typography Section */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-slate-700 mb-4">
+              Typography
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Choose a font that matches your organization&apos;s personality
+            </p>
+
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Website Font Family
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {FONT_OPTIONS.map((font) => (
+                  <button
+                    key={font.value}
+                    type="button"
+                    onClick={() => setFontFamily(font.value)}
+                    className={`p-4 rounded-lg border-2 text-left transition-all ${
+                      fontFamily === font.value
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <Type
+                        className={`w-5 h-5 mt-0.5 ${
+                          fontFamily === font.value
+                            ? "text-blue-600"
+                            : "text-gray-400"
+                        }`}
+                      />
+                      <div className="flex-1">
+                        <div
+                          className="font-semibold text-gray-900"
+                          style={{
+                            fontFamily: `var(--font-${font.value
+                              .toLowerCase()
+                              .replace(/\s+/g, "-")})`,
+                          }}
+                        >
+                          {font.label}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {font.description}
+                        </div>
+                        <div
+                          className="text-sm text-gray-600 mt-2"
+                          style={{
+                            fontFamily: `var(--font-${font.value
+                              .toLowerCase()
+                              .replace(/\s+/g, "-")})`,
+                          }}
+                        >
+                          The quick brown fox jumps over the lazy dog
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Hidden input for form submission */}
+            <input type="hidden" name="font_family" value={fontFamily} />
           </div>
 
           {/* Page Visibility Section */}

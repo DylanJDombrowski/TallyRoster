@@ -1,13 +1,67 @@
-// app/layout.tsx
+// app/layout.tsx - Updated with all font options
 import { ToastProvider } from "@/app/components/toast-provider";
 import type { Metadata } from "next";
-import { Inter, Oswald } from "next/font/google";
+import {
+  Inter,
+  Oswald,
+  Roboto,
+  Playfair_Display,
+  Montserrat,
+  Lora,
+  Poppins,
+  Raleway,
+} from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+// Font configurations
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
 const oswald = Oswald({
   subsets: ["latin"],
   variable: "--font-oswald",
+  display: "swap",
+});
+
+const roboto = Roboto({
+  weight: ["300", "400", "500", "700"],
+  subsets: ["latin"],
+  variable: "--font-roboto",
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-montserrat",
+  display: "swap",
+});
+
+const lora = Lora({
+  subsets: ["latin"],
+  variable: "--font-lora",
+  display: "swap",
+});
+
+const poppins = Poppins({
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-poppins",
+  display: "swap",
+});
+
+const raleway = Raleway({
+  subsets: ["latin"],
+  variable: "--font-raleway",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -16,11 +70,14 @@ export const metadata: Metadata = {
     default: "TallyRoster - Your Team, Your Site",
   },
   description: "The all-in-one platform for youth sports organizations.",
-  // 🔧 FIX: Add manifest in metadata instead of head
   manifest: "/manifest.webmanifest",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <head>
@@ -33,7 +90,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#161659" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className={`${inter.variable} ${oswald.variable} font-sans`}>
+      <body
+        className={`
+        ${inter.variable} 
+        ${oswald.variable} 
+        ${roboto.variable}
+        ${playfair.variable}
+        ${montserrat.variable}
+        ${lora.variable}
+        ${poppins.variable}
+        ${raleway.variable}
+        font-sans
+      `}
+      >
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

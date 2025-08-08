@@ -9,6 +9,8 @@ import { z } from "zod";
 const OrgSettingsSchema = z.object({
   organizationId: z.string().uuid(),
   name: z.string().min(3, "Organization name must be at least 3 characters."),
+  font_family: z.string().default("Inter"),
+  theme_name: z.string().default("default"),
   slogan: z
     .string()
     .max(100, "Slogan must be 100 characters or less.")
@@ -194,6 +196,8 @@ export async function updateOrganizationSettings(
 
     const cleanedUpdateData = {
       ...updateData,
+      font_family: updateData.font_family || "Inter",
+      theme_name: updateData.theme_name || "default",
       logo_url: updateData.logo_url === "" ? null : updateData.logo_url,
       facebook_url:
         updateData.facebook_url === "" ? null : updateData.facebook_url,
