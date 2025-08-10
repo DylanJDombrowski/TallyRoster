@@ -1,7 +1,7 @@
 // app/components/auth/signup-form.tsx
 "use client";
 
-import { signup } from "@/app/auth/actions";
+import { signup } from "@/lib/actions/auth";
 import { useSearchParams } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 

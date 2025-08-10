@@ -3,10 +3,10 @@
 
 import { useToast } from "@/app/components/toast-provider";
 import { Team } from "@/lib/types";
+import { upsertTeam } from "@/lib/actions/teams";
 import { User, Mail, Phone } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { upsertTeam } from "../actions";
 
 interface TeamFormProps {
   teamToEdit?: Team | null;

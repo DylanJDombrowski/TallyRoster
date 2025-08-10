@@ -5,9 +5,9 @@ import { Modal } from "@/app/components/modal";
 import { useToast } from "@/app/components/toast-provider";
 import { useSession } from "@/hooks/use-session"; // Import the session hook
 import { Team } from "@/lib/types";
+import { removeUser, resendInvitation } from "@/lib/actions/users";
 import { User } from "@supabase/supabase-js";
 import { useState } from "react";
-import { removeUser, resendInvitation } from "../actions";
 import { EditUserForm, EditableUser } from "./edit-user-form";
 import { InviteUserForm } from "./invite-user-form";
 

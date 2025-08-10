@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { useToast } from "@/app/components/toast-provider";
-import { login } from "@/app/auth/actions";
+import { login } from "@/lib/actions/auth";
 
 function SubmitButton() {
   const { pending } = useFormStatus();

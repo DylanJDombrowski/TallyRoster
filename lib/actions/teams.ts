@@ -1,4 +1,4 @@
-// app/dashboard/admin/teams/actions.ts - UPDATED with coach management
+// lib/actions/teams.ts - UPDATED with coach management
 
 "use server";
 

@@ -1,4 +1,4 @@
-// app/dashboard/admin/users/actions.ts
+// lib/actions/users.ts
 "use server";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
