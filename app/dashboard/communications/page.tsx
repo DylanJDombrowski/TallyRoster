@@ -2,7 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { CommunicationManager } from "./components/communication-manager";
-import { getSessionData } from "@/lib/actions";
+import { getSessionData } from "@/lib/services";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";

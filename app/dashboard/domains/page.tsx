@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getSessionData } from "@/lib/actions";
+import { getSessionData } from "@/lib/services";
 import { DomainManager } from "./components/domain-manager";
 
 export default async function DomainsPage() {

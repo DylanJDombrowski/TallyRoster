@@ -1,5 +1,5 @@
 // app/dashboard/admin/users/page.tsx
-import { getSessionData } from "@/lib/actions";
+import { getSessionData } from "@/lib/services";
 import { redirect } from "next/navigation";
 import { getOrganizationUsers } from "@/lib/actions";
 import { UserManagementClient } from "./components/user-management-client";

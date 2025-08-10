@@ -7,7 +7,7 @@ import { LogoutButton } from "./components/logout-button";
 import { OrganizationSwitcher } from "./components/organization-switcher";
 import { SidebarNav } from "./components/sidebar-nav";
 import { SessionProvider } from "@/hooks/use-session";
-import { getSessionData } from "@/lib/actions";
+import { getSessionData } from "@/lib/services";
 import { getFontClassName } from "@/lib/utils/fonts";
 
 // Import theme CSS files
