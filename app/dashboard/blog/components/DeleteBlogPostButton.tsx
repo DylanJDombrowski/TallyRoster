@@ -1,6 +1,6 @@
 "use client";
 
-import { deleteBlogPost } from "@/lib/actions/blog";
+import { deleteBlogPost } from "@/lib/actions";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

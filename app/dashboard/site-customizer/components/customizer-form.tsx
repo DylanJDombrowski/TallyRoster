@@ -6,7 +6,7 @@ import { Database } from "@/lib/database.types";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ImageUploader } from "../../players/components/image-uploader";
-import { updateOrganizationSettings } from "../actions";
+import { updateOrganizationSettings } from "@/lib/actions";
 import { MiniPreview } from "./mini-preview";
 import { Type } from "lucide-react";
 

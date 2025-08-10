@@ -5,7 +5,7 @@ import { useToast } from "@/app/components/toast-provider";
 import { Team } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { updateUserRole } from "@/lib/actions/users";
+import { updateUserRole } from "@/lib/actions";
 
 // Define a richer user type for the form
 export type EditableUser = {

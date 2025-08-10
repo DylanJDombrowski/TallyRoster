@@ -2,7 +2,7 @@
 "use client";
 
 import { Team } from "@/lib/types";
-import { getTeamWithCoach } from "@/lib/actions/teams";
+import { getTeamWithCoach } from "@/lib/actions";
 import { useCallback, useState } from "react";
 import { TeamForm } from "./team-form";
 import { TeamList } from "./team-list";

@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { sendNotification, subscribeUser, unsubscribeUser } from "../actions";
+import {
+  sendNotification,
+  subscribeUser,
+  unsubscribeUser,
+} from "@/lib/actions";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -18,7 +22,9 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export function PushNotificationManager() {
   const [isSupported, setIsSupported] = useState(false);
-  const [subscription, setSubscription] = useState<PushSubscription | null>(null);
+  const [subscription, setSubscription] = useState<PushSubscription | null>(
+    null
+  );
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -41,7 +47,9 @@ export function PushNotificationManager() {
     const registration = await navigator.serviceWorker.ready;
     const sub = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+      applicationServerKey: urlBase64ToUint8Array(
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+      ),
     });
     setSubscription(sub);
     const serializedSub = JSON.parse(JSON.stringify(sub));
@@ -70,8 +78,13 @@ export function PushNotificationManager() {
       <h3 className="font-bold mb-2">Team Notifications</h3>
       {subscription ? (
         <div className="space-y-2">
-          <p className="text-green-600 text-sm">✅ You&apos;ll receive game updates and announcements</p>
-          <button onClick={unsubscribeFromPush} className="bg-red-500 text-white px-3 py-1 rounded text-sm">
+          <p className="text-green-600 text-sm">
+            ✅ You&apos;ll receive game updates and announcements
+          </p>
+          <button
+            onClick={unsubscribeFromPush}
+            className="bg-red-500 text-white px-3 py-1 rounded text-sm"
+          >
             Turn Off Notifications
           </button>
 
@@ -84,15 +97,24 @@ export function PushNotificationManager() {
               onChange={(e) => setMessage(e.target.value)}
               className="w-full p-2 border rounded text-sm"
             />
-            <button onClick={sendTestNotification} className="bg-blue-500 text-white px-3 py-1 rounded text-sm mt-1">
+            <button
+              onClick={sendTestNotification}
+              className="bg-blue-500 text-white px-3 py-1 rounded text-sm mt-1"
+            >
               Send Test
             </button>
           </div>
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-gray-600 text-sm">Get notified about game updates, schedule changes, and team announcements</p>
-          <button onClick={subscribeToPush} className="bg-blue-600 text-white px-4 py-2 rounded">
+          <p className="text-gray-600 text-sm">
+            Get notified about game updates, schedule changes, and team
+            announcements
+          </p>
+          <button
+            onClick={subscribeToPush}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+          >
             Enable Notifications
           </button>
         </div>

@@ -5,7 +5,7 @@ import { useToast } from "@/app/components/toast-provider";
 import { useSession } from "@/hooks/use-session";
 import { Team } from "@/lib/types";
 import { useRef, useState } from "react";
-import { inviteUser } from "@/lib/actions/users";
+import { inviteUser } from "@/lib/actions";
 
 interface InviteUserFormProps {
   teams: Team[];

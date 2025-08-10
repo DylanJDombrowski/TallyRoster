@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useMemo, useState } from "react";
-import { deletePlayer, updatePlayerStatus } from "../actions";
+import { deletePlayer, updatePlayerStatus } from "@/lib/actions";
 import { PlayerForm } from "./player-form";
 
 export type PlayerWithTeam = Player & {
@@ -47,7 +47,14 @@ interface PlayerCardProps {
   onViewDetails: (player: PlayerWithTeam) => void;
 }
 
-const PlayerCard = ({ player, isCompact, onEdit, onArchive, onDelete, onViewDetails }: PlayerCardProps) => {
+const PlayerCard = ({
+  player,
+  isCompact,
+  onEdit,
+  onArchive,
+  onDelete,
+  onViewDetails,
+}: PlayerCardProps) => {
   const defaultAvatar = "/assets/teams/defaultpfp.jpg";
 
   if (isCompact) {
@@ -72,10 +79,16 @@ const PlayerCard = ({ player, isCompact, onEdit, onArchive, onDelete, onViewDeta
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <button onClick={() => onViewDetails(player)} className="p-1 text-gray-400 hover:text-blue-600">
+            <button
+              onClick={() => onViewDetails(player)}
+              className="p-1 text-gray-400 hover:text-blue-600"
+            >
               <Eye className="w-4 h-4" />
             </button>
-            <button onClick={() => onEdit(player)} className="p-1 text-gray-400 hover:text-blue-600">
+            <button
+              onClick={() => onEdit(player)}
+              className="p-1 text-gray-400 hover:text-blue-600"
+            >
               <Edit className="w-4 h-4" />
             </button>
           </div>
@@ -103,7 +116,9 @@ const PlayerCard = ({ player, isCompact, onEdit, onArchive, onDelete, onViewDeta
               <p className="text-gray-600">
                 #{player.jersey_number} • {player.position}
               </p>
-              <p className="text-sm text-blue-600 font-medium">{player.teams?.name}</p>
+              <p className="text-sm text-blue-600 font-medium">
+                {player.teams?.name}
+              </p>
             </div>
           </div>
           <div className="flex space-x-1">
@@ -168,7 +183,11 @@ interface PlayerDetailModalProps {
   onClose: () => void;
 }
 
-const PlayerDetailModal = ({ player, isOpen, onClose }: PlayerDetailModalProps) => {
+const PlayerDetailModal = ({
+  player,
+  isOpen,
+  onClose,
+}: PlayerDetailModalProps) => {
   if (!isOpen || !player) return null;
 
   return (
@@ -193,7 +212,10 @@ const PlayerDetailModal = ({ player, isOpen, onClose }: PlayerDetailModalProps) 
               <p className="text-blue-600 font-medium">{player.teams?.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
             ✕
           </button>
         </div>
@@ -280,7 +302,13 @@ interface CSVImportModalProps {
   onImportSuccess: () => void;
 }
 
-const CSVImportModal = ({ isOpen, onClose, teams, organizationId, onImportSuccess }: CSVImportModalProps) => {
+const CSVImportModal = ({
+  isOpen,
+  onClose,
+  teams,
+  organizationId,
+  onImportSuccess,
+}: CSVImportModalProps) => {
   const [selectedTeam, setSelectedTeam] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -342,14 +370,19 @@ const CSVImportModal = ({ isOpen, onClose, teams, organizationId, onImportSucces
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900">Import Players</h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
               ✕
             </button>
           </div>
 
           <form onSubmit={handleImport} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Team</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Team
+              </label>
               <select
                 value={selectedTeam}
                 onChange={(e) => setSelectedTeam(e.target.value)}
@@ -366,7 +399,9 @@ const CSVImportModal = ({ isOpen, onClose, teams, organizationId, onImportSucces
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">CSV File</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                CSV File
+              </label>
               <input
                 type="file"
                 accept=".csv"
@@ -380,8 +415,14 @@ const CSVImportModal = ({ isOpen, onClose, teams, organizationId, onImportSucces
             </div>
 
             <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-blue-800 mb-2">Need a template? Download our CSV template with sample data.</p>
-              <button type="button" onClick={handleDownloadTemplate} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              <p className="text-sm text-blue-800 mb-2">
+                Need a template? Download our CSV template with sample data.
+              </p>
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
                 Download Template →
               </button>
             </div>
@@ -409,16 +450,24 @@ const CSVImportModal = ({ isOpen, onClose, teams, organizationId, onImportSucces
   );
 };
 
-export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerManagerProps) {
+export function PlayerManager({
+  initialPlayers,
+  teams,
+  organizationId,
+}: PlayerManagerProps) {
   const [players, setPlayers] = useState<PlayerWithTeam[]>(initialPlayers);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"active" | "archived">("active");
+  const [statusFilter, setStatusFilter] = useState<"active" | "archived">(
+    "active"
+  );
   const [teamFilter, setTeamFilter] = useState("");
   const [positionFilter, setPositionFilter] = useState("");
   const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTeam | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTeam | null>(
+    null
+  );
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCSVModal, setShowCSVModal] = useState(false);
   const [showPlayerForm, setShowPlayerForm] = useState(false);
@@ -427,7 +476,10 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
 
   // Keep your existing fetchPlayers function
   const fetchPlayers = useCallback(async () => {
-    const { data, error } = await supabase.from("players").select(`*, teams ( name )`).eq("organization_id", organizationId);
+    const { data, error } = await supabase
+      .from("players")
+      .select(`*, teams ( name )`)
+      .eq("organization_id", organizationId);
 
     if (error) {
       console.error("Error fetching players:", error);
@@ -448,7 +500,9 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
     if (isNew) {
       setPlayers((prev) => [...prev, playerWithTeam]);
     } else {
-      setPlayers((prev) => prev.map((p) => (p.id === savedPlayer.id ? playerWithTeam : p)));
+      setPlayers((prev) =>
+        prev.map((p) => (p.id === savedPlayer.id ? playerWithTeam : p))
+      );
     }
     setEditingPlayer(null);
     setShowPlayerForm(false);
@@ -468,7 +522,9 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
 
       const matchesStatus = player.status === statusFilter;
       const matchesTeam = !teamFilter || player.team_id === teamFilter;
-      const matchesPosition = !positionFilter || player.position?.toLowerCase().includes(positionFilter.toLowerCase());
+      const matchesPosition =
+        !positionFilter ||
+        player.position?.toLowerCase().includes(positionFilter.toLowerCase());
 
       return matchesSearch && matchesStatus && matchesTeam && matchesPosition;
     });
@@ -486,21 +542,22 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
 
   const handleDelete = async (player: Player) => {
     // Add confirmation dialog
-    if (window.confirm(`Are you sure you want to permanently delete ${player.first_name} ${player.last_name}? This cannot be undone.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to permanently delete ${player.first_name} ${player.last_name}? This cannot be undone.`
+      )
+    ) {
       try {
-        // Import your deletePlayer action at the top of the file
-        // import { deletePlayer } from "../actions";
-
         // Call your existing deletePlayer action
         const result = await deletePlayer(player.id);
 
-        if (result.error) {
+        if (!result.success) {
           console.error("Delete failed:", result.error);
           // You might want to show a toast notification here
         } else {
           // THIS IS WHERE YOU USE handleDeleteSuccess
           handleDeleteSuccess(player.id);
-          console.log("Player deleted successfully");
+          console.log("Player deleted successfully:", result.data.message);
           // You might want to show a success toast here
         }
       } catch (error) {
@@ -512,23 +569,33 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
   // Similarly, for handleArchive, you should integrate it with your updatePlayerStatus action:
   const handleArchive = async (player: Player) => {
     try {
-      // Import your updatePlayerStatus action at the top of the file
-      // import { updatePlayerStatus } from "../actions";
-
       const formData = new FormData();
       formData.append("playerId", player.id);
-      formData.append("status", player.status === "active" ? "archived" : "active");
+      formData.append(
+        "status",
+        player.status === "active" ? "archived" : "active"
+      );
 
       const result = await updatePlayerStatus(formData);
 
-      if (result.error) {
+      if (!result.success) {
         console.error("Archive failed:", result.error);
       } else {
         // Update the player in local state
         setPlayers((prev) =>
-          prev.map((p) => (p.id === player.id ? { ...p, status: player.status === "active" ? "archived" : ("active" as const) } : p))
+          prev.map((p) =>
+            p.id === player.id
+              ? {
+                  ...p,
+                  status:
+                    player.status === "active"
+                      ? "archived"
+                      : ("active" as const),
+                }
+              : p
+          )
         );
-        console.log("Player status updated successfully");
+        console.log("Player status updated successfully:", result.data.message);
       }
     } catch (error) {
       console.error("Error updating player status:", error);
@@ -609,7 +676,9 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
                 <button
                   onClick={() => setStatusFilter("active")}
                   className={`flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    statusFilter === "active" ? "bg-white text-blue-600 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                    statusFilter === "active"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
                   <Users className="w-4 h-4 mr-1" />
@@ -618,7 +687,9 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
                 <button
                   onClick={() => setStatusFilter("archived")}
                   className={`flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    statusFilter === "archived" ? "bg-white text-blue-600 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                    statusFilter === "archived"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
                   <GraduationCap className="w-4 h-4 mr-1" />
@@ -631,7 +702,9 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
                 <button
                   onClick={() => setViewMode("cards")}
                   className={`p-2 rounded-md transition-colors ${
-                    viewMode === "cards" ? "bg-white text-blue-600 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                    viewMode === "cards"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
                   <Grid className="w-4 h-4" />
@@ -639,7 +712,9 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
                 <button
                   onClick={() => setViewMode("list")}
                   className={`p-2 rounded-md transition-colors ${
-                    viewMode === "list" ? "bg-white text-blue-600 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                    viewMode === "list"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -737,14 +812,22 @@ export function PlayerManager({ initialPlayers, teams, organizationId }: PlayerM
         {filteredPlayers.length === 0 && (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No players found</h3>
-            <p className="text-gray-500">Try adjusting your search or filters</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No players found
+            </h3>
+            <p className="text-gray-500">
+              Try adjusting your search or filters
+            </p>
           </div>
         )}
       </div>
 
       {/* Modals */}
-      <PlayerDetailModal player={selectedPlayer} isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} />
+      <PlayerDetailModal
+        player={selectedPlayer}
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+      />
 
       <CSVImportModal
         isOpen={showCSVModal}

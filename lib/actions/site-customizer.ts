@@ -1,4 +1,4 @@
-// app/dashboard/site-customizer/actions.ts - UPDATED WITH PAGE VISIBILITY
+// lib/actions/site-customizer.ts - UPDATED WITH PAGE VISIBILITY
 "use server";
 
 import { createServerClient } from "@supabase/ssr";

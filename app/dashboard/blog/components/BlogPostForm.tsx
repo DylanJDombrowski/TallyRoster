@@ -8,7 +8,7 @@ import {
   generateSlug,
   type BlogPost,
   type CreateBlogPostData,
-} from "@/lib/actions/blog";
+} from "@/lib/actions";
 import RichTextEditor from "@/app/components/RichTextEditor";
 import { Calendar, Save, Eye, ArrowLeft } from "lucide-react";
 import Link from "next/link";

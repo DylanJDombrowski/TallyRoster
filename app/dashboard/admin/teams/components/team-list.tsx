@@ -4,7 +4,7 @@
 import { Team } from "@/lib/types";
 import { User, Mail, Edit2, Trash2, Users } from "lucide-react";
 import Image from "next/image";
-import { deleteTeam } from "@/lib/actions/teams";
+import { deleteTeam } from "@/lib/actions";
 
 interface TeamListProps {
   teams: Team[];

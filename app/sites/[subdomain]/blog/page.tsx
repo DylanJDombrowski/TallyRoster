@@ -1,4 +1,4 @@
-import { getPublishedBlogPosts } from "@/lib/actions/blog";
+import { getPublishedBlogPosts } from "@/lib/actions";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";

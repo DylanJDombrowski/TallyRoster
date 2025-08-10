@@ -8,7 +8,7 @@ import {
   deleteOrganizationLink,
   getOrganizationLinks,
   updateLinksOrder,
-} from "../actions";
+} from "@/lib/actions";
 import { DraggableLinks } from "./draggable-links";
 import { LinkForm } from "./link-form";
 

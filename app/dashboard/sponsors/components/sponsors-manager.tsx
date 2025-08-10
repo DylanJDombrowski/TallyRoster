@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Edit, Trash2, GripVertical, ExternalLink } from "lucide-react";
 import Image from "next/image";
-import { deleteSponsor, updateSponsorsOrder } from "../actions";
+import { deleteSponsor, updateSponsorsOrder } from "@/lib/actions";
 import { SponsorForm } from "./sponsor-form";
 import { useToast } from "@/app/components/toast-provider";
 

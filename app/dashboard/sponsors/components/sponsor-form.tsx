@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ImageUploader } from "../../players/components/image-uploader";
-import { createSponsor, updateSponsor } from "../actions";
+import { createSponsor, updateSponsor } from "@/lib/actions";
 import { ArrowLeft } from "lucide-react";
 
 interface Sponsor {

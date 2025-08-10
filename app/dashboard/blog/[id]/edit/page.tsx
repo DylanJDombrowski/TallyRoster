@@ -1,4 +1,4 @@
-import { getBlogPost } from "@/lib/actions/blog";
+import { getBlogPost } from "@/lib/actions";
 import { notFound } from "next/navigation";
 import BlogPostForm from "../../components/BlogPostForm";
 
