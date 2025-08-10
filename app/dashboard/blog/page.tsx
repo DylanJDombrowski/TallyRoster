@@ -5,7 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import DeleteBlogPostButton from "./components/DeleteBlogPostButton";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
-import { getSessionData } from "@/lib/actions";
+import { getSessionData } from "@/lib/services";
 import { redirect } from "next/navigation";
 
 // REFACTORED: Server action that accepts organizationId and userId as parameters
