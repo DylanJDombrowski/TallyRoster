@@ -5,7 +5,7 @@ import { useToast } from "@/app/components/toast-provider";
 import { Team } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { updateUserRole } from "../actions";
+import { updateUserRole } from "@/lib/actions/users";
 
 // Define a richer user type for the form
 export type EditableUser = {
@@ -53,12 +53,19 @@ export function EditUserForm({ user, teams, onClose }: EditUserFormProps) {
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="user_id" value={user.id} />
       <div>
-        <label className="block text-sm font-medium text-slate-900">Email</label>
-        <p className="mt-1 p-2 border border-gray-200 rounded-md bg-gray-50">{user.email}</p>
+        <label className="block text-sm font-medium text-slate-900">
+          Email
+        </label>
+        <p className="mt-1 p-2 border border-gray-200 rounded-md bg-gray-50">
+          {user.email}
+        </p>
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="role" className="block text-sm font-medium text-slate-900">
+        <label
+          htmlFor="role"
+          className="block text-sm font-medium text-slate-900"
+        >
           Role
         </label>
         <select
@@ -77,7 +84,10 @@ export function EditUserForm({ user, teams, onClose }: EditUserFormProps) {
 
       {(selectedRole === "coach" || selectedRole === "parent") && (
         <div className="space-y-1">
-          <label htmlFor="team_id" className="block text-sm font-medium text-slate-900">
+          <label
+            htmlFor="team_id"
+            className="block text-sm font-medium text-slate-900"
+          >
             Team
           </label>
           <select
