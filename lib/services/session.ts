@@ -1,4 +1,3 @@
-// app/actions.ts (or lib/actions/session.ts)
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
