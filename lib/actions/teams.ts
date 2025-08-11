@@ -3,7 +3,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { TeamFormSchema } from "@/lib/types"; // ← FIXED: Import from consolidated types
+import { TeamFormSchema } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 

@@ -51,17 +51,6 @@ export function TeamForm({
     formState: { errors, isSubmitting },
   } = useForm<TeamFormData>({
     resolver: zodResolver(TeamFormSchema),
-    defaultValues: {
-      name: "",
-      season: "",
-      year: new Date().getFullYear(),
-      team_image_url: "",
-      primary_color: "#161659",
-      secondary_color: "#BD1515",
-      coach_name: "",
-      coach_email: "",
-      coach_phone: "",
-    },
   });
 
   // Watch the team image URL for preview
@@ -101,6 +90,7 @@ export function TeamForm({
         coach_phone: initialCoachData?.phone || "",
       });
     } else {
+      // Provide defaults for new teams
       reset({
         name: "",
         season: "",

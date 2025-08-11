@@ -1,4 +1,4 @@
-// lib/types.ts - Single source of truth for all types and schemas
+// lib/types.ts - COMPLETE FIXED VERSION
 import { z } from "zod";
 import { Database } from "./database.types";
 
@@ -20,7 +20,7 @@ export const PlayerFormSchema = z.object({
   team_id: z.string().uuid("You must select a team."),
   headshot_url: z.string().url().nullable(),
   height: z.string().nullable(),
-  bats: z.enum(["L", "R", "S"]).nullable(), // Left, Right, Switch
+  bats: z.enum(["L", "R", "S"]).nullable(),
   throws: z.enum(["L", "R"]).nullable(),
   town: z.string().nullable(),
   school: z.string().nullable(),
@@ -63,30 +63,28 @@ export const ScheduleEventFormSchema = z.object({
   is_home: z.boolean().default(false),
 });
 
-// Team schema - FIXED to match both form needs and database schema
+// Team schema - OPTION 1: Make fields truly optional
 export const TeamFormSchema = z.object({
   id: z.string().uuid().optional(),
-  name: z.string().min(2, "Team name must be at least 2 characters"),
+  name: z.string().min(2, "Team name must be at least 2 characters").trim(),
   season: z.string().min(1, "Season is required"),
   year: z.coerce.number().int().min(2020).max(2035).optional(),
   team_image_url: z.string().url().optional().or(z.literal("")),
-  // Force these to be strings with defaults to avoid conflicts
   primary_color: z
     .string()
     .regex(/^#[0-9A-F]{6}$/i, "Must be valid hex color")
-    .default("#161659"),
+    .optional(),
   secondary_color: z
     .string()
     .regex(/^#[0-9A-F]{6}$/i, "Must be valid hex color")
-    .default("#BD1515"),
-  // Coach fields for form handling
-  coach_name: z.string().optional(),
-  coach_email: z.string().email("Invalid email").optional().or(z.literal("")),
+    .optional(),
+  coach_name: z.string().trim().optional(),
+  coach_email: z.string().email().optional().or(z.literal("")),
   coach_phone: z.string().optional(),
 });
 
 // ============================================================================
-// ONBOARDING SCHEMAS - Consolidated from app/types/onboarding.ts
+// ONBOARDING SCHEMAS
 // ============================================================================
 
 export const OrganizationFormSchema = z.object({
@@ -117,7 +115,7 @@ export const PlanSelectionSchema = z.object({
 });
 
 // ============================================================================
-// INFERRED TYPES - Generated from schemas
+// INFERRED TYPES
 // ============================================================================
 
 export type PlayerFormData = z.infer<typeof PlayerFormSchema>;
@@ -162,7 +160,7 @@ export type ColorPreset = {
 };
 
 // ============================================================================
-// DATABASE TYPES - Direct from Supabase
+// DATABASE TYPES
 // ============================================================================
 
 export type Player = Database["public"]["Tables"]["players"]["Row"];
@@ -176,7 +174,7 @@ export type BlogPost = Database["public"]["Tables"]["blog_posts"]["Row"];
 export type Sponsor = Database["public"]["Tables"]["sponsors"]["Row"];
 
 // ============================================================================
-// EXTENDED TYPES - For UI components with relations
+// EXTENDED TYPES
 // ============================================================================
 
 export type TeamWithDetails = Team & {
@@ -194,7 +192,7 @@ export type CoachWithTeam = Coach & {
 };
 
 // ============================================================================
-// UTILITY TYPES - For different views and components
+// UTILITY TYPES
 // ============================================================================
 
 export type TeamListItem = Pick<
@@ -228,45 +226,27 @@ export type CoachCardData = Pick<
 >;
 
 // ============================================================================
-// HELPER FUNCTIONS - Image URL handling
+// HELPER FUNCTIONS
 // ============================================================================
 
 export const getPlayerImageUrl = (path: string | null | undefined): string => {
   const defaultImage = "/assets/teams/defaultpfp.jpg";
-
   if (!path) return defaultImage;
-
-  // If the path is already a full URL, return it directly
-  if (path.startsWith("http")) {
-    return path;
-  }
-
-  // Otherwise, construct the full URL for legacy Supabase storage
+  if (path.startsWith("http")) return path;
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/player-headshots${path}`;
 };
 
 export const getTeamImageUrl = (path: string | null | undefined): string => {
   const defaultImage = "/assets/logos/mvxLogo2.png";
-
   if (!path) return defaultImage;
-
-  // If the path is already a full URL, return it directly
-  if (path.startsWith("http")) {
-    return path;
-  }
-
-  // Otherwise, construct the full URL for legacy Supabase storage
+  if (path.startsWith("http")) return path;
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/team-photos${path}`;
 };
 
 export const getCoachImageUrl = (coach: Coach): string => {
   if (coach.image_url) return coach.image_url;
-  return "/assets/teams/defaultpfp.jpg"; // fallback image
+  return "/assets/teams/defaultpfp.jpg";
 };
-
-// ============================================================================
-// HELPER FUNCTIONS - Season generation
-// ============================================================================
 
 export const generateSeasonOptions = () => {
   const currentYear = new Date().getFullYear();
