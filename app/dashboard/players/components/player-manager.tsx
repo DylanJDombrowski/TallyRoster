@@ -1,8 +1,8 @@
-// app/dashboard/players/components/player-manager.tsx
+// app/dashboard/players/components/player-manager.tsx - Refactored
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { Player, Team } from "@/lib/types";
+import { getPlayerImageUrl } from "@/lib/utils/images";
 import {
   Archive,
   Award,
@@ -13,20 +13,18 @@ import {
   GraduationCap,
   Grid,
   List,
-  Mail,
   MapPin,
-  Phone,
   Plus,
   Search,
   Trash2,
-  Twitter,
   Upload,
   Users,
 } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useMemo, useState } from "react";
-import { deletePlayer, updatePlayerStatus } from "@/lib/actions";
 import { PlayerForm } from "./player-form";
+import { PlayerDetailModal } from "./player-detail-modal";
+import { CSVImportModal } from "./csv-import-modal";
+import { usePlayerManagement } from "../hooks/use-player-management";
 
 export type PlayerWithTeam = Player & {
   teams: Pick<Team, "name"> | null;
@@ -55,15 +53,13 @@ const PlayerCard = ({
   onDelete,
   onViewDetails,
 }: PlayerCardProps) => {
-  const defaultAvatar = "/assets/teams/defaultpfp.jpg";
-
   if (isCompact) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Image
-              src={player.headshot_url || defaultAvatar}
+              src={getPlayerImageUrl(player.headshot_url)}
               alt={`${player.first_name} ${player.last_name}`}
               width={40}
               height={40}
@@ -103,7 +99,7 @@ const PlayerCard = ({
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center space-x-3">
             <Image
-              src={player.headshot_url || defaultAvatar}
+              src={getPlayerImageUrl(player.headshot_url)}
               alt={`${player.first_name} ${player.last_name}`}
               width={48}
               height={48}
@@ -177,433 +173,56 @@ const PlayerCard = ({
   );
 };
 
-interface PlayerDetailModalProps {
-  player: PlayerWithTeam | null;
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const PlayerDetailModal = ({
-  player,
-  isOpen,
-  onClose,
-}: PlayerDetailModalProps) => {
-  if (!isOpen || !player) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-start justify-between mb-6">
-            <Image
-              src={player.headshot_url || "/assets/teams/defaultpfp.jpg"}
-              alt={`${player.first_name} ${player.last_name}`}
-              width={64}
-              height={64}
-              className="w-16 h-16 rounded-full object-cover border-2 border-gray-100"
-            />
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {player.first_name} {player.last_name}
-              </h2>
-              <p className="text-lg text-gray-600">
-                #{player.jersey_number} • {player.position}
-              </p>
-              <p className="text-blue-600 font-medium">{player.teams?.name}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Personal Info</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Height:</span>
-                <span>{player.height || "Not provided"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Town:</span>
-                <span>{player.town || "Not provided"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">School:</span>
-                <span>{player.school || "Not provided"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Graduation:</span>
-                <span>{player.grad_year || "Not provided"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">GPA:</span>
-                <span>{player.gpa || "Not provided"}</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Baseball Info</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Bats:</span>
-                <span>{player.bats || "Not provided"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Throws:</span>
-                <span>{player.throws || "Not provided"}</span>
-              </div>
-              {player.twitter_handle && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Twitter:</span>
-                  <span className="flex items-center">
-                    <Twitter className="w-3 h-3 mr-1" />@{player.twitter_handle}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {(player.parent_email || player.parent_phone) && (
-            <div className="md:col-span-2">
-              <h3 className="font-semibold text-gray-900 mb-3">Contact Info</h3>
-              <div className="grid sm:grid-cols-2 gap-2 text-sm">
-                {player.parent_email && (
-                  <div className="flex items-center">
-                    <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                    <span>{player.parent_email}</span>
-                  </div>
-                )}
-                {player.parent_phone && (
-                  <div className="flex items-center">
-                    <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                    <span>{player.parent_phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface CSVImportModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  teams: Team[];
-  organizationId: string;
-  onImportSuccess: () => void;
-}
-
-const CSVImportModal = ({
-  isOpen,
-  onClose,
-  teams,
-  organizationId,
-  onImportSuccess,
-}: CSVImportModalProps) => {
-  const [selectedTeam, setSelectedTeam] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleDownloadTemplate = () => {
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      "first_name,last_name,jersey_number,position,grad_year,height,town,school\n" +
-      "John,Doe,23,Pitcher,2025,6'2\",Louisville,Central High\n" +
-      "Jane,Smith,15,Catcher,2026,5'6\",Lexington,North High\n";
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "player_import_template.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleImport = async (event: { preventDefault: () => void }) => {
-    event.preventDefault();
-    if (!selectedFile || !selectedTeam) return;
-
-    setIsImporting(true);
-
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-    formData.append("team_id", selectedTeam);
-    formData.append("organization_id", organizationId);
-
-    try {
-      const response = await fetch("/api/import/players", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to import players.");
-      }
-
-      onImportSuccess();
-      onClose();
-      setSelectedFile(null);
-      setSelectedTeam("");
-    } catch (error) {
-      console.error("Import failed:", error);
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl max-w-md w-full">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Import Players</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-
-          <form onSubmit={handleImport} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Team
-              </label>
-              <select
-                value={selectedTeam}
-                onChange={(e) => setSelectedTeam(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Choose a team...</option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                CSV File
-              </label>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={(e) => {
-                  const files = e.target.files;
-                  setSelectedFile(files && files.length > 0 ? files[0] : null);
-                }}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-blue-800 mb-2">
-                Need a template? Download our CSV template with sample data.
-              </p>
-              <button
-                type="button"
-                onClick={handleDownloadTemplate}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                Download Template →
-              </button>
-            </div>
-
-            <div className="flex space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!selectedFile || !selectedTeam || isImporting}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isImporting ? "Importing..." : "Import Players"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export function PlayerManager({
   initialPlayers,
   teams,
   organizationId,
 }: PlayerManagerProps) {
-  const [players, setPlayers] = useState<PlayerWithTeam[]>(initialPlayers);
-  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"active" | "archived">(
-    "active"
-  );
-  const [teamFilter, setTeamFilter] = useState("");
-  const [positionFilter, setPositionFilter] = useState("");
-  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTeam | null>(
-    null
-  );
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showCSVModal, setShowCSVModal] = useState(false);
-  const [showPlayerForm, setShowPlayerForm] = useState(false);
+  const {
+    // State
+    searchTerm,
+    statusFilter,
+    teamFilter,
+    positionFilter,
+    viewMode,
+    showFilters,
+    selectedPlayer,
+    showDetailModal,
+    showCSVModal,
+    showPlayerForm,
+    editingPlayer,
 
-  const supabase = createClient();
+    // Computed values
+    filteredPlayers,
+    activeCount,
+    alumniCount,
 
-  // Keep your existing fetchPlayers function
-  const fetchPlayers = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("players")
-      .select(`*, teams ( name )`)
-      .eq("organization_id", organizationId);
+    // State setters
+    setSearchTerm,
+    setStatusFilter,
+    setTeamFilter,
+    setPositionFilter,
+    setViewMode,
+    setShowFilters,
+    setShowCSVModal,
+    setShowPlayerForm,
 
-    if (error) {
-      console.error("Error fetching players:", error);
-      return;
-    }
-    setPlayers(data as PlayerWithTeam[]);
-  }, [supabase, organizationId]);
-
-  // Keep your existing handleSaveSuccess function
-  const handleSaveSuccess = (savedPlayer: Player, isNew: boolean) => {
-    const team = teams.find((t) => t.id === savedPlayer.team_id);
-
-    const playerWithTeam = {
-      ...savedPlayer,
-      teams: team ? { name: team.name } : null,
-    };
-
-    if (isNew) {
-      setPlayers((prev) => [...prev, playerWithTeam]);
-    } else {
-      setPlayers((prev) =>
-        prev.map((p) => (p.id === savedPlayer.id ? playerWithTeam : p))
-      );
-    }
-    setEditingPlayer(null);
-    setShowPlayerForm(false);
-  };
-
-  // Keep your existing handleDeleteSuccess function
-  const handleDeleteSuccess = (deletedPlayerId: string) => {
-    setPlayers((prev) => prev.filter((p) => p.id !== deletedPlayerId));
-  };
-
-  const filteredPlayers = useMemo(() => {
-    return players.filter((player) => {
-      const matchesSearch =
-        player.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        player.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        player.jersey_number?.toString().includes(searchTerm);
-
-      const matchesStatus = player.status === statusFilter;
-      const matchesTeam = !teamFilter || player.team_id === teamFilter;
-      const matchesPosition =
-        !positionFilter ||
-        player.position?.toLowerCase().includes(positionFilter.toLowerCase());
-
-      return matchesSearch && matchesStatus && matchesTeam && matchesPosition;
-    });
-  }, [players, searchTerm, statusFilter, teamFilter, positionFilter]);
-
-  const handleViewDetails = (player: PlayerWithTeam) => {
-    setSelectedPlayer(player);
-    setShowDetailModal(true);
-  };
-
-  const handleEdit = (player: PlayerWithTeam) => {
-    setEditingPlayer(player);
-    setShowPlayerForm(true);
-  };
-
-  const handleDelete = async (player: Player) => {
-    // Add confirmation dialog
-    if (
-      window.confirm(
-        `Are you sure you want to permanently delete ${player.first_name} ${player.last_name}? This cannot be undone.`
-      )
-    ) {
-      try {
-        // Call your existing deletePlayer action
-        const result = await deletePlayer(player.id);
-
-        if (!result.success) {
-          console.error("Delete failed:", result.error);
-          // You might want to show a toast notification here
-        } else {
-          // THIS IS WHERE YOU USE handleDeleteSuccess
-          handleDeleteSuccess(player.id);
-          console.log("Player deleted successfully:", result.data.message);
-          // You might want to show a success toast here
-        }
-      } catch (error) {
-        console.error("Error deleting player:", error);
-      }
-    }
-  };
-
-  // Similarly, for handleArchive, you should integrate it with your updatePlayerStatus action:
-  const handleArchive = async (player: Player) => {
-    try {
-      const formData = new FormData();
-      formData.append("playerId", player.id);
-      formData.append(
-        "status",
-        player.status === "active" ? "archived" : "active"
-      );
-
-      const result = await updatePlayerStatus(formData);
-
-      if (!result.success) {
-        console.error("Archive failed:", result.error);
-      } else {
-        // Update the player in local state
-        setPlayers((prev) =>
-          prev.map((p) =>
-            p.id === player.id
-              ? {
-                  ...p,
-                  status:
-                    player.status === "active"
-                      ? "archived"
-                      : ("active" as const),
-                }
-              : p
-          )
-        );
-        console.log("Player status updated successfully:", result.data.message);
-      }
-    } catch (error) {
-      console.error("Error updating player status:", error);
-    }
-  };
-
-  const activeCount = players.filter((p) => p.status === "active").length;
-  const alumniCount = players.filter((p) => p.status === "archived").length;
+    // Handlers
+    fetchPlayers,
+    handleSaveSuccess,
+    handleDelete,
+    handleArchive,
+    handleViewDetails,
+    handleEdit,
+    handleClearFilters,
+    handleCloseDetailModal,
+    handleCloseCSVModal,
+    handleClosePlayerForm,
+  } = usePlayerManagement({
+    initialPlayers,
+    teams,
+    organizationId,
+  });
 
   // If showing player form, render that instead
   if (showPlayerForm) {
@@ -612,10 +231,7 @@ export function PlayerManager({
         teams={teams}
         playerToEdit={editingPlayer}
         onSaveSuccess={handleSaveSuccess}
-        onCancelEdit={() => {
-          setShowPlayerForm(false);
-          setEditingPlayer(null);
-        }}
+        onCancelEdit={handleClosePlayerForm}
         organizationId={organizationId}
       />
     );
@@ -757,11 +373,7 @@ export function PlayerManager({
                 />
 
                 <button
-                  onClick={() => {
-                    setTeamFilter("");
-                    setPositionFilter("");
-                    setSearchTerm("");
-                  }}
+                  onClick={handleClearFilters}
                   className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Clear Filters
@@ -774,7 +386,7 @@ export function PlayerManager({
         {/* Results */}
         <div className="mb-4">
           <p className="text-sm text-gray-600">
-            Showing {filteredPlayers.length} of {players.length} players
+            Showing {filteredPlayers.length} of {filteredPlayers.length} players
           </p>
         </div>
 
@@ -826,12 +438,12 @@ export function PlayerManager({
       <PlayerDetailModal
         player={selectedPlayer}
         isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
+        onClose={handleCloseDetailModal}
       />
 
       <CSVImportModal
         isOpen={showCSVModal}
-        onClose={() => setShowCSVModal(false)}
+        onClose={handleCloseCSVModal}
         teams={teams}
         organizationId={organizationId}
         onImportSuccess={fetchPlayers}
