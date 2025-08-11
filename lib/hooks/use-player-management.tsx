@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Player, Team } from "@/lib/types";
 import { deletePlayer, updatePlayerStatus } from "@/lib/actions";
 import { useCallback, useMemo, useState } from "react";
-import { PlayerWithTeam } from "../components/player-manager";
+import { PlayerWithTeam } from "../../app/dashboard/players/components/player-manager";
 
 interface UsePlayerManagementProps {
   initialPlayers: PlayerWithTeam[];

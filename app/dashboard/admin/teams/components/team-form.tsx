@@ -1,37 +1,33 @@
 // app/dashboard/admin/teams/components/team-form.tsx
 "use client";
 
-import { useToast } from "@/app/components/toast-provider";
-import { Team } from "@/lib/types";
-import { upsertTeam } from "@/lib/actions";
-import { User, Mail, Phone } from "lucide-react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { User, Mail, Phone, Upload, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+
+import { useToast } from "@/app/components/toast-provider";
+import { useCloudinaryUpload } from "@/lib/hooks/use-cloudinary-upload";
+import {
+  Team,
+  TeamFormSchema,
+  TeamFormData,
+  generateSeasonOptions,
+} from "@/lib/types";
+import { upsertTeam } from "@/lib/actions";
 
 interface TeamFormProps {
   teamToEdit?: Team | null;
   onSaveSuccess: (savedTeam: Team, isNew: boolean) => void;
   onCancelEdit: () => void;
   existingTeams: Team[];
-  // NEW: Coach data for editing
   initialCoachData?: {
     name?: string;
     email?: string;
     phone?: string;
   };
 }
-
-// Function to generate season options
-const generateSeasonOptions = () => {
-  const currentYear = new Date().getFullYear();
-  const options = [];
-  for (let i = 0; i < 4; i++) {
-    const startYear = currentYear + i;
-    const endYear = (startYear + 1).toString().slice(-2);
-    options.push(`${startYear}-${endYear}`);
-  }
-  return options;
-};
 
 export function TeamForm({
   teamToEdit,
@@ -41,106 +37,134 @@ export function TeamForm({
   initialCoachData,
 }: TeamFormProps) {
   const { showToast } = useToast();
-  const formRef = useRef<HTMLFormElement>(null);
   const seasons = generateSeasonOptions();
 
-  // Form state
-  const [imageUrl, setImageUrl] = useState<string | null>(
-    teamToEdit?.team_image_url || null
-  );
-  const [isUploading, setIsUploading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<{
-    [key: string]: string;
-  }>({});
-
-  // NEW: Coach form state
-  const [coachData, setCoachData] = useState({
-    name: initialCoachData?.name || "",
-    email: initialCoachData?.email || "",
-    phone: initialCoachData?.phone || "",
+  // React Hook Form setup - FIXED typing
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm<TeamFormData>({
+    resolver: zodResolver(TeamFormSchema),
+    defaultValues: {
+      name: "",
+      season: "",
+      year: new Date().getFullYear(),
+      team_image_url: "",
+      primary_color: "#161659",
+      secondary_color: "#BD1515",
+      coach_name: "",
+      coach_email: "",
+      coach_phone: "",
+    },
   });
 
-  // Populate form when editing
+  // Watch the team image URL for preview
+  const teamImageUrl = watch("team_image_url");
+
+  // Cloudinary upload hook
+  const {
+    isUploading,
+    error: uploadError,
+    uploadImage,
+    clearError: clearUploadError,
+  } = useCloudinaryUpload({
+    uploadPreset: "team_photos",
+    folder: "teams",
+    onSuccess: (url) => {
+      setValue("team_image_url", url);
+      showToast("Team image uploaded successfully!", "success");
+    },
+    onError: (error) => {
+      showToast(error, "error");
+    },
+  });
+
+  // Reset form when teamToEdit or initialCoachData changes
   useEffect(() => {
-    setImageUrl(teamToEdit?.team_image_url || null);
-    setValidationErrors({});
-
-    // NEW: Reset coach data when team changes
-    setCoachData({
-      name: initialCoachData?.name || "",
-      email: initialCoachData?.email || "",
-      phone: initialCoachData?.phone || "",
-    });
-  }, [teamToEdit, initialCoachData]);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (isSubmitting) return;
-
-    const formData = new FormData(event.currentTarget);
-    const errors: { [key: string]: string } = {};
-
-    // Basic validation
-    const teamName = (formData.get("name") as string)?.trim();
-    const season = formData.get("season") as string;
-    const coachName = (formData.get("coach_name") as string)?.trim();
-    const coachEmail = (formData.get("coach_email") as string)?.trim();
-
-    if (!teamName) {
-      errors.name = "Team name is required";
+    if (teamToEdit) {
+      reset({
+        id: teamToEdit.id,
+        name: teamToEdit.name,
+        season: teamToEdit.season || "",
+        year: teamToEdit.year ?? new Date().getFullYear(),
+        team_image_url: teamToEdit.team_image_url || "",
+        primary_color: teamToEdit.primary_color || "#161659",
+        secondary_color: teamToEdit.secondary_color || "#BD1515",
+        coach_name: initialCoachData?.name || "",
+        coach_email: initialCoachData?.email || "",
+        coach_phone: initialCoachData?.phone || "",
+      });
+    } else {
+      reset({
+        name: "",
+        season: "",
+        year: new Date().getFullYear(),
+        team_image_url: "",
+        primary_color: "#161659",
+        secondary_color: "#BD1515",
+        coach_name: initialCoachData?.name || "",
+        coach_email: initialCoachData?.email || "",
+        coach_phone: initialCoachData?.phone || "",
+      });
     }
+    clearErrors();
+    clearUploadError();
+  }, [teamToEdit, initialCoachData, reset, clearErrors, clearUploadError]);
 
-    if (!season) {
-      errors.season = "Season is required";
+  // Handle image upload
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await uploadImage(file);
     }
+  };
 
-    // NEW: Coach validation
-    if (coachName && coachName.length < 2) {
-      errors.coach_name = "Coach name must be at least 2 characters";
-    }
-
-    if (coachEmail && !coachEmail.includes("@")) {
-      errors.coach_email = "Please enter a valid email address";
-    }
-
+  // Form submission
+  const onSubmit = async (data: TeamFormData) => {
     // Check for duplicate team name in same season
-    if (teamName && season) {
-      const duplicate = existingTeams.find(
-        (team) =>
-          team.name.toLowerCase() === teamName.toLowerCase() &&
-          team.season === season &&
-          team.id !== teamToEdit?.id
-      );
+    const duplicate = existingTeams.find(
+      (team) =>
+        team.name.toLowerCase() === data.name.toLowerCase() &&
+        team.season === data.season &&
+        team.id !== teamToEdit?.id
+    );
 
-      if (duplicate) {
-        errors.name = `A team named "${teamName}" already exists for the ${season} season`;
-      }
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
+    if (duplicate) {
+      setError("name", {
+        message: `A team named "${data.name}" already exists for the ${data.season} season`,
+      });
       showToast("Please fix the errors below", "error");
       return;
     }
 
-    setValidationErrors({});
-    setIsSubmitting(true);
-
     try {
+      // Convert form data to FormData for the server action
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value.toString());
+        }
+      });
+
       const result = await upsertTeam(null, formData);
 
       if (result.error) {
         showToast(result.error, "error");
         if (result.fields) {
-          const flatFields: { [key: string]: string } = {};
+          // Set field-specific errors
           Object.entries(result.fields).forEach(([key, value]) => {
-            flatFields[key] = Array.isArray(value)
-              ? value.join(", ")
-              : value ?? "";
+            setError(key as keyof TeamFormData, {
+              message: Array.isArray(value) ? value.join(", ") : value ?? "",
+            });
           });
-          setValidationErrors(flatFields);
         }
       } else if (result.success && result.team) {
         const isNew = !teamToEdit?.id;
@@ -148,134 +172,27 @@ export function TeamForm({
         onSaveSuccess(result.team, isNew);
 
         if (isNew) {
-          formRef.current?.reset();
-          setImageUrl(null);
-          setCoachData({ name: "", email: "", phone: "" });
+          reset();
         }
       }
     } catch (error) {
       console.error("Form submission error:", error);
       showToast("An unexpected error occurred", "error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      showToast("Please select an image file", "error");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      showToast("File size must be under 10MB", "error");
-      return;
-    }
-
-    setIsUploading(true);
-
-    try {
-      const timestamp = Math.round(new Date().getTime() / 1000);
-
-      const paramsToSign = {
-        timestamp: timestamp.toString(),
-        upload_preset: "team_photos",
-        folder: "teams",
-      };
-
-      const signResponse = await fetch("/api/sign-image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ paramsToSign }),
-      });
-
-      if (!signResponse.ok) {
-        const errorData = await signResponse.json();
-        throw new Error(errorData.error || "Failed to get upload signature");
-      }
-
-      const { signature } = await signResponse.json();
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("api_key", process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY!);
-      formData.append("timestamp", timestamp.toString());
-      formData.append("signature", signature);
-      formData.append("upload_preset", "team_photos");
-      formData.append("folder", "teams");
-
-      const uploadResponse = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json();
-        throw new Error(errorData.error?.message || "Upload failed");
-      }
-
-      const uploadData = await uploadResponse.json();
-
-      if (uploadData.secure_url) {
-        setImageUrl(uploadData.secure_url);
-        showToast("Team image uploaded successfully!", "success");
-      } else {
-        throw new Error("No URL returned from upload");
-      }
-    } catch (error) {
-      console.error("Team upload error:", error);
-      showToast(
-        error instanceof Error ? error.message : "Upload failed",
-        "error"
-      );
-    } finally {
-      setIsUploading(false);
     }
   };
 
   const handleCancel = () => {
-    formRef.current?.reset();
-    setValidationErrors({});
-    setImageUrl(teamToEdit?.team_image_url || null);
-    setCoachData({
-      name: initialCoachData?.name || "",
-      email: initialCoachData?.email || "",
-      phone: initialCoachData?.phone || "",
-    });
+    reset();
+    clearErrors();
+    clearUploadError();
     onCancelEdit();
-  };
-
-  // NEW: Handle coach field changes
-  const handleCoachFieldChange = (
-    field: keyof typeof coachData,
-    value: string
-  ) => {
-    setCoachData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
   };
 
   return (
     <form
-      ref={formRef}
-      onSubmit={handleSubmit}
-      key={teamToEdit?.id ?? "new"}
+      onSubmit={handleSubmit(onSubmit)}
       className="space-y-6 p-6 border rounded-lg bg-white shadow-sm"
     >
-      <input type="hidden" name="id" defaultValue={teamToEdit?.id ?? ""} />
-      <input type="hidden" name="team_image_url" value={imageUrl || ""} />
-
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl text-slate-900 font-semibold">
@@ -308,18 +225,14 @@ export function TeamForm({
           </label>
           <input
             id="name"
-            name="name"
-            defaultValue={teamToEdit?.name}
+            {...register("name")}
             className={`w-full p-3 border text-slate-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-              validationErrors.name
-                ? "border-red-500 bg-red-50"
-                : "border-gray-300"
+              errors.name ? "border-red-500 bg-red-50" : "border-gray-300"
             }`}
             placeholder="e.g., Vipers, Eagles, Thunder"
-            required
           />
-          {validationErrors.name && (
-            <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+          {errors.name && (
+            <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
           )}
         </div>
 
@@ -334,14 +247,10 @@ export function TeamForm({
             </label>
             <select
               id="season"
-              name="season"
-              defaultValue={teamToEdit?.season || ""}
+              {...register("season")}
               className={`w-full p-3 border text-slate-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                validationErrors.season
-                  ? "border-red-500 bg-red-50"
-                  : "border-gray-300"
+                errors.season ? "border-red-500 bg-red-50" : "border-gray-300"
               }`}
-              required
             >
               <option value="">Select a season</option>
               {seasons.map((season) => (
@@ -350,9 +259,9 @@ export function TeamForm({
                 </option>
               ))}
             </select>
-            {validationErrors.season && (
+            {errors.season && (
               <p className="mt-1 text-sm text-red-600">
-                {validationErrors.season}
+                {errors.season.message}
               </p>
             )}
           </div>
@@ -366,12 +275,14 @@ export function TeamForm({
             </label>
             <input
               id="year"
-              name="year"
               type="number"
-              defaultValue={teamToEdit?.year ?? new Date().getFullYear()}
+              {...register("year", { valueAsNumber: true })}
               className="w-full p-3 border text-slate-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="2025"
             />
+            {errors.year && (
+              <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
+            )}
           </div>
         </div>
 
@@ -384,10 +295,10 @@ export function TeamForm({
             Team Logo/Image
           </label>
 
-          {imageUrl && (
+          {teamImageUrl && (
             <div className="mb-3">
               <Image
-                src={imageUrl}
+                src={teamImageUrl}
                 alt="Team Preview"
                 width={96}
                 height={96}
@@ -396,20 +307,50 @@ export function TeamForm({
             </div>
           )}
 
-          <input
-            id="team_image_upload"
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            disabled={isUploading}
-            className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
-          />
-          {isUploading && (
-            <p className="text-sm text-blue-600 mt-1">Uploading...</p>
+          <div className="flex items-center space-x-3">
+            <label className="cursor-pointer">
+              <input
+                id="team_image_upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={isUploading}
+                className="hidden"
+              />
+              <div
+                className={`
+                  flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors
+                  ${
+                    isUploading
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }
+                `}
+              >
+                {isUploading ? (
+                  <>
+                    <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-gray-700 rounded-full mr-2" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Image
+                  </>
+                )}
+              </div>
+            </label>
+            <span className="text-xs text-slate-500">
+              PNG, JPG, or GIF up to 10MB
+            </span>
+          </div>
+
+          {uploadError && (
+            <div className="mt-2 flex items-center text-red-600 text-sm">
+              <X className="h-4 w-4 mr-1" />
+              {uploadError}
+            </div>
           )}
-          <p className="text-xs text-slate-500 mt-1">
-            PNG, JPG, or GIF up to 10MB
-          </p>
         </div>
 
         {/* Color Pickers */}
@@ -423,11 +364,15 @@ export function TeamForm({
             </label>
             <input
               id="primary_color"
-              name="primary_color"
               type="color"
-              defaultValue={teamToEdit?.primary_color || "#161659"}
+              {...register("primary_color")}
               className="w-full h-12 p-1 border border-gray-300 rounded-lg cursor-pointer"
             />
+            {errors.primary_color && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.primary_color.message}
+              </p>
+            )}
           </div>
           <div>
             <label
@@ -438,16 +383,20 @@ export function TeamForm({
             </label>
             <input
               id="secondary_color"
-              name="secondary_color"
               type="color"
-              defaultValue={teamToEdit?.secondary_color || "#BD1515"}
+              {...register("secondary_color")}
               className="w-full h-12 p-1 border border-gray-300 rounded-lg cursor-pointer"
             />
+            {errors.secondary_color && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.secondary_color.message}
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* NEW: Coach Information Section */}
+      {/* Coach Information Section */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-slate-800 border-b border-slate-200 pb-2 flex items-center">
           <User className="w-5 h-5 mr-2" />
@@ -468,19 +417,15 @@ export function TeamForm({
           </label>
           <input
             id="coach_name"
-            name="coach_name"
-            value={coachData.name}
-            onChange={(e) => handleCoachFieldChange("name", e.target.value)}
+            {...register("coach_name")}
             className={`w-full p-3 border text-slate-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-              validationErrors.coach_name
-                ? "border-red-500 bg-red-50"
-                : "border-gray-300"
+              errors.coach_name ? "border-red-500 bg-red-50" : "border-gray-300"
             }`}
             placeholder="e.g., Sarah Johnson"
           />
-          {validationErrors.coach_name && (
+          {errors.coach_name && (
             <p className="mt-1 text-sm text-red-600">
-              {validationErrors.coach_name}
+              {errors.coach_name.message}
             </p>
           )}
         </div>
@@ -497,20 +442,18 @@ export function TeamForm({
             </label>
             <input
               id="coach_email"
-              name="coach_email"
               type="email"
-              value={coachData.email}
-              onChange={(e) => handleCoachFieldChange("email", e.target.value)}
+              {...register("coach_email")}
               className={`w-full p-3 border text-slate-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                validationErrors.coach_email
+                errors.coach_email
                   ? "border-red-500 bg-red-50"
                   : "border-gray-300"
               }`}
               placeholder="coach@example.com"
             />
-            {validationErrors.coach_email && (
+            {errors.coach_email && (
               <p className="mt-1 text-sm text-red-600">
-                {validationErrors.coach_email}
+                {errors.coach_email.message}
               </p>
             )}
           </div>
@@ -525,10 +468,8 @@ export function TeamForm({
             </label>
             <input
               id="coach_phone"
-              name="coach_phone"
               type="tel"
-              value={coachData.phone}
-              onChange={(e) => handleCoachFieldChange("phone", e.target.value)}
+              {...register("coach_phone")}
               className="w-full p-3 border text-slate-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="(555) 123-4567"
             />

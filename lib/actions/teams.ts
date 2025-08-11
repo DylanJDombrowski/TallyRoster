@@ -1,9 +1,9 @@
-// lib/actions/teams.ts - UPDATED with coach management
+// lib/actions/teams.ts - UPDATED with correct import
 
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { TeamFormSchema } from "@/lib/schemas/team";
+import { TeamFormSchema } from "@/lib/types"; // ← FIXED: Import from consolidated types
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
@@ -37,7 +37,7 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
     secondary_color: formData.get("secondary_color"),
     year: formData.get("year"),
     team_image_url: formData.get("team_image_url") || null,
-    // NEW: Coach fields
+    // Coach fields
     coach_name: formData.get("coach_name") || undefined,
     coach_email: formData.get("coach_email") || undefined,
     coach_phone: formData.get("coach_phone") || undefined,
@@ -128,7 +128,7 @@ export async function upsertTeam(prevState: unknown, formData: FormData) {
       };
     }
 
-    // NEW: Handle coach creation/update
+    // Handle coach creation/update
     if (coach_name && coach_name.trim()) {
       console.log(
         `[Team Actions] Managing coach for team ${teamResult.id}: ${coach_name}`
@@ -292,7 +292,7 @@ export async function deleteTeam(teamId: string) {
   return { success: "Team and associated coaches deleted successfully." };
 }
 
-// NEW: Function to get team with coach information for editing
+// Function to get team with coach information for editing
 export async function getTeamWithCoach(teamId: string) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);

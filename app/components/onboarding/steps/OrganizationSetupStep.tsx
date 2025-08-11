@@ -2,7 +2,11 @@
 "use client";
 
 import { useToast } from "@/app/components/toast-provider";
-import { OnboardingStepProps, OrganizationFormData, SubdomainCheckResponse } from "@/app/types/onboarding";
+import {
+  OnboardingStepProps,
+  OrganizationFormData,
+  SubdomainCheckResponse,
+} from "@/lib/types";
 import { useState } from "react";
 
 const ORGANIZATION_TYPES = [
@@ -28,7 +32,11 @@ const SPORTS = [
   "Other",
 ] as const;
 
-export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepProps) {
+export function OrganizationSetupStep({
+  onNext,
+  onBack,
+  data,
+}: OnboardingStepProps) {
   const [formData, setFormData] = useState<OrganizationFormData>({
     organizationName: data.organizationName || "",
     organizationType: data.organizationType || "",
@@ -38,7 +46,9 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
   });
 
   const [isCheckingSubdomain, setIsCheckingSubdomain] = useState(false);
-  const [subdomainAvailable, setSubdomainAvailable] = useState<boolean | null>(null);
+  const [subdomainAvailable, setSubdomainAvailable] = useState<boolean | null>(
+    null
+  );
   const { showToast } = useToast();
 
   const generateSubdomain = (orgName: string): string => {
@@ -56,7 +66,9 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
     }));
   };
 
-  const checkSubdomainAvailability = async (subdomain: string): Promise<void> => {
+  const checkSubdomainAvailability = async (
+    subdomain: string
+  ): Promise<void> => {
     if (!subdomain || subdomain.length < 3) {
       setSubdomainAvailable(null);
       return;
@@ -64,7 +76,9 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
 
     setIsCheckingSubdomain(true);
     try {
-      const response = await fetch(`/api/check-subdomain?subdomain=${subdomain}`);
+      const response = await fetch(
+        `/api/check-subdomain?subdomain=${subdomain}`
+      );
       const result: SubdomainCheckResponse = await response.json();
       setSubdomainAvailable(result.available);
     } catch (error) {
@@ -106,7 +120,9 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
     <div className="space-y-6">
       {/* Organization Name */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Organization Name *</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Organization Name *
+        </label>
         <input
           type="text"
           value={formData.organizationName}
@@ -118,10 +134,17 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
 
       {/* Organization Type */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Organization Type</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Organization Type
+        </label>
         <select
           value={formData.organizationType}
-          onChange={(e) => setFormData((prev) => ({ ...prev, organizationType: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              organizationType: e.target.value,
+            }))
+          }
           className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="">Select type...</option>
@@ -135,10 +158,14 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
 
       {/* Sport */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Sport/Activity</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Sport/Activity
+        </label>
         <select
           value={formData.sport}
-          onChange={(e) => setFormData((prev) => ({ ...prev, sport: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, sport: e.target.value }))
+          }
           className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="">Select sport...</option>
@@ -152,7 +179,9 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
 
       {/* Subdomain */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Your Site URL *</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Your Site URL *
+        </label>
         <div className="flex items-center">
           <input
             type="text"
@@ -161,19 +190,33 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
             placeholder="yourteam"
             className="flex-1 p-3 border border-slate-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
-          <span className="px-3 py-3 bg-slate-100 border border-l-0 border-slate-300 rounded-r-lg text-slate-600">.tallyroster.com</span>
+          <span className="px-3 py-3 bg-slate-100 border border-l-0 border-slate-300 rounded-r-lg text-slate-600">
+            .tallyroster.com
+          </span>
         </div>
-        {isCheckingSubdomain && <p className="text-sm text-slate-500 mt-1">Checking availability...</p>}
-        {subdomainAvailable === true && <p className="text-sm text-green-600 mt-1">✓ Available</p>}
-        {subdomainAvailable === false && <p className="text-sm text-red-600 mt-1">✗ Not available</p>}
+        {isCheckingSubdomain && (
+          <p className="text-sm text-slate-500 mt-1">
+            Checking availability...
+          </p>
+        )}
+        {subdomainAvailable === true && (
+          <p className="text-sm text-green-600 mt-1">✓ Available</p>
+        )}
+        {subdomainAvailable === false && (
+          <p className="text-sm text-red-600 mt-1">✗ Not available</p>
+        )}
       </div>
 
       {/* Your Role */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Your Role</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Your Role
+        </label>
         <select
           value={formData.yourRole}
-          onChange={(e) => setFormData((prev) => ({ ...prev, yourRole: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, yourRole: e.target.value }))
+          }
           className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="">Select your role...</option>
@@ -188,7 +231,11 @@ export function OrganizationSetupStep({ onNext, onBack, data }: OnboardingStepPr
 
       {/* Navigation Buttons */}
       <div className="flex justify-between pt-6">
-        <button onClick={onBack} className="px-6 py-2 text-slate-600 hover:text-slate-800 transition-colors" disabled>
+        <button
+          onClick={onBack}
+          className="px-6 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+          disabled
+        >
           Back
         </button>
         <button

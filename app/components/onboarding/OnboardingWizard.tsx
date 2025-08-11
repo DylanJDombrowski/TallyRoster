@@ -1,7 +1,7 @@
 // app/components/onboarding/OnboardingWizard.tsx
 "use client";
 
-import { OnboardingStep, OnboardingWizardData } from "@/app/types/onboarding";
+import { OnboardingStep, OnboardingWizardData } from "@/lib/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 
@@ -12,7 +12,9 @@ interface OnboardingWizardProps {
 
 export function OnboardingWizard({ steps, onComplete }: OnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [wizardData, setWizardData] = useState<Partial<OnboardingWizardData>>({});
+  const [wizardData, setWizardData] = useState<Partial<OnboardingWizardData>>(
+    {}
+  );
 
   const handleNext = (stepData?: Partial<OnboardingWizardData>) => {
     if (stepData) {
@@ -42,7 +44,9 @@ export function OnboardingWizard({ steps, onComplete }: OnboardingWizardProps) {
         {/* Progress Header */}
         <div className="max-w-2xl mx-auto mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-slate-900">Welcome to TallyRoster! 🎉</h1>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Welcome to TallyRoster! 🎉
+            </h1>
             <span className="text-sm text-slate-600">
               Step {currentStep + 1} of {steps.length}
             </span>
@@ -61,7 +65,12 @@ export function OnboardingWizard({ steps, onComplete }: OnboardingWizardProps) {
           {/* Step Indicators */}
           <div className="flex justify-between mt-4">
             {steps.map((step, index) => (
-              <div key={step.id} className={`flex items-center space-x-2 ${index <= currentStep ? "text-blue-600" : "text-slate-400"}`}>
+              <div
+                key={step.id}
+                className={`flex items-center space-x-2 ${
+                  index <= currentStep ? "text-blue-600" : "text-slate-400"
+                }`}
+              >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     index < currentStep
@@ -73,7 +82,9 @@ export function OnboardingWizard({ steps, onComplete }: OnboardingWizardProps) {
                 >
                   {index < currentStep ? "✓" : index + 1}
                 </div>
-                <span className="text-sm font-medium hidden sm:block">{step.title}</span>
+                <span className="text-sm font-medium hidden sm:block">
+                  {step.title}
+                </span>
               </div>
             ))}
           </div>
@@ -91,11 +102,19 @@ export function OnboardingWizard({ steps, onComplete }: OnboardingWizardProps) {
               className="bg-white rounded-xl shadow-lg p-8"
             >
               <div className="mb-6">
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">{steps[currentStep].title}</h2>
-                <p className="text-slate-600">{steps[currentStep].description}</p>
+                <h2 className="text-xl font-semibold text-slate-900 mb-2">
+                  {steps[currentStep].title}
+                </h2>
+                <p className="text-slate-600">
+                  {steps[currentStep].description}
+                </p>
               </div>
 
-              <CurrentStepComponent onNext={handleNext} onBack={handleBack} data={wizardData} />
+              <CurrentStepComponent
+                onNext={handleNext}
+                onBack={handleBack}
+                data={wizardData}
+              />
             </motion.div>
           </AnimatePresence>
         </div>

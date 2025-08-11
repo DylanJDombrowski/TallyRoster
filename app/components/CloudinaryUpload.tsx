@@ -1,107 +1,37 @@
+// app/components/CloudinaryUpload.tsx
 "use client";
 
-import { useState } from "react";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
+import { useCloudinaryUpload } from "@/lib/hooks/use-cloudinary-upload";
 
 interface CloudinaryUploadProps {
   onUpload: (url: string) => void;
   disabled?: boolean;
+  uploadPreset?: string;
+  folder?: string;
+  maxFileSize?: number;
 }
 
 export default function CloudinaryUpload({
   onUpload,
   disabled = false,
+  uploadPreset = "blog-images",
+  folder,
+  maxFileSize = 5 * 1024 * 1024, // 5MB default
 }: CloudinaryUploadProps) {
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isUploading, error, uploadImage, clearError } = useCloudinaryUpload({
+    uploadPreset,
+    folder,
+    maxFileSize,
+    onSuccess: onUpload,
+  });
 
-  const uploadToCloudinary = async (file: File) => {
-    try {
-      setIsUploading(true);
-      setError(null);
-
-      // Prepare upload parameters
-      const timestamp = Math.round(new Date().getTime() / 1000);
-      const uploadPreset =
-        process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "blog-images";
-
-      const paramsToSign = {
-        timestamp: timestamp.toString(),
-        upload_preset: uploadPreset,
-      };
-
-      // Get signature from your API
-      const signResponse = await fetch("/api/sign-image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ paramsToSign }),
-      });
-
-      if (!signResponse.ok) {
-        throw new Error("Failed to get upload signature");
-      }
-
-      const { signature } = await signResponse.json();
-
-      // Prepare form data for Cloudinary
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("timestamp", timestamp.toString());
-      formData.append("signature", signature);
-      formData.append(
-        "api_key",
-        process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || ""
-      );
-      formData.append("upload_preset", uploadPreset);
-
-      // Upload to Cloudinary
-      const cloudinaryResponse = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!cloudinaryResponse.ok) {
-        throw new Error("Failed to upload image");
-      }
-
-      const result = await cloudinaryResponse.json();
-
-      // Return optimized URL with auto format and quality
-      const optimizedUrl = result.secure_url.replace(
-        "/upload/",
-        "/upload/f_auto,q_auto/"
-      );
-      onUpload(optimizedUrl);
-    } catch (err) {
-      console.error("Upload error:", err);
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setError("Please select an image file");
-      return;
+    if (file) {
+      clearError();
+      await uploadImage(file);
     }
-
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be less than 5MB");
-      return;
-    }
-
-    uploadToCloudinary(file);
   };
 
   return (
@@ -132,7 +62,7 @@ export default function CloudinaryUpload({
               <Upload className="h-8 w-8 text-gray-400 mb-2" />
               <p className="text-sm text-gray-600">Click to upload an image</p>
               <p className="text-xs text-gray-500 mt-1">
-                PNG, JPG, GIF up to 5MB
+                PNG, JPG, GIF up to {Math.round(maxFileSize / (1024 * 1024))}MB
               </p>
             </div>
           )}
@@ -153,58 +83,19 @@ export default function CloudinaryUpload({
 export function CloudinaryUploadButton({
   onUpload,
   disabled = false,
+  uploadPreset = "blog-images",
+  folder,
 }: CloudinaryUploadProps) {
-  const [isUploading, setIsUploading] = useState(false);
+  const { isUploading, uploadImage } = useCloudinaryUpload({
+    uploadPreset,
+    folder,
+    onSuccess: onUpload,
+  });
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setIsUploading(true);
-
-      const timestamp = Math.round(new Date().getTime() / 1000);
-      const uploadPreset =
-        process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "blog-images";
-
-      const paramsToSign = {
-        timestamp: timestamp.toString(),
-        upload_preset: uploadPreset,
-      };
-
-      const signResponse = await fetch("/api/sign-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paramsToSign }),
-      });
-
-      const { signature } = await signResponse.json();
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("timestamp", timestamp.toString());
-      formData.append("signature", signature);
-      formData.append(
-        "api_key",
-        process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || ""
-      );
-      formData.append("upload_preset", uploadPreset);
-
-      const cloudinaryResponse = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: "POST", body: formData }
-      );
-
-      const result = await cloudinaryResponse.json();
-      const optimizedUrl = result.secure_url.replace(
-        "/upload/",
-        "/upload/f_auto,q_auto/"
-      );
-      onUpload(optimizedUrl);
-    } catch (error) {
-      console.error("Upload error:", error);
-    } finally {
-      setIsUploading(false);
+    if (file) {
+      await uploadImage(file);
     }
   };
 

@@ -2,7 +2,11 @@
 "use client";
 
 import { useToast } from "@/app/components/toast-provider";
-import { ColorPreset, OnboardingStepProps, VisualCustomizationData } from "@/app/types/onboarding";
+import {
+  ColorPreset,
+  OnboardingStepProps,
+  VisualCustomizationData,
+} from "@/lib/types";
 import Image from "next/image";
 import { useRef, useState } from "react";
 
@@ -15,14 +19,20 @@ const PRESET_COLORS: ColorPreset[] = [
   { name: "Teal", primary: "#0d9488", secondary: "#14b8a6" },
 ];
 
-export function VisualCustomizationStep({ onNext, onBack, data }: OnboardingStepProps) {
+export function VisualCustomizationStep({
+  onNext,
+  onBack,
+  data,
+}: OnboardingStepProps) {
   const [formData, setFormData] = useState<VisualCustomizationData>({
     primaryColor: data.primaryColor || "#1e40af",
     secondaryColor: data.secondaryColor || "#3b82f6",
     logo: data.logo || null,
   });
 
-  const [logoPreview, setLogoPreview] = useState<string | null>(data.logoPreview || null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(
+    data.logoPreview || null
+  );
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
@@ -35,7 +45,9 @@ export function VisualCustomizationStep({ onNext, onBack, data }: OnboardingStep
     }));
   };
 
-  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+  const handleLogoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -93,7 +105,9 @@ export function VisualCustomizationStep({ onNext, onBack, data }: OnboardingStep
     <div className="space-y-8">
       {/* Color Selection */}
       <div>
-        <h3 className="text-lg font-medium text-slate-900 mb-4">Choose Your Team Colors</h3>
+        <h3 className="text-lg font-medium text-slate-900 mb-4">
+          Choose Your Team Colors
+        </h3>
 
         {/* Color Presets */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
@@ -108,10 +122,18 @@ export function VisualCustomizationStep({ onNext, onBack, data }: OnboardingStep
               }`}
             >
               <div className="flex items-center space-x-2 mb-2">
-                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: preset.primary }} />
-                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: preset.secondary }} />
+                <div
+                  className="w-6 h-6 rounded-full"
+                  style={{ backgroundColor: preset.primary }}
+                />
+                <div
+                  className="w-6 h-6 rounded-full"
+                  style={{ backgroundColor: preset.secondary }}
+                />
               </div>
-              <span className="text-sm font-medium text-slate-700">{preset.name}</span>
+              <span className="text-sm font-medium text-slate-700">
+                {preset.name}
+              </span>
             </button>
           ))}
         </div>
@@ -119,36 +141,60 @@ export function VisualCustomizationStep({ onNext, onBack, data }: OnboardingStep
         {/* Custom Color Pickers */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Primary Color</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Primary Color
+            </label>
             <div className="flex items-center space-x-3">
               <input
                 type="color"
                 value={formData.primaryColor}
-                onChange={(e) => setFormData((prev) => ({ ...prev, primaryColor: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    primaryColor: e.target.value,
+                  }))
+                }
                 className="w-12 h-12 border border-slate-300 rounded-lg cursor-pointer"
               />
               <input
                 type="text"
                 value={formData.primaryColor}
-                onChange={(e) => setFormData((prev) => ({ ...prev, primaryColor: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    primaryColor: e.target.value,
+                  }))
+                }
                 placeholder="#1e40af"
                 className="flex-1 p-2 border border-slate-300 rounded-md text-sm"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Secondary Color</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Secondary Color
+            </label>
             <div className="flex items-center space-x-3">
               <input
                 type="color"
                 value={formData.secondaryColor}
-                onChange={(e) => setFormData((prev) => ({ ...prev, secondaryColor: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    secondaryColor: e.target.value,
+                  }))
+                }
                 className="w-12 h-12 border border-slate-300 rounded-lg cursor-pointer"
               />
               <input
                 type="text"
                 value={formData.secondaryColor}
-                onChange={(e) => setFormData((prev) => ({ ...prev, secondaryColor: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    secondaryColor: e.target.value,
+                  }))
+                }
                 placeholder="#3b82f6"
                 className="flex-1 p-2 border border-slate-300 rounded-md text-sm"
               />
@@ -159,13 +205,30 @@ export function VisualCustomizationStep({ onNext, onBack, data }: OnboardingStep
 
       {/* Logo Upload */}
       <div>
-        <h3 className="text-lg font-medium text-slate-900 mb-4">Upload Your Team Logo</h3>
+        <h3 className="text-lg font-medium text-slate-900 mb-4">
+          Upload Your Team Logo
+        </h3>
 
         {!logoPreview ? (
           <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-slate-400 transition-colors">
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-            <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="inline-flex flex-col items-center">
-              <svg className="w-12 h-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="inline-flex flex-col items-center"
+            >
+              <svg
+                className="w-12 h-12 text-slate-400 mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -173,24 +236,37 @@ export function VisualCustomizationStep({ onNext, onBack, data }: OnboardingStep
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              <span className="text-lg font-medium text-slate-600 mb-2">{isUploading ? "Uploading..." : "Click to upload logo"}</span>
+              <span className="text-lg font-medium text-slate-600 mb-2">
+                {isUploading ? "Uploading..." : "Click to upload logo"}
+              </span>
               <span className="text-sm text-slate-500">PNG, JPG up to 5MB</span>
             </button>
           </div>
         ) : (
           <div className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg">
-            <Image src={logoPreview} alt="Logo preview" width={64} height={64} className="object-contain rounded-lg" />
+            <Image
+              src={logoPreview}
+              alt="Logo preview"
+              width={64}
+              height={64}
+              className="object-contain rounded-lg"
+            />
             <div className="flex-1">
               <p className="font-medium text-slate-900">Logo uploaded</p>
               <p className="text-sm text-slate-500">Looking great!</p>
             </div>
-            <button onClick={removeLogo} className="text-red-600 hover:text-red-700 font-medium">
+            <button
+              onClick={removeLogo}
+              className="text-red-600 hover:text-red-700 font-medium"
+            >
               Remove
             </button>
           </div>
         )}
 
-        <p className="text-sm text-slate-600 mt-2">Don&apos;t have a logo? No problem! You can add one later.</p>
+        <p className="text-sm text-slate-600 mt-2">
+          Don&apos;t have a logo? No problem! You can add one later.
+        </p>
       </div>
 
       {/* Live Preview */}
@@ -204,15 +280,29 @@ export function VisualCustomizationStep({ onNext, onBack, data }: OnboardingStep
           }}
         >
           <div className="flex items-center space-x-4 mb-4">
-            {logoPreview && <Image src={logoPreview} alt="Logo" width={48} height={48} className="object-contain" />}
+            {logoPreview && (
+              <Image
+                src={logoPreview}
+                alt="Logo"
+                width={48}
+                height={48}
+                className="object-contain"
+              />
+            )}
             <div>
-              <h4 className="text-xl font-bold" style={{ color: formData.primaryColor }}>
+              <h4
+                className="text-xl font-bold"
+                style={{ color: formData.primaryColor }}
+              >
                 {data.organizationName || "Your Team Name"}
               </h4>
               <p className="text-slate-600">{data.sport || "Sport"}</p>
             </div>
           </div>
-          <div className="inline-block px-4 py-2 rounded-md text-white font-medium" style={{ backgroundColor: formData.primaryColor }}>
+          <div
+            className="inline-block px-4 py-2 rounded-md text-white font-medium"
+            style={{ backgroundColor: formData.primaryColor }}
+          >
             Sample Button
           </div>
         </div>
@@ -220,7 +310,10 @@ export function VisualCustomizationStep({ onNext, onBack, data }: OnboardingStep
 
       {/* Navigation Buttons */}
       <div className="flex justify-between pt-6">
-        <button onClick={onBack} className="px-6 py-2 text-slate-600 hover:text-slate-800 transition-colors">
+        <button
+          onClick={onBack}
+          className="px-6 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+        >
           Back
         </button>
         <button

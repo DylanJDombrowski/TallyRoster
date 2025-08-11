@@ -24,7 +24,7 @@ import Image from "next/image";
 import { PlayerForm } from "./player-form";
 import { PlayerDetailModal } from "./player-detail-modal";
 import { CSVImportModal } from "./csv-import-modal";
-import { usePlayerManagement } from "../hooks/use-player-management";
+import { usePlayerManagement } from "@/lib/hooks/use-player-management";
 
 export type PlayerWithTeam = Player & {
   teams: Pick<Team, "name"> | null;

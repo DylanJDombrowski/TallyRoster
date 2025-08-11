@@ -1,8 +1,12 @@
-// lib/types.ts - Updated types for extended schema
+// lib/types.ts - Single source of truth for all types and schemas
 import { z } from "zod";
 import { Database } from "./database.types";
 
-// Enhanced Player schema with all the new fields
+// ============================================================================
+// FORM SCHEMAS - Single source of truth for validation
+// ============================================================================
+
+// Enhanced Player schema
 export const PlayerFormSchema = z.object({
   id: z.string().uuid().optional(),
   first_name: z.string().min(2, "First name must be at least 2 characters."),
@@ -24,6 +28,11 @@ export const PlayerFormSchema = z.object({
   gpa: z.coerce.number().min(0).max(4.0).nullable(),
   twitter_handle: z.string().nullable(),
   parent_email: z.string().email("Invalid email address.").nullable(),
+});
+
+export const PlayerStatusSchema = z.object({
+  playerId: z.string().uuid(),
+  status: z.enum(["active", "archived"]),
 });
 
 // Coach schema
@@ -54,32 +63,122 @@ export const ScheduleEventFormSchema = z.object({
   is_home: z.boolean().default(false),
 });
 
-// Team schema update
+// Team schema - FIXED to match both form needs and database schema
 export const TeamFormSchema = z.object({
   id: z.string().uuid().optional(),
-  name: z.string().min(3, "Team name must be at least 3 characters."),
-  season: z.string().min(1, "Season is required."), // 🔧 FIX: Make season required
-  year: z.coerce.number().int().min(2020).max(2035).nullable(),
-  team_image_url: z.string().url().nullable().optional(),
-  primary_color: z.string().default("#161659"),
-  secondary_color: z.string().default("#BD1515"),
+  name: z.string().min(2, "Team name must be at least 2 characters"),
+  season: z.string().min(1, "Season is required"),
+  year: z.coerce.number().int().min(2020).max(2035).optional(),
+  team_image_url: z.string().url().optional().or(z.literal("")),
+  // Force these to be strings with defaults to avoid conflicts
+  primary_color: z
+    .string()
+    .regex(/^#[0-9A-F]{6}$/i, "Must be valid hex color")
+    .default("#161659"),
+  secondary_color: z
+    .string()
+    .regex(/^#[0-9A-F]{6}$/i, "Must be valid hex color")
+    .default("#BD1515"),
+  // Coach fields for form handling
+  coach_name: z.string().optional(),
+  coach_email: z.string().email("Invalid email").optional().or(z.literal("")),
+  coach_phone: z.string().optional(),
 });
 
-// Infer types from schemas
+// ============================================================================
+// ONBOARDING SCHEMAS - Consolidated from app/types/onboarding.ts
+// ============================================================================
+
+export const OrganizationFormSchema = z.object({
+  organizationName: z.string().min(2, "Organization name is required"),
+  organizationType: z.string().min(1, "Organization type is required"),
+  sport: z.string().optional(),
+  subdomain: z
+    .string()
+    .min(3, "Subdomain must be at least 3 characters")
+    .regex(
+      /^[a-z0-9]+$/,
+      "Subdomain can only contain lowercase letters and numbers"
+    ),
+  yourRole: z.string().default("admin"),
+});
+
+export const VisualCustomizationSchema = z.object({
+  primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be valid hex color"),
+  secondaryColor: z
+    .string()
+    .regex(/^#[0-9A-F]{6}$/i, "Must be valid hex color"),
+  logo: z.instanceof(File).nullable(),
+  logoPreview: z.string().optional(),
+});
+
+export const PlanSelectionSchema = z.object({
+  selectedPlan: z.enum(["starter", "pro", "elite"]),
+});
+
+// ============================================================================
+// INFERRED TYPES - Generated from schemas
+// ============================================================================
+
 export type PlayerFormData = z.infer<typeof PlayerFormSchema>;
+export type PlayerStatusData = z.infer<typeof PlayerStatusSchema>;
 export type CoachFormData = z.infer<typeof CoachFormSchema>;
 export type ScheduleEventFormData = z.infer<typeof ScheduleEventFormSchema>;
 export type TeamFormData = z.infer<typeof TeamFormSchema>;
 
-// Base types from database
+// Onboarding types
+export type OrganizationFormData = z.infer<typeof OrganizationFormSchema>;
+export type VisualCustomizationData = z.infer<typeof VisualCustomizationSchema>;
+export type PlanSelectionData = z.infer<typeof PlanSelectionSchema>;
+
+export interface OnboardingWizardData
+  extends OrganizationFormData,
+    VisualCustomizationData,
+    PlanSelectionData {}
+
+export interface OnboardingStepProps {
+  onNext: (data?: Record<string, unknown>) => void;
+  onBack: () => void;
+  data: Partial<OnboardingWizardData>;
+}
+
+export interface OnboardingStep {
+  id: string;
+  title: string;
+  description: string;
+  component: React.ComponentType<OnboardingStepProps>;
+}
+
+export interface SubdomainCheckResponse {
+  available: boolean;
+  subdomain?: string;
+  error?: string;
+}
+
+export type ColorPreset = {
+  name: string;
+  primary: string;
+  secondary: string;
+};
+
+// ============================================================================
+// DATABASE TYPES - Direct from Supabase
+// ============================================================================
+
 export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type Team = Database["public"]["Tables"]["teams"]["Row"];
 export type Coach = Database["public"]["Tables"]["coaches"]["Row"];
 export type ScheduleEvent =
   Database["public"]["Tables"]["schedule_events"]["Row"];
 export type PlayerStats = Database["public"]["Tables"]["player_stats"]["Row"];
+export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
+export type BlogPost = Database["public"]["Tables"]["blog_posts"]["Row"];
+export type Sponsor = Database["public"]["Tables"]["sponsors"]["Row"];
 
-// Extended types for UI components
+// ============================================================================
+// EXTENDED TYPES - For UI components with relations
+// ============================================================================
+
 export type TeamWithDetails = Team & {
   players: Player[];
   coaches: Coach[];
@@ -87,18 +186,28 @@ export type TeamWithDetails = Team & {
 };
 
 export type PlayerWithTeam = Player & {
-  teams: Pick<Team, "name"> | null;
+  teams: Pick<Team, "name" | "season"> | null;
 };
 
 export type CoachWithTeam = Coach & {
-  teams: Pick<Team, "name"> | null;
+  teams: Pick<Team, "name" | "season"> | null;
 };
 
-// Utility types for different views
+// ============================================================================
+// UTILITY TYPES - For different views and components
+// ============================================================================
+
 export type TeamListItem = Pick<
   Team,
-  "id" | "name" | "season" | "year" | "team_image_url"
+  | "id"
+  | "name"
+  | "season"
+  | "year"
+  | "team_image_url"
+  | "primary_color"
+  | "secondary_color"
 >;
+
 export type PlayerCardData = Pick<
   Player,
   | "id"
@@ -108,43 +217,64 @@ export type PlayerCardData = Pick<
   | "position"
   | "headshot_url"
   | "grad_year"
->;
-export type CoachCardData = Pick<
-  Coach,
-  "id" | "name" | "position" | "image_url" | "email" | "phone"
+  | "height"
+  | "town"
+  | "school"
 >;
 
-// Image handling utilities
-export const getPlayerImageUrl = (path: string | null | undefined) => {
+export type CoachCardData = Pick<
+  Coach,
+  "id" | "name" | "position" | "image_url" | "email" | "phone" | "bio"
+>;
+
+// ============================================================================
+// HELPER FUNCTIONS - Image URL handling
+// ============================================================================
+
+export const getPlayerImageUrl = (path: string | null | undefined): string => {
   const defaultImage = "/assets/teams/defaultpfp.jpg";
 
   if (!path) return defaultImage;
 
-  // THIS IS THE FIX: If the path is already a full URL, return it directly.
+  // If the path is already a full URL, return it directly
   if (path.startsWith("http")) {
     return path;
   }
 
-  // Otherwise, if it's a partial path, construct the full URL (this maintains old functionality if needed)
-  // Note: We are keeping the logic from before that removed the double slash.
+  // Otherwise, construct the full URL for legacy Supabase storage
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/player-headshots${path}`;
 };
 
-// You should apply the same fix to the team image URL helper
-export const getTeamImageUrl = (path: string | null | undefined) => {
+export const getTeamImageUrl = (path: string | null | undefined): string => {
   const defaultImage = "/assets/logos/mvxLogo2.png";
 
   if (!path) return defaultImage;
 
-  // THIS IS THE FIX: If the path is already a full URL, return it directly.
+  // If the path is already a full URL, return it directly
   if (path.startsWith("http")) {
     return path;
   }
 
+  // Otherwise, construct the full URL for legacy Supabase storage
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/team-photos${path}`;
 };
 
 export const getCoachImageUrl = (coach: Coach): string => {
   if (coach.image_url) return coach.image_url;
   return "/assets/teams/defaultpfp.jpg"; // fallback image
+};
+
+// ============================================================================
+// HELPER FUNCTIONS - Season generation
+// ============================================================================
+
+export const generateSeasonOptions = () => {
+  const currentYear = new Date().getFullYear();
+  const options = [];
+  for (let i = 0; i < 4; i++) {
+    const startYear = currentYear + i;
+    const endYear = (startYear + 1).toString().slice(-2);
+    options.push(`${startYear}-${endYear}`);
+  }
+  return options;
 };

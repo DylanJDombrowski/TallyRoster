@@ -3,8 +3,11 @@
 
 import { getServerClient } from "@/lib/services/database";
 import { validateFormData, type ActionResult } from "@/lib/services/validation";
-import { withErrorHandling, handleDatabaseError } from "@/lib/services/error-handling";
-import { PlayerStatusSchema } from "@/lib/schemas/player";
+import {
+  withErrorHandling,
+  handleDatabaseError,
+} from "@/lib/services/error-handling";
+import { PlayerStatusSchema } from "@/lib/schemas";
 
 /**
  * Update player status (active/archived)
@@ -30,14 +33,14 @@ export const updatePlayerStatus = withErrorHandling(
       const statusText = status === "archived" ? "archived" : "activated";
       return {
         success: true,
-        data: { message: `Player ${statusText} successfully.` }
+        data: { message: `Player ${statusText} successfully.` },
       };
     } catch (error) {
       return handleDatabaseError(error);
     }
   },
   {
-    revalidatePaths: ["/dashboard/players"]
+    revalidatePaths: ["/dashboard/players"],
   }
 );
 
@@ -63,13 +66,13 @@ export const deletePlayer = withErrorHandling(
 
       return {
         success: true,
-        data: { message: "Player deleted successfully." }
+        data: { message: "Player deleted successfully." },
       };
     } catch (error) {
       return handleDatabaseError(error);
     }
   },
   {
-    revalidatePaths: ["/dashboard/players"]
+    revalidatePaths: ["/dashboard/players"],
   }
 );
