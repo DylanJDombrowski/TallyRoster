@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { User, Mail, Phone, Upload, X } from "lucide-react";
 import Image from "next/image";
-
+import { THEME_PRESETS } from "@/lib/utils/theme";
 import { useToast } from "@/app/components/toast-provider";
 import { useCloudinaryUpload } from "@/lib/hooks/use-cloudinary-upload";
 import {
@@ -382,6 +382,42 @@ export function TeamForm({
                 {errors.secondary_color.message}
               </p>
             )}
+          </div>
+        </div>
+
+        <div className="col-span-full">
+          <label className="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">
+            Quick Color Presets
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {THEME_PRESETS.map((preset) => (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => {
+                  setValue("primary_color", preset.colors.primary);
+                  setValue("secondary_color", preset.colors.secondary);
+                }}
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors text-left"
+                title={preset.description}
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div
+                      className="w-4 h-4 rounded-full border"
+                      style={{ backgroundColor: preset.colors.primary }}
+                    />
+                    <div
+                      className="w-4 h-4 rounded-full border"
+                      style={{ backgroundColor: preset.colors.secondary }}
+                    />
+                  </div>
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                    {preset.name}
+                  </span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </div>
