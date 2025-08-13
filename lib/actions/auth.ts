@@ -72,6 +72,9 @@ export async function signup(prevState: unknown, formData: FormData) {
 }
 
 export async function login(prevState: unknown, formData: FormData) {
+  // Clear any previous state first
+  await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay to clear UI state
+
   const validation = LoginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -83,7 +86,6 @@ export async function login(prevState: unknown, formData: FormData) {
       message: "Invalid data provided.",
     };
   }
-
   const { email, password } = validation.data;
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);

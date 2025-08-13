@@ -163,6 +163,48 @@ export async function inviteUser(
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
+  // Check if user already exists using the correct admin API method
+  const { data: existingUsers, error: getUserError } =
+    await supabaseAdmin.auth.admin.listUsers();
+
+  if (getUserError) {
+    console.error("❌ Error checking existing users:", getUserError);
+    return { error: "Failed to check existing users" };
+  }
+
+  const existingUser = existingUsers.users.find((u) => u.email === email);
+
+  if (existingUser) {
+    // User exists - just add organization role
+    const { error } = await supabase.from("user_organization_roles").insert({
+      user_id: existingUser.id,
+      organization_id: organizationId,
+      role: role === "parent" ? "member" : role,
+    });
+
+    if (error) {
+      if (error.code === "23505") {
+        // Unique constraint violation
+        return { error: "User is already a member of this organization" };
+      }
+      throw error;
+    }
+
+    // Also add to user_roles table
+    const { error: userRoleError } = await supabase.from("user_roles").insert({
+      user_id: existingUser.id,
+      role: role,
+      team_id: role === "admin" ? null : teamId,
+    });
+
+    if (userRoleError && userRoleError.code !== "23505") {
+      console.error("❌ Error adding user role:", userRoleError);
+    }
+
+    revalidatePath("/dashboard/admin/users");
+    return { success: `User ${email} added to organization successfully` };
+  }
+
   // Verify the current user is admin of the organization
   const { data: userOrgRole, error: roleError } = await supabase
     .from("user_organization_roles")
@@ -311,7 +353,6 @@ export async function removeUser(
   }
 }
 
-// Resend invitation
 export async function resendInvitation(
   organizationId: string,
   currentUserId: string,

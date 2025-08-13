@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { useToast } from "@/app/components/toast-provider";
 import { login } from "@/lib/actions";
@@ -23,12 +23,15 @@ function SubmitButton() {
 export function LoginForm() {
   const [state, formAction] = useActionState(login, undefined);
   const { showToast } = useToast();
+  const previousMessageRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (state?.message) {
+    // Only show toast if the message is new (different from previous)
+    if (state?.message && state.message !== previousMessageRef.current) {
       showToast(state.message, "error");
+      previousMessageRef.current = state.message;
     }
-  }, [state, showToast]);
+  }, [state?.message, showToast]);
 
   return (
     <div className="mx-auto max-w-sm">
